@@ -1,0 +1,57 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Monemusic
+      </h2>
+      <p class="text-center"><br>연습실 & 보충수업 시스템</p>
+    </div>
+    
+    <% if flash[:notice] == 'signup_success' %>
+      <script>
+        alert('회원가입 신청이 완료되었습니다. 관리자 승인을 기다려주세요.');
+      </script>
+    <% elsif flash[:alert_message] %>
+      <script>
+        alert('<%= flash[:alert_message] %>');
+      </script>
+    <% elsif flash[:alert] %>
+      <div class="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <span class="block sm:inline"><%= flash[:alert] %></span>
+      </div>
+    <% end %>
+    
+    <%= form_with url: login_path, local: true, data: { turbo: false }, class: "mt-8 space-y-6" do |f| %>
+      <div class="rounded-md shadow-sm -space-y-px">
+        <div>
+          <%= f.label :username, "아이디", class: "sr-only" %>
+          <%= f.text_field :username, 
+              required: true,
+              class: "appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm",
+              placeholder: "아이디" %>
+        </div>
+        <div>
+          <%= f.label :password, "비밀번호", class: "sr-only" %>
+          <%= f.password_field :password,
+              required: true,
+              class: "appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm",
+              placeholder: "비밀번호" %>
+        </div>
+      </div>
+
+      <div>
+        <%= f.submit "로그인", 
+            class: "group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer" %>
+      </div>
+      
+      <div class="flex items-center justify-between mt-8">
+        <div class="text-sm" style="margin-right: 10px;">
+          <%= link_to "회원가입", register_path, class: "font-medium text-indigo-600 hover:text-indigo-500" %>
+        </div>
+        <div class="text-sm ml-4">
+          <%= link_to "비밀번호 찾기", password_reset_path, class: "font-medium text-indigo-600 hover:text-indigo-500" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

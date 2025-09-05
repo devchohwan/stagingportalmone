@@ -1,0 +1,101 @@
+<div class="max-w-6xl mx-auto">
+  <h2 class="text-2xl font-bold mb-6">페널티 관리</h2>
+  
+  <!-- 필터 섹션 -->
+  <div class="bg-white rounded-lg p-4 shadow mb-6">
+    <%= form_with url: admin_penalties_path, method: :get, class: "flex flex-wrap gap-4" do |f| %>
+      <div>
+        <%= f.text_field :search, 
+            value: params[:search],
+            placeholder: "이름/아이디 검색",
+            class: "px-3 py-2 border border-gray-300 rounded-lg" %>
+      </div>
+      
+      <div>
+        <%= f.select :blocked, 
+            options_for_select([
+              ['전체', ''],
+              ['차단된 회원만', 'true']
+            ], params[:blocked]),
+            {},
+            class: "px-3 py-2 border border-gray-300 rounded-lg" %>
+      </div>
+      
+      <%= f.submit "검색", class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer" %>
+      
+      <% if params[:search].present? || params[:blocked].present? %>
+        <%= link_to "초기화", admin_penalties_path, class: "bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700" %>
+      <% end %>
+    <% end %>
+  </div>
+  
+  <!-- 패널티 목록 -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">회원</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">노쇼 횟수</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">취소 횟수</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">총 횟수</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        <% @penalties.each do |penalty| %>
+          <tr class="<%= 'bg-red-50' if penalty.is_blocked? %>">
+            <td class="px-4 py-3 text-sm">
+              <%= penalty.user.name %>
+              <span class="text-xs text-gray-500 block"><%= penalty.user.username %></span>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <%= penalty.no_show_count %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <%= penalty.cancel_count %>
+            </td>
+            <td class="px-4 py-3 text-sm font-medium">
+              <%= penalty.no_show_count + penalty.cancel_count %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <% if penalty.is_blocked? %>
+                <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">차단됨</span>
+              <% else %>
+                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">정상</span>
+              <% end %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <% if penalty.no_show_count > 0 || penalty.cancel_count > 0 || penalty.is_blocked? %>
+                <%= link_to "패널티 초기화", reset_admin_penalty_path(penalty),
+                            method: :patch,
+                            data: { turbo_method: :patch, turbo_confirm: "패널티를 초기화하시겠습니까?" },
+                            class: "text-blue-600 hover:text-blue-800 text-xs" %>
+              <% else %>
+                <span class="text-gray-400 text-xs">없음</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    
+    <% if @penalties.empty? %>
+      <div class="text-center py-8 text-gray-500">
+        패널티 기록이 없습니다.
+      </div>
+    <% end %>
+  </div>
+  
+  <div class="mt-6 flex justify-between items-center">
+    <div>
+      <p class="text-sm text-gray-600">
+        총 <%= @penalties.count %>명 | 차단: <%= @penalties.where(is_blocked: true).count %>명
+      </p>
+      <p class="text-xs text-gray-500 mt-1">
+        <%= Date.current.year %>년 <%= Date.current.month %>월 기준
+      </p>
+    </div>
+    <%= link_to "관리자 대시보드로", admin_root_path, class: "text-gray-600 text-sm" %>
+  </div>
+</div>

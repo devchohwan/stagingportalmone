@@ -1,0 +1,40 @@
+<div class="max-w-4xl mx-auto">
+  <h2 class="text-2xl font-bold mb-6">관리자 대시보드</h2>
+  
+  <div class="grid grid-cols-2 gap-4 mb-8">
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h3 class="text-sm text-gray-600">승인 대기</h3>
+      <p class="text-2xl font-bold"><%= @pending_users %></p>
+    </div>
+    
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h3 class="text-sm text-gray-600">전체 회원 수</h3>
+      <p class="text-2xl font-bold"><%= @total_users %></p>
+    </div>
+    
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h3 class="text-sm text-gray-600">오늘 예약 수</h3>
+      <p class="text-2xl font-bold"><%= @todays_reservations %></p>
+    </div>
+    
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h3 class="text-sm text-gray-600">이용 전 예약 수</h3>
+      <p class="text-2xl font-bold"><%= @active_reservations %></p>
+    </div>
+  </div>
+  
+  <div class="space-y-4">
+    <%= link_to "회원 관리", admin_users_path, 
+                class: "block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 text-center" %>
+    
+    <%= link_to "예약 관리", admin_reservations_path, 
+                class: "block w-full bg-gray-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-700 text-center" %>
+    
+    <%= link_to "페널티 관리", admin_penalties_path, 
+                class: "block w-full bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 text-center" %>
+  </div>
+  
+  <div class="mt-6">
+    <%= link_to "홈으로", root_path, class: "text-gray-600 text-sm" %>
+  </div>
+</div>

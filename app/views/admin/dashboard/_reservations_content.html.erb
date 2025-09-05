@@ -1,0 +1,360 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-6xl mx-auto py-8 px-4">
+    <h2 class="text-2xl font-bold mb-6">예약 관리</h2>
+    
+    <!-- 탭 선택 -->
+    <div class="flex gap-4 mb-4 border-b">
+      <button onclick="loadReservationsTab('practice')"
+              class="reservation-tab-btn <%= service_type != 'makeup' ? 'active' : '' %> pb-2 px-1">
+        연습실 예약
+      </button>
+      <button onclick="loadReservationsTab('makeup')"
+              class="reservation-tab-btn <%= service_type == 'makeup' ? 'active' : '' %> pb-2 px-1">
+        보충수업 예약
+      </button>
+    </div>
+  
+  <!-- 검색 기능 (수정된 부분) -->
+  <div class="mb-4">
+    <form id="reservation-filter-form" class="flex gap-2 flex-wrap">
+      <input type="text" 
+             id="reservation-search"
+             name="search"
+             placeholder="이름이나 아이디로 검색..."
+             class="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-violet-500 focus:border-transparent"
+             value=""
+             onkeyup="searchReservations()"
+             oninput="searchReservations()">
+      
+      <select id="reservation-status" name="status" class="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-violet-500 focus:border-transparent" onchange="filterReservations()">
+        <option value="">전체 상태</option>
+        <% if service_type == 'makeup' %>
+          <option value="pending">승인 대기</option>
+          <option value="active">수업 대기</option>
+          <option value="completed">완료</option>
+          <option value="cancelled">거절됨</option>
+          <option value="no_show">노쇼</option>
+        <% else %>
+          <option value="pending">대기</option>
+          <option value="active">이용 전</option>
+          <option value="completed">완료</option>
+          <option value="cancelled">취소</option>
+          <option value="no_show">노쇼</option>
+        <% end %>
+      </select>
+      
+      <input type="date" 
+             id="reservation-date"
+             name="date"
+             class="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-violet-500 focus:border-transparent"
+             onchange="filterReservations()">
+      
+      <button type="button" onclick="filterReservations()" 
+              class="px-3 py-1.5 text-sm bg-violet-600 text-white rounded hover:bg-violet-700">
+        검색
+      </button>
+      
+      <button type="button" onclick="resetReservationFilters()" 
+              class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+        초기화
+      </button>
+    </form>
+  </div>
+  
+  <!-- 예약 목록 -->
+  <div class="bg-white rounded-lg shadow">
+    <% if reservations && reservations.any? %>
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"><%= service_type == 'makeup' ? '수업' : '연습실' %></th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">날짜</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">시간</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% reservations.each do |reservation| %>
+            <tr class="reservation-row <%= 'bg-yellow-50' if reservation.status == 'pending' %>" 
+                data-name="<%= reservation.user.name %>"
+                data-username="<%= reservation.user.username %>"
+                data-status="<%= reservation.status %>"
+                data-date="<%= reservation.start_time.strftime('%Y-%m-%d') %>">
+              <td class="px-4 py-2 text-sm font-medium"><%= reservation.user.name %></td>
+              <td class="px-4 py-2 text-sm"><%= reservation.user.username %></td>
+              <td class="px-4 py-2 text-sm">
+                <% if service_type == 'makeup' %>
+                  <%= reservation.subject if reservation.respond_to?(:subject) %> 보충
+                  <% if reservation.user.respond_to?(:teacher) && reservation.user.teacher %>
+                    <span class="text-xs text-gray-500">(<%= reservation.user.teacher %>)</span>
+                  <% end %>
+                <% else %>
+                  <%= reservation.room.number %>번
+                  <% if reservation.room.respond_to?(:has_outlet) && reservation.room.has_outlet %>
+                    <span title="콘센트 있음">🔌</span>
+                  <% end %>
+                <% end %>
+              </td>
+              <td class="px-4 py-2 text-sm"><%= reservation.start_time.strftime('%Y-%m-%d') %></td>
+              <td class="px-4 py-2 text-sm">
+                <%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>
+              </td>
+              <td class="px-4 py-2">
+                <% if service_type == 'makeup' %>
+                  <% case reservation.status %>
+                  <% when 'pending' %>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">승인 대기</span>
+                  <% when 'active' %>
+                    <% if reservation.start_time > Time.current %>
+                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">수업 대기</span>
+                    <% else %>
+                      <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">완료</span>
+                    <% end %>
+                  <% when 'completed' %>
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">완료</span>
+                  <% when 'cancelled' %>
+                    <% if reservation.cancelled_by == 'admin' %>
+                      <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">거절됨</span>
+                    <% else %>
+                      <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">취소</span>
+                    <% end %>
+                  <% when 'no_show' %>
+                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">노쇼</span>
+                  <% else %>
+                    <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full"><%= reservation.status %></span>
+                  <% end %>
+                <% else %>
+                  <% case reservation.status %>
+                  <% when 'pending' %>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">대기</span>
+                  <% when 'active' %>
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">이용 전</span>
+                  <% when 'completed' %>
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">완료</span>
+                  <% when 'cancelled' %>
+                    <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">취소</span>
+                  <% when 'no_show' %>
+                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">노쇼</span>
+                  <% else %>
+                    <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full"><%= reservation.status %></span>
+                  <% end %>
+                <% end %>
+              </td>
+              <td class="px-4 py-2">
+                <% if service_type == 'makeup' && reservation.status == 'pending' %>
+                  <button onclick="updateReservationStatus(<%= reservation.id %>, 'active', 'makeup')" 
+                          class="text-green-600 hover:text-green-800 text-sm cursor-pointer mr-2">승인</button>
+                  <button onclick="updateReservationStatus(<%= reservation.id %>, 'cancelled', 'makeup')" 
+                          class="text-red-600 hover:text-red-800 text-sm cursor-pointer mr-2">거절</button>
+                <% end %>
+                <select onchange="updateReservationStatus(<%= reservation.id %>, this.value, '<%= service_type %>')" 
+                        class="text-xs px-2 py-1 border border-gray-300 rounded mr-2">
+                  <% if service_type == 'makeup' %>
+                    <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>승인 대기</option>
+                    <option value="active" <%= 'selected' if reservation.status == 'active' %>>수업 대기</option>
+                    <option value="completed" <%= 'selected' if reservation.status == 'completed' %>>완료</option>
+                    <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>><%= reservation.cancelled_by == 'admin' ? '거절됨' : '취소' %></option>
+                    <option value="no_show" <%= 'selected' if reservation.status == 'no_show' %>>노쇼</option>
+                  <% else %>
+                    <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>대기</option>
+                    <option value="active" <%= 'selected' if reservation.status == 'active' %>>이용 전</option>
+                    <option value="completed" <%= 'selected' if reservation.status == 'completed' %>>완료</option>
+                    <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>>취소</option>
+                    <option value="no_show" <%= 'selected' if reservation.status == 'no_show' %>>노쇼</option>
+                  <% end %>
+                </select>
+                <button onclick="deleteReservation(<%= reservation.id %>, '<%= service_type %>')" 
+                        class="text-red-600 hover:text-red-800 text-sm cursor-pointer">삭제</button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-gray-500 p-8 text-center">예약이 없습니다.</p>
+    <% end %>
+  </div>
+  </div>
+</div>
+
+<script>
+// 예약 관리 전역 함수들 - 클라이언트 사이드 필터링으로 간단하게 구현
+
+// 검색 함수들을 즉시 실행 함수로 감싸서 확실히 로드되게 함
+(function() {
+  // 검색 기능
+  window.searchReservations = function() {
+    const searchInput = document.getElementById('reservation-search');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const rows = document.querySelectorAll('.reservation-row');
+    
+    rows.forEach(row => {
+      const name = (row.getAttribute('data-name') || '').toLowerCase();
+      const username = (row.getAttribute('data-username') || '').toLowerCase();
+      
+      if (searchTerm === '' || name.includes(searchTerm) || username.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  };
+
+  // 필터링 기능 
+  window.filterReservations = function() {
+    const statusFilter = document.getElementById('reservation-status')?.value || '';
+    const dateFilter = document.getElementById('reservation-date')?.value || '';
+    const searchTerm = (document.getElementById('reservation-search')?.value || '').toLowerCase();
+    const rows = document.querySelectorAll('.reservation-row');
+    
+    rows.forEach(row => {
+      let visible = true;
+      
+      // 검색어 필터
+      if (searchTerm) {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const username = (row.getAttribute('data-username') || '').toLowerCase();
+        if (!name.includes(searchTerm) && !username.includes(searchTerm)) {
+          visible = false;
+        }
+      }
+      
+      // 상태 필터
+      if (statusFilter && visible) {
+        const status = row.getAttribute('data-status');
+        if (status !== statusFilter) {
+          visible = false;
+        }
+      }
+      
+      // 날짜 필터
+      if (dateFilter && visible) {
+        const date = row.getAttribute('data-date');
+        if (date !== dateFilter) {
+          visible = false;
+        }
+      }
+      
+      row.style.display = visible ? '' : 'none';
+    });
+  };
+
+  // 초기화 기능
+  window.resetReservationFilters = function() {
+    const searchInput = document.getElementById('reservation-search');
+    const statusSelect = document.getElementById('reservation-status');
+    const dateInput = document.getElementById('reservation-date');
+    
+    if (searchInput) searchInput.value = '';
+    if (statusSelect) statusSelect.value = '';
+    if (dateInput) dateInput.value = '';
+    
+    const rows = document.querySelectorAll('.reservation-row');
+    rows.forEach(row => {
+      row.style.display = '';
+    });
+  };
+
+  // 통합 필터 적용 (검색 버튼용)
+  window.applyReservationFilters = function() {
+    window.filterReservations();
+  };
+
+  console.log('예약 관리 필터링 함수들이 로드되었습니다.');
+})();
+
+// 기존 함수들
+  
+  window.updateReservationStatus = function(reservationId, status, service) {
+    fetch(`/admin/reservations/${reservationId}/update_status`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: status, service: service })
+    }).then(response => {
+      if (response.ok || response.redirected) {
+        window.loadReservationsTab(service);
+      } else {
+        alert('상태 변경에 실패했습니다.');
+      }
+    });
+  };
+
+  window.deleteReservation = function(reservationId, service) {
+    if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
+      fetch(`/admin/reservations/${reservationId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ service: service })
+      }).then(response => {
+        if (response.ok || response.redirected) {
+          window.loadReservationsTab(service);
+        } else {
+          alert('삭제에 실패했습니다.');
+        }
+      });
+    }
+  };
+  
+  window.applyReservationFilters = function() {
+    const service = window.currentReservationService || 'practice';
+    const search = document.getElementById('reservation-search')?.value || '';
+    const status = document.getElementById('reservation-status')?.value || '';
+    const date = document.getElementById('reservation-date')?.value || '';
+    
+    // URL 파라미터 구성
+    const params = new URLSearchParams();
+    params.append('service', service);
+    if (search) params.append('search', search);
+    if (status) params.append('status', status);
+    if (date) params.append('date', date);
+    
+    // 서버에서 필터링된 데이터 가져오기
+    fetch(`/admin/reservations/content?${params.toString()}`)
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('reservations-content-area').innerHTML = html;
+      })
+      .catch(error => {
+        console.error('Filter error:', error);
+      });
+  };
+  
+  window.resetReservationFilters = function() {
+    document.getElementById('reservation-search').value = '';
+    document.getElementById('reservation-status').value = '';
+    document.getElementById('reservation-date').value = '';
+    
+    // 필터 초기화 후 데이터 다시 로드
+    const service = window.currentReservationService || 'practice';
+    window.loadReservationsTab(service);
+  };
+
+</script>
+
+<style>
+.reservation-tab-btn {
+  color: #666;
+  font-weight: normal;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.reservation-tab-btn.active {
+  color: #7c3aed;
+  font-weight: bold;
+  border-bottom: 2px solid #7c3aed;
+}
+.reservation-tab-btn:hover {
+  color: #7c3aed;
+}
+</style>

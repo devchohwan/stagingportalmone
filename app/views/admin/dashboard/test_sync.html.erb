@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>전화번호 동기화 테스트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .success { color: #28a745; }
+        .warning { color: #ffc107; }
+        .error { color: #dc3545; }
+        .info { color: #007bff; }
+        .log-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #ddd;
+            border-radius: 4px;
+        }
+        .log-item.success { border-left-color: #28a745; }
+        .log-item.error { border-left-color: #dc3545; }
+        .log-item.info { border-left-color: #007bff; }
+    </style>
+</head>
+<body>
+    <h1>📞 전화번호 동기화 시스템 테스트</h1>
+    
+    <div class="container">
+        <h2>🎯 문제 해결 목표</h2>
+        <p>사용자가 전화번호를 변경하면 <strong>모든 시스템</strong>에 자동으로 동기화</p>
+        <ul>
+            <li>✅ 모네뮤직 API (메인 시스템)</li>
+            <li>✅ 연습실 API</li>
+            <li>✅ 보충수업 API</li>
+        </ul>
+    </div>
+    
+    <div class="container">
+        <h2>🔄 업데이트된 동기화 로직</h2>
+        <div class="log-item info">
+            <strong>ProfileController#update_phone</strong> 메서드가 다음과 같이 개선되었습니다:
+        </div>
+        
+        <div class="log-item">
+            <strong>1단계:</strong> 전화번호 형식 검증
+        </div>
+        
+        <div class="log-item success">
+            <strong>2단계:</strong> 모네뮤직 API 업데이트 (메인 시스템)
+        </div>
+        
+        <div class="log-item success">
+            <strong>3단계:</strong> 연습실 API 업데이트 (관리자 페이지에 표시되는 데이터)
+        </div>
+        
+        <div class="log-item success">
+            <strong>4단계:</strong> 보충수업 API 업데이트 (관리자 페이지에 표시되는 데이터)
+        </div>
+        
+        <div class="log-item info">
+            <strong>5단계:</strong> 로컬 세션 업데이트 (항상 수행)
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>📊 개선된 동기화 결과 메시지</h2>
+        <div class="log-item success">
+            <strong>사용자에게 보여지는 메시지:</strong> "전화번호가 성공적으로 변경되었습니다."
+        </div>
+        
+        <div class="log-item info">
+            <strong>관리자 로그:</strong> 실제 동기화 상태가 상세히 기록됨
+        </div>
+        
+        <div class="log-item warning">
+            <strong>부분 실패 시:</strong> 개발자/관리자에게만 알림, 사용자에게는 성공 메시지 표시
+        </div>
+        
+        <div class="log-item error">
+            <strong>전체 실패 시:</strong> "전화번호 변경에 실패했습니다. 잠시 후 다시 시도해주세요."
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>🔧 기초적인 문제 해결 완료</h2>
+        <div class="log-item success">
+            <strong>✅ 모네뮤직 API 연동:</strong> 관리자 페이지에서 모네뮤직 API로부터 최신 사용자 정보를 가져오도록 개선
+        </div>
+        
+        <div class="log-item success">
+            <strong>✅ 데이터 병합:</strong> 연습실/보충수업 API 데이터와 모네뮤직 API 데이터를 동적으로 병합
+        </div>
+        
+        <div class="log-item info">
+            <strong>🔄 동작 플로우:</strong>
+            <ol>
+                <li>사용자가 전화번호 변경 → 모든 API에 동기화</li>
+                <li>관리자 페이지 로드 → 모네뮤직에서 최신 데이터 가져오기</li>
+                <li>연습실/보충수업 데이터와 병합 → 최신 전화번호 표시</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>🔄 로그아웃 시 전화번호 초기화 문제 해결</h2>
+        
+        <div class="log-item error">
+            <strong>🔴 기존 문제:</strong>
+            <ol>
+                <li>사용자가 전화번호 변경</li>
+                <li>세션에만 저장됨</li>
+                <li>로그아웃 → 세션 삭제</li>
+                <li>재로그인 → 변경된 전화번호 초기화 ❌</li>
+            </ol>
+        </div>
+        
+        <div class="log-item success">
+            <strong>✅ 해결 방안:</strong>
+            <ul>
+                <li><strong>로그인 시 모네뮤직 API 호출:</strong> 최신 사용자 정보 가져오기</li>
+                <li><strong>백업 시스템:</strong> 모네뮤직 API 실패 시 연습실 API에서 가져오기</li>
+                <li><strong>세션 업데이트:</strong> 최신 전화번호로 세션 초기화</li>
+            </ul>
+        </div>
+        
+        <div class="log-item info">
+            <strong>🔄 새로운 로그인 플로우:</strong>
+            <ol>
+                <li>로그인 API 호출</li>
+                <li><code>fetch_latest_user_info()</code> 실행</li>
+                <li>모네뮤직 API에서 최신 데이터 가져오기</li>
+                <li>세션에 최신 전화번호 저장</li>
+                <li>서비스 페이지로 이동 → 변경된 전화번호 표시 ✅</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>🎆 모든 문제 해결 완료!</h2>
+        
+        <div class="log-item success">
+            <strong>✅ 로그아웃 문제:</strong> 토큰 처리 개선으로 해결
+        </div>
+        
+        <div class="log-item success">
+            <strong>✅ 데이터 동기화 문제:</strong> 모든API 동시 업데이트로 해결
+        </div>
+        
+        <div class="log-item success">
+            <strong>✅ 관리자 페이지 반영 문제:</strong> 모네뮤직 API 연동으로 해결
+        </div>
+        
+        <div class="log-item success">
+            <strong>✅ 전화번호 초기화 문제:</strong> 로그인 시 최신 데이터 로딩으로 해결</strong>
+        </div>
+        
+        <div class="log-item info">
+            <strong>🎉 최종 결과:</strong>
+            <p>사용자가 전화번호를 변경하면:</p>
+            <ul>
+                <li>로그아웃 안됨 ✅</li>
+                <li>관리자 페이지 즉시 반영 ✅</li>
+                <li>로그아웃 후 재로그인에도 변경된 번호 유지 ✅</li>
+                <li>모든시스템 동기화 ✅</li>
+            </ul>
+        </div>
+        
+        <p><a href="/admin">← 관리자 대시보드로 돌아가기</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,760 @@
+<div class="flex h-screen bg-gray-50">
+  <!-- 왼쪽 사이드바 -->
+  <div class="w-72 bg-white border-r border-gray-200">
+    <div class="p-6 border-b border-gray-100">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center">
+          <span class="text-white text-lg">⚡</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Spawning Pool</h1>
+          <p class="text-xs text-gray-500">통합 관리 시스템</p>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="p-4">
+      <p class="text-xs text-gray-400 uppercase tracking-wider mb-3 px-3">메인 메뉴</p>
+      <ul class="space-y-1">
+        <li>
+          <a href="javascript:void(0)" data-tab="dashboard" class="tab-link active flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
+            <span class="text-lg">📊</span>
+            <div>
+              <span class="font-medium">한눈에 보기</span>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a href="javascript:void(0)" data-tab="users" class="tab-link flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
+            <span class="text-lg">👥</span>
+            <div>
+              <span class="font-medium">회원 관리</span>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a href="javascript:void(0)" data-tab="reservations" class="tab-link flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
+            <span class="text-lg">📅</span>
+            <div>
+              <span class="font-medium">예약 관리</span>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </nav>
+    
+    <div class="absolute bottom-0 w-72 p-6 border-t border-gray-100">
+      <div class="flex items-center space-x-3 mb-4">
+      </div>
+      <a href="/services" class="flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 py-2 px-4 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span class="text-sm">서비스 메인으로</span>
+      </a>
+    </div>
+  </div>
+  
+  <!-- 오른쪽 콘텐츠 영역 -->
+  <div class="flex-1 overflow-hidden">
+    <!-- 대시보드 탭 -->
+    <div id="dashboard-tab" class="tab-content h-full p-8 overflow-auto">
+      <div class="max-w-7xl mx-auto">
+        <div class="mb-8">
+          <h2 class="text-3xl font-bold text-gray-900">Dashboard Overview</h2>
+          <p class="text-gray-500 mt-1">시스템 전체 현황을 한눈에 확인하세요</p>
+        </div>
+        
+        <!-- 회원 관리 섹션 -->
+        <div class="mb-10">
+          <div class="flex items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800">회원 관리</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white rounded-2xl p-6 border border-gray-100" onclick="document.querySelector('[data-tab=\"users\"]').click(); loadUsersTab('waiting');">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">⏳</span>
+              </div>
+              <p class="text-sm text-gray-500 mb-1">승인 대기</p>
+              <p class="text-3xl font-bold text-gray-900"><%= @total_pending_users %></p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 border border-gray-100" onclick="document.querySelector('[data-tab=\"users\"]').click(); loadUsersTab('approved');">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">👥</span>
+              </div>
+              <p class="text-sm text-gray-500 mb-1">전체 사용자</p>
+              <p class="text-3xl font-bold text-gray-900"><%= @total_users %></p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 예약 통계 섹션 -->
+        <div class="mb-10">
+          <div class="flex items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800">연습실 예약 현황</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white rounded-2xl p-6 border border-gray-100" onclick="document.querySelector('[data-tab=\"reservations\"]').click();">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">🎹</span>
+              </div>
+              <p class="text-sm text-gray-500 mb-1">오늘 연습실 예약</p>
+              <p class="text-3xl font-bold text-gray-900"><%= @practice_todays_reservations || 0 %></p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 border border-gray-100" onclick="document.querySelector('[data-tab=\"reservations\"]').click();">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">🎵</span>
+              </div>
+              <p class="text-sm text-gray-500 mb-1">진행중인 연습실 예약</p>
+              <p class="text-3xl font-bold text-gray-900"><%= @practice_active_reservations || 0 %></p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mb-10">
+          <div class="flex items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800">보충수업 예약 현황</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white rounded-2xl p-6 border border-gray-100">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">📚</span>
+              </div>
+              <p class="text-sm text-gray-500 mb-1">오늘 보충수업 예약</p>
+              <p class="text-3xl font-bold text-gray-900"><%= @makeup_todays_reservations || 0 %></p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 border border-gray-100">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">✏️</span>
+              </div>
+              <p class="text-sm text-gray-500 mb-1">진행중인 보충수업 예약</p>
+              <p class="text-3xl font-bold text-gray-900"><%= @makeup_active_reservations || 0 %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 통합 회원 관리 탭 -->
+    <div id="users-tab" class="tab-content hidden h-full p-8 overflow-auto">
+      <div id="users-content-area" class="h-full">
+        <!-- 회원 목록이 여기에 로드됨 -->
+      </div>
+    </div>
+    
+    <!-- 예약 관리 탭 -->
+    <div id="reservations-tab" class="tab-content hidden h-full p-8 overflow-auto">
+      <div id="reservations-content-area" class="h-full">
+        <!-- 예약 목록이 여기에 로드됨 -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root {
+    --primary: oklch(0.5393 0.2713 286.7462);
+    --primary-foreground: oklch(1.0000 0 0);
+  }
+  
+  .tab-link.active {
+    background-color: rgba(139, 92, 246, 0.1);
+    color: rgb(139, 92, 246);
+    font-weight: 600;
+  }
+  
+  /* 스크롤바 스타일 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f9fafb;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+  
+  /* 부드러운 폰트 렌더링 */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+</style>
+
+<script>
+  // Initialize global functions immediately
+  if (typeof window.adminFunctionsInitialized === 'undefined') {
+    window.adminFunctionsInitialized = true;
+    
+    window.changeTab = function(tab) {
+      if (!tab) tab = 'approved';
+      const contentArea = document.getElementById('users-content-area');
+      if (!contentArea) return;
+      
+      // 현재 탭 저장
+      window.currentUsersTab = tab;
+      
+      contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div></div>';
+      
+      fetch(`/admin/users/content?tab=${tab}`)
+        .then(response => response.text())
+        .then(html => {
+          contentArea.innerHTML = html;
+        })
+        .catch(error => {
+          console.error('Error loading users:', error);
+          contentArea.innerHTML = '<div class="text-center py-8 text-red-600">회원 목록을 불러오는데 실패했습니다.</div>';
+        });
+    };
+    
+    // 현재 탭 가져오기 헬퍼 함수
+    window.getCurrentTab = function() {
+      // 현재 활성화된 탭 버튼에서 탭 정보 가져오기
+      const activeTabBtn = document.querySelector('.tab-btn.active');
+      if (activeTabBtn) {
+        const onclickAttr = activeTabBtn.getAttribute('onclick');
+        const match = onclickAttr.match(/changeTab\('([^']+)'\)/);
+        if (match) return match[1];
+      }
+      // 저장된 탭 정보가 있으면 사용
+      return window.currentUsersTab || 'approved';
+    };
+
+    window.holdUser = function(userId, system) {
+      if(confirm('이 사용자를 보류하시겠습니까?')) {
+        const url = system === 'makeup' ? `/admin/makeup/users/${userId}/hold` : `/admin/practice/users/${userId}/hold`;
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+          }
+        }).then(() => {
+          window.changeTab(getCurrentTab());
+        });
+      }
+    };
+
+    window.approveUser = function(userId, system) {
+      if(confirm('이 사용자를 승인하시겠습니까?')) {
+        const url = system === 'makeup' ? `/admin/makeup/users/${userId}/approve` : `/admin/practice/users/${userId}/approve`;
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+          }
+        }).then(() => {
+          window.changeTab(getCurrentTab());
+        });
+      }
+    };
+
+    window.rejectUser = function(userId, system) {
+      if(confirm('이 사용자를 거부/삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reject` : `/admin/practice/users/${userId}/reject`;
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+          }
+        }).then(() => {
+          window.changeTab(getCurrentTab());
+        });
+      }
+    };
+
+    window.deleteUser = function(userId, system) {
+      if(confirm('정말 삭제하시겠습니까?')) {
+        const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reject` : `/admin/practice/users/${userId}/reject`;
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+          }
+        }).then(() => {
+          window.changeTab(getCurrentTab());
+        });
+      }
+    };
+
+    window.updateTeacher = function(userId, teacher, system) {
+      const url = system === 'makeup' ? `/admin/makeup/users/${userId}/update_teacher` : `/admin/practice/users/${userId}/update_teacher`;
+      fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ teacher: teacher })
+      });
+    };
+    
+    // 예약 관리 함수들
+    window.updateReservationStatus = function(reservationId, status, service) {
+      fetch(`/admin/reservations/${reservationId}/update_status.json`, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ status: status, service: service })
+      }).then(response => {
+        if (response.ok) {
+          window.loadReservationsTab(service);
+        } else {
+          alert('상태 변경에 실패했습니다.');
+        }
+      }).catch(error => {
+        console.error('Error:', error);
+        alert('요청 처리 중 오류가 발생했습니다.');
+      });
+    };
+
+    window.deleteReservation = function(reservationId, service) {
+      if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
+        fetch(`/admin/reservations/${reservationId}.json`, {
+          method: 'DELETE',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ service: service })
+        }).then(response => {
+          if (response.ok) {
+            window.loadReservationsTab(service);
+          } else {
+            alert('삭제에 실패했습니다.');
+          }
+        }).catch(error => {
+          console.error('Error:', error);
+          alert('요청 처리 중 오류가 발생했습니다.');
+        });
+      }
+    };
+
+    window.resetPassword = function(userId, username, system) {
+      const newPassword = prompt(`${username}의 새 비밀번호를 입력하세요 (최소 6자):`);
+      if (newPassword && newPassword.length >= 6) {
+        const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reset_password` : `/admin/practice/users/${userId}/reset_password`;
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ password: newPassword })
+        }).then(() => {
+          alert('비밀번호가 재설정되었습니다.');
+        });
+      } else if (newPassword) {
+        alert('비밀번호는 최소 6자 이상이어야 합니다.');
+      }
+    };
+    
+    // 검색 기능 (글로벌 함수)
+    window.searchUsers = function() {
+      const searchInput = document.getElementById('user-search');
+      const systemFilter = document.getElementById('system-filter');
+      if (!searchInput) {
+        console.log('Search input not found');
+        return;
+      }
+      
+      const searchTerm = searchInput.value.toLowerCase();
+      const systemValue = systemFilter ? systemFilter.value : '';
+      const rows = document.querySelectorAll('.user-row');
+      
+      console.log(`Searching for: ${searchTerm}, System: ${systemValue}, Found ${rows.length} rows`);
+      
+      rows.forEach(row => {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const username = (row.getAttribute('data-username') || '').toLowerCase();
+        const system = row.getAttribute('data-system') || '';
+        
+        let matchSearch = searchTerm === '' || name.includes(searchTerm) || username.includes(searchTerm);
+        let matchSystem = systemValue === '' || system === systemValue;
+        
+        if (matchSearch && matchSystem) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    };
+    
+    // 시스템 필터링 기능
+    window.filterBySystem = function() {
+      searchUsers(); // 검색 함수를 재사용하여 두 필터 모두 적용
+    };
+    
+    // 페널티 초기화 함수 (글로벌 함수)
+    window.resetPenalty = function(userId, system) {
+      if(confirm('이 사용자의 페널티를 초기화하시겠습니까?')) {
+        const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reset_penalty` : `/admin/practice/users/${userId}/reset_penalty`;
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+          }
+        }).then(response => {
+          if (response.ok) {
+            alert('페널티가 초기화되었습니다.');
+            window.changeTab('penalty');
+          } else {
+            alert('페널티 초기화에 실패했습니다.');
+          }
+        });
+      }
+    };
+
+    // 예약 관리 검색 및 필터링 함수들 추가
+    window.searchReservations = function() {
+      const searchInput = document.getElementById('reservation-search');
+      if (!searchInput) return;
+      
+      const searchTerm = searchInput.value.toLowerCase();
+      const rows = document.querySelectorAll('.reservation-row');
+      
+      rows.forEach(row => {
+        const name = (row.getAttribute('data-name') || '').toLowerCase();
+        const username = (row.getAttribute('data-username') || '').toLowerCase();
+        
+        if (searchTerm === '' || name.includes(searchTerm) || username.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    };
+
+    window.filterReservations = function() {
+      const statusFilter = document.getElementById('reservation-status')?.value || '';
+      const dateFilter = document.getElementById('reservation-date')?.value || '';
+      const searchTerm = (document.getElementById('reservation-search')?.value || '').toLowerCase();
+      const rows = document.querySelectorAll('.reservation-row');
+      
+      rows.forEach(row => {
+        let visible = true;
+        
+        if (searchTerm) {
+          const name = (row.getAttribute('data-name') || '').toLowerCase();
+          const username = (row.getAttribute('data-username') || '').toLowerCase();
+          if (!name.includes(searchTerm) && !username.includes(searchTerm)) {
+            visible = false;
+          }
+        }
+        
+        if (statusFilter && visible) {
+          const status = row.getAttribute('data-status');
+          if (status !== statusFilter) {
+            visible = false;
+          }
+        }
+        
+        if (dateFilter && visible) {
+          const date = row.getAttribute('data-date');
+          if (date !== dateFilter) {
+            visible = false;
+          }
+        }
+        
+        row.style.display = visible ? '' : 'none';
+      });
+    };
+
+    window.resetReservationFilters = function() {
+      const searchInput = document.getElementById('reservation-search');
+      const statusSelect = document.getElementById('reservation-status');
+      const dateInput = document.getElementById('reservation-date');
+      
+      if (searchInput) searchInput.value = '';
+      if (statusSelect) statusSelect.value = '';
+      if (dateInput) dateInput.value = '';
+      
+      const rows = document.querySelectorAll('.reservation-row');
+      rows.forEach(row => {
+        row.style.display = '';
+      });
+    };
+
+    window.applyReservationFilters = function() {
+      window.filterReservations();
+    };
+
+    // 대시보드에서 예약 관리로 직접 이동
+    window.showReservationsTab = function(service) {
+      // 예약 관리 탭 활성화
+      document.querySelector('[data-tab="reservations"]').click();
+      
+      // 서비스 타입에 따라 iframe 경로 설정
+      const iframe = document.getElementById('reservations-iframe');
+      if (service) {
+        iframe.src = `/admin/reservations?service=${service}`;
+      }
+    };
+    
+    // 예약 관리 탭 로드
+    window.loadReservationsTab = function(service) {
+      if (!service) service = 'practice';
+      const contentArea = document.getElementById('reservations-content-area');
+      if (!contentArea) return;
+      
+      // 현재 서비스 타입 저장
+      window.currentReservationService = service;
+      
+      contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div></div>';
+      
+      fetch(`/admin/reservations/content?service=${service}`)
+        .then(response => response.text())
+        .then(html => {
+          contentArea.innerHTML = html;
+        })
+        .catch(error => {
+          console.error('Error loading reservations:', error);
+          contentArea.innerHTML = '<div class="text-center py-8 text-red-600">예약 목록을 불러오는데 실패했습니다.</div>';
+        });
+    };
+    
+    // 통합 회원 관리 탭 로드
+    window.loadUsersTab = function(tab) {
+      if (!tab) tab = getCurrentTab();  // 현재 탭 유지
+      const contentArea = document.getElementById('users-content-area');
+      if (!contentArea) return;
+      
+      // 현재 탭 저장
+      window.currentUsersTab = tab;
+      
+      contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div></div>';
+      
+      fetch(`/admin/users/content?tab=${tab}`)
+        .then(response => response.text())
+        .then(html => {
+          contentArea.innerHTML = html;
+        })
+        .catch(error => {
+          console.error('Error loading users:', error);
+          contentArea.innerHTML = '<div class="text-center py-8 text-red-600">회원 목록을 불러오는데 실패했습니다.</div>';
+        });
+    };
+  }
+  
+  // Tab switching functionality - Initialize once
+  function initializeTabSwitching() {
+    // Check if already initialized
+    if (window.tabSwitchingInitialized) return;
+    window.tabSwitchingInitialized = true;
+    
+    // Use event delegation for tab clicking
+    document.addEventListener('click', function(e) {
+      const tabLink = e.target.closest('.tab-link');
+      if (!tabLink) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const tabLinks = document.querySelectorAll('.tab-link');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      // 모든 탭 비활성화
+      tabLinks.forEach(l => l.classList.remove('active'));
+      tabContents.forEach(c => c.classList.add('hidden'));
+      
+      // 클릭한 탭 활성화
+      tabLink.classList.add('active');
+      const tabId = tabLink.getAttribute('data-tab') + '-tab';
+      const tabContent = document.getElementById(tabId);
+      if (tabContent) {
+        tabContent.classList.remove('hidden');
+      }
+      
+      // 데이터 로드
+      const tabName = tabLink.getAttribute('data-tab');
+      if (tabName === 'reservations') {
+        loadReservationsTab();
+      } else if (tabName === 'users') {
+        loadUsersTab();
+      }
+    });
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTabSwitching);
+  } else {
+    initializeTabSwitching();
+  }
+  
+  // Also initialize on Turbo navigation
+  document.addEventListener('turbo:load', initializeTabSwitching);
+  
+  // 대시보드에서 예약 관리로 직접 이동
+  function showReservationsTab(service) {
+    // 예약 관리 탭 활성화
+    document.querySelector('[data-tab="reservations"]').click();
+    
+    // 서비스 타입에 따라 iframe 경로 설정
+    const iframe = document.getElementById('reservations-iframe');
+    if (service) {
+      iframe.src = `/admin/reservations?service=${service}`;
+    }
+  }
+  
+  // 예약 관리 탭 로드 (duplicate function removed - using window.loadReservationsTab)
+  
+  // 통합 회원 관리 탭 로드
+  function loadUsersTab(tab) {
+    if (!tab) tab = 'approved';
+    const contentArea = document.getElementById('users-content-area');
+    contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div></div>';
+    
+    fetch(`/admin/users/content?tab=${tab}`)
+      .then(response => response.text())
+      .then(html => {
+        contentArea.innerHTML = html;
+      })
+      .catch(error => {
+        console.error('Error loading users:', error);
+        contentArea.innerHTML = '<div class="text-center py-8 text-red-600">회원 목록을 불러오는데 실패했습니다.</div>';
+      });
+  }
+  
+  // Users management functions - moved from partial to make them globally available
+  window.changeTab = function(tab) {
+    loadUsersTab(tab);
+  };
+
+  window.approveUser = function(userId, system) {
+    if(confirm('이 사용자를 승인하시겠습니까?')) {
+      const url = system === 'makeup' ? `/admin/makeup/users/${userId}/approve` : `/admin/practice/users/${userId}/approve`;
+      fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        }
+      }).then(() => {
+        loadUsersTab();
+      });
+    }
+  };
+
+  window.holdUser = function(userId, system) {
+    if(confirm('이 사용자를 보류하시겠습니까?')) {
+      const url = system === 'makeup' ? `/admin/makeup/users/${userId}/hold` : `/admin/practice/users/${userId}/hold`;
+      fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        }
+      }).then(() => {
+        loadUsersTab();
+      });
+    }
+  };
+
+  window.rejectUser = function(userId, system) {
+    if(confirm('이 사용자를 거부/삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reject` : `/admin/practice/users/${userId}/reject`;
+      fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        }
+      }).then(() => {
+        loadUsersTab();
+      });
+    }
+  };
+
+  window.deleteUser = function(userId, system) {
+    if(confirm('정말 삭제하시겠습니까?')) {
+      const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reject` : `/admin/practice/users/${userId}/reject`;
+      fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        }
+      }).then(() => {
+        loadUsersTab();
+      });
+    }
+  };
+
+  window.updateTeacher = function(userId, teacher, system) {
+    const url = system === 'makeup' ? `/admin/makeup/users/${userId}/update_teacher` : `/admin/practice/users/${userId}/update_teacher`;
+    fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ teacher: teacher })
+    });
+  };
+
+  window.updatePhone = function(userId, type, system) {
+    const phoneInput = document.getElementById(`phone-${type}-${userId}`);
+    const phone = phoneInput.value;
+    
+    const url = system === 'makeup' ? `/admin/makeup/users/${userId}/update_info` : `/admin/practice/users/${userId}/update_info`;
+    fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        phone: phone 
+      })
+    }).then(response => {
+      if(response.ok) {
+        alert('전화번호가 업데이트되었습니다.');
+      } else {
+        alert('전화번호 업데이트에 실패했습니다.');
+      }
+    });
+  };
+
+  window.resetPassword = function(userId, username, system) {
+    const newPassword = prompt(`${username}의 새 비밀번호를 입력하세요 (최소 6자):`);
+    if (newPassword && newPassword.length >= 6) {
+      const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reset_password` : `/admin/practice/users/${userId}/reset_password`;
+      fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password: newPassword })
+      }).then(() => {
+        alert('비밀번호가 재설정되었습니다.');
+      });
+    } else if (newPassword) {
+      alert('비밀번호는 최소 6자 이상이어야 합니다.');
+    }
+  };
+</script>

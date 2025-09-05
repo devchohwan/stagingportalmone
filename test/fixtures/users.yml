@@ -1,0 +1,25 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  username: MyString
+  name: MyString
+  email: MyString
+  phone: MyString
+  password_digest: MyString
+  status: MyString
+  is_admin: false
+  teacher: MyString
+  no_show_count: 1
+  cancel_count: 1
+
+two:
+  username: MyString
+  name: MyString
+  email: MyString
+  phone: MyString
+  password_digest: MyString
+  status: MyString
+  is_admin: false
+  teacher: MyString
+  no_show_count: 1
+  cancel_count: 1

@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  phone: MyString
+  code: MyString
+  verified: false
+  expires_at: 2025-09-05 18:12:15
+
+two:
+  phone: MyString
+  code: MyString
+  verified: false
+  expires_at: 2025-09-05 18:12:15

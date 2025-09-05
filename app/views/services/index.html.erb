@@ -1,0 +1,79 @@
+<div class="min-h-screen bg-gray-50">
+  <% if flash[:profile_success].present? %>
+    <script>
+      // 메시지를 sessionStorage에 저장된 것과 비교
+      var message = '<%= flash[:profile_success] %>';
+      var messageKey = 'profile_alert_' + Date.now();
+      var lastAlert = sessionStorage.getItem('last_profile_alert');
+      
+      // 이전에 표시한 메시지와 다르거나 처음이면 표시
+      if (lastAlert !== message) {
+        alert(message);
+        sessionStorage.setItem('last_profile_alert', message);
+        
+        // 3초 후 자동으로 삭제 (같은 메시지 반복 방지)
+        setTimeout(function() {
+          sessionStorage.removeItem('last_profile_alert');
+        }, 3000);
+      }
+    </script>
+  <% end %>
+  
+  <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        안녕하세요, <%= @user.name %>님
+      </h1>
+      <p class="text-gray-600 mb-8">이용하실 서비스를 선택해주세요</p>
+    </div>
+
+    <div class="max-w-md mx-auto space-y-6 mt-10">
+      <!-- 연습실 예약 -->
+      <a href="<%= Rails.configuration.practice_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>" 
+         class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white mb-4">
+          📅
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">연습실 예약</h3>
+        <p class="text-gray-500">연습실 예약 현황을 확인하고 새로운 예약을 진행합니다</p>
+      </a>
+
+      <!-- 보충수업 관리 -->
+      <a href="<%= Rails.configuration.makeup_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>" 
+         class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white mb-4">
+          📚
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">보충수업 관리</h3>
+        <p class="text-gray-500">보충수업 일정을 확인하고 관리합니다</p>
+      </a>
+      
+      <!-- 비밀번호 변경 -->
+      <a href="<%= edit_profile_path %>" 
+         class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-gray-500 text-white mb-4">
+          🔒
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">비밀번호 변경</h3>
+        <p class="text-gray-500">계정 보안을 위해 비밀번호를 변경합니다</p>
+      </a>
+      
+      <!-- 관리자 대시보드 (관리자만 표시) -->
+      <% if @user.is_admin %>
+        <a href="/admin" 
+           class="block p-6 bg-red-50 border-2 border-red-500 rounded-lg shadow hover:shadow-lg transition-shadow">
+          <div class="flex items-center justify-center h-12 w-12 rounded-md bg-red-500 text-white mb-4">
+            ⚙️
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">관리자 대시보드</h3>
+          <p class="text-gray-500">연습실 및 보충수업 통합 관리 시스템</p>
+        </a>
+      <% end %>
+    </div>
+
+    <div class="mt-8 text-center">
+      <%= link_to "로그아웃", logout_path, 
+          class: "text-gray-600 hover:text-gray-900 underline" %>
+    </div>
+  </div>
+</div>

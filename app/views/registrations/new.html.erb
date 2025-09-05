@@ -1,0 +1,253 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        회원가입
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Monemusic 통합 계정 생성
+      </p>
+    </div>
+    
+    <% if flash[:alert] %>
+      <div class="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <span class="block sm:inline"><%= flash[:alert] %></span>
+      </div>
+    <% end %>
+    
+    <%= form_with url: register_path, local: true, data: { turbo: false }, class: "mt-8 space-y-6" do |f| %>
+      <div class="space-y-4">
+        <div>
+          <%= f.label :username, "아이디", class: "block text-sm font-medium text-gray-700" %>
+          <%= f.text_field :username, 
+              required: true,
+              class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+        </div>
+        
+        <div>
+          <%= f.label :password, "비밀번호", class: "block text-sm font-medium text-gray-700" %>
+          <span class="text-xs text-gray-500">(6자 이상)</span>
+          <%= f.password_field :password,
+              required: true,
+              class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+        </div>
+        
+        <div>
+          <%= f.label :password_confirmation, "비밀번호 확인", class: "block text-sm font-medium text-gray-700" %>
+          <%= f.password_field :password_confirmation,
+              required: true,
+              class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+        </div>
+        
+        <div>
+          <%= f.label :name, "이름", class: "block text-sm font-medium text-gray-700" %>
+          <%= f.text_field :name,
+              required: true,
+              class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+        </div>
+        
+        <div>
+          <%= f.label :phone, "핸드폰 번호", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1 flex gap-2">
+            <%= f.text_field :phone,
+                id: "phone-input",
+                placeholder: "010-0000-0000",
+                class: "flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+            <button type="button" 
+                    id="verify-phone-btn"
+                    onclick="sendPhoneVerification()"
+                    style="background-color: #4f46e5; color: white; padding: 8px 16px; border-radius: 6px; font-size: 14px; border: none; cursor: pointer; white-space: nowrap;"
+                    onmouseover="this.style.backgroundColor='#4338ca'"
+                    onmouseout="this.style.backgroundColor='#4f46e5'">
+              인증하기
+            </button>
+          </div>
+          <!-- 인증번호 입력 필드 (초기에는 숨김) -->
+          <div id="verification-code-section" class="mt-2 hidden">
+            <div class="flex gap-2">
+              <input type="text" 
+                     id="verification-code"
+                     placeholder="인증번호 6자리 입력"
+                     maxlength="6"
+                     class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <button type="button"
+                      onclick="verifyCode()"
+                      style="background-color: #4f46e5; color: white; padding: 8px 16px; border-radius: 6px; font-size: 14px; border: none; cursor: pointer; white-space: nowrap;"
+                      onmouseover="this.style.backgroundColor='#4338ca'"
+                      onmouseout="this.style.backgroundColor='#4f46e5'">
+                확인
+              </button>
+            </div>
+            <p id="timer-display" class="text-xs text-gray-500 mt-1"></p>
+          </div>
+          <p id="phone-verify-status" class="text-xs mt-1"></p>
+        </div>
+        
+        <div>
+          <%= f.label :teacher, "담당 선생님", class: "block text-sm font-medium text-gray-700" %>
+          <p class="text-xs text-red-600 mt-1">*반드시 지금 배우고 있는 선생님을 선택해주세요.</p>
+          <%= f.select :teacher, 
+              options_for_select(@teachers), 
+              { prompt: "선생님을 선택하세요" }, 
+              class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
+              required: true %>
+        </div>
+      </div>
+      
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <p class="text-sm text-blue-800">가입 후 관리자 승인이 필요합니다.</p>
+        <p class="text-xs text-blue-600 mt-1">승인까지 최대 하루가 소요될 수 있습니다.</p>
+      </div>
+
+      <div>
+        <%= f.submit "가입하기", 
+            class: "group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer" %>
+      </div>
+      
+      <div class="text-center">
+        <%= link_to "이미 계정이 있으신가요? 로그인", login_path, class: "text-sm text-indigo-600 hover:text-indigo-500" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+let verificationTimer;
+let timeLeft = 180; // 3분
+let isPhoneVerified = false;
+
+function sendPhoneVerification() {
+  const phoneInput = document.getElementById('phone-input');
+  const phone = phoneInput.value.replace(/-/g, '');
+  
+  // 전화번호 유효성 검사
+  if (!phone || phone.length !== 11) {
+    alert('올바른 전화번호를 입력해주세요. (예: 010-0000-0000)');
+    return;
+  }
+  
+  // 인증번호 발송 API 호출
+  fetch('/api/send-verification', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ phone: phone })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (!data.success) {
+      alert(data.message || '인증번호 발송에 실패했습니다.');
+      return;
+    }
+    console.log('인증번호 발송 성공:', data.message);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('인증번호 발송 중 오류가 발생했습니다.');
+  });
+  
+  // UI 업데이트
+  document.getElementById('verification-code-section').classList.remove('hidden');
+  const btn = document.getElementById('verify-phone-btn');
+  btn.textContent = '재발송';
+  btn.style.backgroundColor = '#6b7280';
+  btn.onmouseout = function() { this.style.backgroundColor = '#6b7280'; };
+  btn.onmouseover = function() { this.style.backgroundColor = '#4b5563'; };
+  
+  // 상태 메시지
+  const statusEl = document.getElementById('phone-verify-status');
+  statusEl.textContent = '인증번호가 발송되었습니다.';
+  statusEl.classList.add('text-green-600');
+  statusEl.classList.remove('text-red-600');
+  
+  // 타이머 시작
+  startTimer();
+}
+
+function startTimer() {
+  // 이전 타이머가 있으면 초기화
+  if (verificationTimer) {
+    clearInterval(verificationTimer);
+  }
+  
+  timeLeft = 180; // 3분 리셋
+  
+  verificationTimer = setInterval(() => {
+    timeLeft--;
+    
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    
+    document.getElementById('timer-display').textContent = 
+      `남은 시간: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (timeLeft <= 0) {
+      clearInterval(verificationTimer);
+      document.getElementById('timer-display').textContent = '시간 초과 - 재발송 버튼을 클릭하세요';
+      document.getElementById('timer-display').classList.add('text-red-600');
+    }
+  }, 1000);
+}
+
+function verifyCode() {
+  const code = document.getElementById('verification-code').value;
+  
+  if (!code || code.length !== 6) {
+    alert('6자리 인증번호를 입력해주세요.');
+    return;
+  }
+  
+  // 인증번호 확인 API 호출
+  fetch('/api/verify-code', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ code: code })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (!data.success) {
+      alert(data.message || '인증번호가 일치하지 않습니다.');
+      return;
+    }
+    
+    // 인증 성공 처리
+    isPhoneVerified = true;
+    clearInterval(verificationTimer);
+    
+    // UI 업데이트
+    document.getElementById('verification-code-section').classList.add('hidden');
+    document.getElementById('verify-phone-btn').style.display = 'none';
+    document.getElementById('phone-input').setAttribute('readonly', true);
+    document.getElementById('phone-input').style.backgroundColor = '#f3f4f6';
+    
+    // 상태 메시지
+    const statusEl = document.getElementById('phone-verify-status');
+    statusEl.textContent = '✓ 인증이 완료되었습니다.';
+    statusEl.classList.add('text-green-600');
+    statusEl.classList.remove('text-red-600');
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('인증 확인 중 오류가 발생했습니다.');
+  });
+}
+
+// 폼 제출 시 인증 확인 (선택사항)
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      // 인증 필수로 만들려면 아래 주석 해제
+      // if (!isPhoneVerified) {
+      //   e.preventDefault();
+      //   alert('전화번호 인증을 완료해주세요.');
+      // }
+    });
+  }
+});
+</script>

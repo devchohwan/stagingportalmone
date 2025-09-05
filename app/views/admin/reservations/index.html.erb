@@ -1,0 +1,141 @@
+<div class="max-w-6xl mx-auto">
+  <h2 class="text-2xl font-bold mb-6">예약 관리</h2>
+  
+  <!-- 필터 섹션 -->
+  <div class="bg-white rounded-lg p-4 shadow mb-6">
+    <%= form_with url: admin_reservations_path, method: :get, class: "flex flex-wrap gap-4" do |f| %>
+      <div>
+        <%= f.text_field :search, 
+            value: params[:search],
+            placeholder: "이름/아이디 검색",
+            class: "px-3 py-2 border border-gray-300 rounded-lg" %>
+      </div>
+      
+      <div>
+        <%= f.select :status, 
+            options_for_select([
+              ['전체 상태', ''],
+              ['이용 전', 'active'],
+              ['완료', 'completed'],
+              ['취소', 'cancelled'],
+              ['노쇼', 'no_show']
+            ], params[:status]),
+            {},
+            class: "px-3 py-2 border border-gray-300 rounded-lg" %>
+      </div>
+      
+      
+      <div>
+        <%= f.date_field :date, value: params[:date], class: "px-3 py-2 border border-gray-300 rounded-lg" %>
+      </div>
+      
+      <%= f.submit "검색", class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer" %>
+      
+      <% if params[:search].present? || params[:status].present? || params[:date].present? %>
+        <%= link_to "초기화", admin_reservations_path, class: "bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700" %>
+      <% end %>
+    <% end %>
+  </div>
+  
+  <!-- 예약 목록 -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">회원</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">연습실</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">날짜</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">시간</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태변경</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">삭제</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        <% @reservations.each do |reservation| %>
+          <tr class="<%= 'bg-gray-50' if reservation.end_time < Time.current %>">
+            <td class="px-4 py-3 text-sm">
+              <%= reservation.user.name %>
+              <span class="text-xs text-gray-500 block"><%= reservation.user.username %></span>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <%= reservation.room.number %>번
+              <% if reservation.room.has_outlet %>
+                <span class="text-xs">🔌</span>
+              <% end %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <%= reservation.start_time.strftime('%Y-%m-%d') %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <% status_text = reservation.status_display %>
+              <% case status_text %>
+              <% when '이용 전' %>
+                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">이용 전</span>
+              <% when '이용 중' %>
+                <span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded">이용 중</span>
+              <% when '완료', 'completed' %>
+                <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">완료</span>
+              <% when 'cancelled' %>
+                <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">취소</span>
+              <% when 'no_show' %>
+                <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">노쇼</span>
+              <% else %>
+                <span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded"><%= status_text %></span>
+              <% end %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <%= form_with url: update_status_admin_reservation_path(reservation), method: :patch do |f| %>
+                <% if params[:search].present? %>
+                  <%= f.hidden_field :search, value: params[:search] %>
+                <% end %>
+                <% if params[:status].present? %>
+                  <%= f.hidden_field :filter_status, value: params[:status] %>
+                <% end %>
+                <% if params[:date].present? %>
+                  <%= f.hidden_field :date, value: params[:date] %>
+                <% end %>
+                <%= f.select :status, 
+                    options_for_select([
+                      ['활성', 'active'],
+                      ['완료', 'completed'],
+                      ['취소', 'cancelled'],
+                      ['노쇼', 'no_show']
+                    ], reservation.status),
+                    {},
+                    class: "text-xs px-2 py-1 border border-gray-300 rounded",
+                    onchange: "this.form.requestSubmit()" %>
+              <% end %>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <% delete_params = {} %>
+              <% delete_params[:search] = params[:search] if params[:search].present? %>
+              <% delete_params[:status] = params[:status] if params[:status].present? %>
+              <% delete_params[:date] = params[:date] if params[:date].present? %>
+              <%= link_to "삭제", admin_reservation_path(reservation, delete_params),
+                          method: :delete,
+                          data: { turbo_method: :delete, turbo_confirm: "정말 삭제하시겠습니까?" },
+                          class: "text-red-600 hover:text-red-800 text-xs" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    
+    <% if @reservations.empty? %>
+      <div class="text-center py-8 text-gray-500">
+        예약이 없습니다.
+      </div>
+    <% end %>
+  </div>
+  
+  <div class="mt-6 flex justify-between items-center">
+    <p class="text-sm text-gray-600">
+      총 <%= @reservations.count %>개의 예약
+    </p>
+    <%= link_to "관리자 대시보드로", admin_root_path, class: "text-gray-600 text-sm" %>
+  </div>
+</div>

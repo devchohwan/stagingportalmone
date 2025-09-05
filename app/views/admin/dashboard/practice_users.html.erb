@@ -1,0 +1,349 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-6xl mx-auto py-8 px-4">
+    <h2 class="text-2xl font-bold mb-6">연습실 회원 관리</h2>
+    
+    <% if @pending_users.any? %>
+      <div class="mb-8">
+        <h3 class="text-lg font-medium mb-3">승인 대기 회원</h3>
+        <div class="space-y-2">
+          <% @pending_users.each do |user| %>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="font-medium"><%= user['name'] %></p>
+                  <p class="text-sm text-gray-600">
+                    아이디: <%= user['username'] %> | 이메일: <%= user['email'] %>
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    전화번호: 
+                    <input type="tel" 
+                           id="phone-pending-<%= user['id'] %>"
+                           value="<%= user['phone'] || '' %>" 
+                           placeholder="미등록"
+                           class="text-sm px-2 py-0.5 border border-gray-300 rounded w-24">
+                    <button onclick="updatePhone(<%= user['id'] %>, 'pending')" 
+                            class="text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700">확인</button>
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    담당: 
+                    <select onchange="updateTeacher(<%= user['id'] %>, this.value)" 
+                            class="text-xs px-2 py-1 border border-gray-300 rounded">
+                      <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
+                        <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                      <% end %>
+                    </select>
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    가입일: <%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d %H:%M') %>
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="approvePracticeUser(<%= user['id'] %>)" 
+                          class="btn-approve">승인</button>
+                  <button onclick="holdPracticeUser(<%= user['id'] %>)"
+                          class="btn-hold">보류</button>
+                  <button onclick="rejectPracticeUser(<%= user['id'] %>)"
+                          class="btn-reject">거부</button>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+    
+    <!-- 탭 네비게이션 -->
+    <div class="mb-6">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex gap-8">
+          <a href="?tab=approved" 
+             class="<%= @tab != 'on_hold' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm">
+            승인된 회원
+          </a>
+          
+          <a href="?tab=on_hold"
+             class="<%= @tab == 'on_hold' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm">
+            보류된 회원 (<%= @on_hold_users.length %>)
+          </a>
+        </nav>
+      </div>
+    </div>
+    
+    <% if @tab == 'on_hold' %>
+      <!-- 보류된 회원 목록 -->
+      <div class="pt-2">
+        <h3 class="text-lg font-medium mb-4 text-gray-800">보류된 회원</h3>
+        <% if @on_hold_users.any? %>
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">보류일</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <% @on_hold_users.each do |user| %>
+                  <tr>
+                    <td class="px-4 py-3 text-sm"><%= user['name'] %></td>
+                    <td class="px-4 py-3 text-sm"><%= user['username'] %></td>
+                    <td class="px-4 py-3 text-sm">
+                      <input type="tel" 
+                             id="phone-hold-<%= user['id'] %>"
+                             value="<%= user['phone'] || '' %>" 
+                             placeholder="-"
+                             class="text-sm px-2 py-0.5 border border-gray-300 rounded w-24">
+                      <button onclick="updatePhone(<%= user['id'] %>, 'hold')" 
+                              class="text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700">확인</button>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                      <select onchange="updateTeacher(<%= user['id'] %>, this.value)" 
+                              class="text-xs px-2 py-1 border border-gray-300 rounded">
+                        <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
+                          <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                        <% end %>
+                      </select>
+                    </td>
+                    <td class="px-4 py-3 text-sm"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+                    <td class="px-4 py-3 text-sm">
+                      <div class="flex gap-2">
+                        <button onclick="approvePracticeUser(<%= user['id'] %>)" 
+                                class="text-green-600 hover:text-green-800 text-sm">승인</button>
+                        <button onclick="rejectPracticeUser(<%= user['id'] %>)" 
+                                class="text-red-600 hover:text-red-800 text-sm">거부</button>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            보류된 회원이 없습니다.
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <!-- 승인된 회원 목록 -->
+      <div class="pt-2">
+        <h3 class="text-lg font-medium mb-4 text-gray-800">승인된 회원</h3>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">비밀번호</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <% @approved_users.each do |user| %>
+                <tr>
+                  <td class="px-4 py-3 text-sm"><%= user['name'] %></td>
+                  <td class="px-4 py-3 text-sm"><%= user['username'] %></td>
+                  <td class="px-4 py-3 text-sm">
+                    <input type="tel" 
+                           id="phone-approved-<%= user['id'] %>"
+                           value="<%= user['phone'] || '' %>" 
+                           placeholder="-"
+                           class="text-sm px-2 py-0.5 border border-gray-300 rounded w-24">
+                    <button onclick="updatePhone(<%= user['id'] %>, 'approved')" 
+                            class="text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700">확인</button>
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <span class="text-xs text-gray-500">암호화됨</span>
+                    <button onclick="resetPassword('<%= user['id'] %>', '<%= user['username'] %>')" 
+                            class="ml-2 text-xs text-blue-600 hover:text-blue-800">초기화</button>
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <select onchange="updateTeacher(<%= user['id'] %>, this.value)" 
+                            class="text-xs px-2 py-1 border border-gray-300 rounded">
+                      <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
+                        <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                      <% end %>
+                    </select>
+                  </td>
+                  <td class="px-4 py-3 text-sm"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="flex gap-2">
+                      <button onclick="holdPracticeUser(<%= user['id'] %>)" 
+                              class="link-hold">보류</button>
+                      <button onclick="deletePracticeUser(<%= user['id'] %>)" 
+                              class="text-red-600 hover:text-red-800 text-sm">삭제</button>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+    
+    <div class="mt-6">
+      <a href="/admin" class="text-gray-600 text-sm">관리자 대시보드로</a>
+    </div>
+  </div>
+</div>
+
+<style>
+.btn-approve {
+  background-color: #10b981;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.btn-approve:hover {
+  background-color: #059669;
+}
+
+.btn-hold {
+  background-color: #f97316;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.btn-hold:hover {
+  background-color: #ea580c;
+}
+
+.btn-reject {
+  background-color: #ef4444;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.btn-reject:hover {
+  background-color: #dc2626;
+}
+
+.link-hold {
+  color: #f97316;
+  font-size: 14px;
+}
+.link-hold:hover {
+  color: #ea580c;
+  cursor: pointer;
+}
+</style>
+
+<script>
+function approvePracticeUser(userId) {
+  if(confirm('이 사용자를 승인하시겠습니까?')) {
+    fetch(`/admin/practice/users/${userId}/approve`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function holdPracticeUser(userId) {
+  if(confirm('이 사용자를 보류하시겠습니까?')) {
+    fetch(`/admin/practice/users/${userId}/hold`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function rejectPracticeUser(userId) {
+  if(confirm('이 사용자를 거부/삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    fetch(`/admin/practice/users/${userId}/reject`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function deletePracticeUser(userId) {
+  if(confirm('정말 삭제하시겠습니까?')) {
+    fetch(`/admin/practice/users/${userId}/reject`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function updateTeacher(userId, teacher) {
+  fetch(`/admin/practice/users/${userId}/update_teacher`, {
+    method: 'PATCH',
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ teacher: teacher })
+  });
+}
+
+function updatePhone(userId, type) {
+  const phoneInput = document.getElementById(`phone-${type}-${userId}`);
+  const phone = phoneInput.value;
+  
+  fetch(`/admin/practice/users/${userId}/update_info`, {
+    method: 'PATCH',
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ 
+      phone: phone 
+    })
+  }).then(response => {
+    if(response.ok) {
+      alert('전화번호가 업데이트되었습니다.');
+    } else {
+      alert('전화번호 업데이트에 실패했습니다.');
+    }
+  });
+}
+
+function resetPassword(userId, username) {
+  const newPassword = prompt(`${username}의 새 비밀번호를 입력하세요 (최소 6자):`);
+  if (newPassword && newPassword.length >= 6) {
+    fetch(`/admin/practice/users/${userId}/reset_password`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password: newPassword })
+    }).then(() => {
+      alert('비밀번호가 재설정되었습니다.');
+    });
+  } else if (newPassword) {
+    alert('비밀번호는 최소 6자 이상이어야 합니다.');
+  }
+}
+</script>

@@ -1,0 +1,216 @@
+<div class="max-w-4xl mx-auto">
+  <h2 class="text-2xl font-bold mb-6">회원 관리</h2>
+  
+  <% if @pending_users.any? %>
+    <div class="mb-8">
+      <h3 class="text-lg font-medium mb-3">승인 대기 회원</h3>
+      <div class="space-y-2">
+        <% @pending_users.each do |user| %>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-medium"><%= user.name %></p>
+                <p class="text-sm text-gray-600">
+                  아이디: <%= user.username %> | 이메일: <%= user.email %>
+                </p>
+                <p class="text-sm text-gray-600">
+                  담당: 
+                  <%= form_with url: update_teacher_admin_user_path(user), method: :patch, style: "display: inline-block;" do |f| %>
+                    <%= f.select :teacher,
+                        options_for_select(User::TEACHERS, user.teacher),
+                        {},
+                        class: "text-xs px-2 py-1 border border-gray-300 rounded",
+                        onchange: "this.form.requestSubmit()" %>
+                  <% end %>
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                  가입일: <%= user.created_at.strftime('%Y-%m-%d %H:%M') %>
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <%= link_to "승인", approve_admin_user_path(user), 
+                            method: :patch, 
+                            data: { turbo_method: :patch },
+                            class: "btn-approve" %>
+                <%= link_to "보류", hold_admin_user_path(user), 
+                            method: :patch, 
+                            data: { turbo_method: :patch },
+                            class: "btn-hold" %>
+                <%= link_to "거부", reject_admin_user_path(user), 
+                            method: :patch, 
+                            data: { turbo_method: :patch, turbo_confirm: "정말 거부하시겠습니까?" },
+                            class: "btn-reject" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  
+  <!-- 탭 네비게이션 -->
+  <div class="mb-6">
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex gap-8">
+        <%= link_to "승인된 회원", admin_users_path(tab: 'approved'), 
+                    class: "#{params[:tab] != 'on_hold' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm" %>
+        
+        <%= link_to "보류된 회원 (#{@on_hold_users.count})", admin_users_path(tab: 'on_hold'),
+                    class: "#{params[:tab] == 'on_hold' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-3 px-3 border-b-2 font-medium text-sm" %>
+      </nav>
+    </div>
+  </div>
+  
+  <% if params[:tab] == 'on_hold' %>
+    <!-- 보류된 회원 목록 -->
+    <div class="pt-2">
+      <h3 class="text-lg font-medium mb-4 text-gray-800">보류된 회원</h3>
+      <% if @on_hold_users.any? %>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">보류일</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <% @on_hold_users.each do |user| %>
+                <tr>
+                  <td class="px-4 py-3 text-sm"><%= user.name %></td>
+                  <td class="px-4 py-3 text-sm"><%= user.username %></td>
+                  <td class="px-4 py-3 text-sm">
+                    <%= form_with url: update_teacher_admin_user_path(user), method: :patch, style: "display: inline-block;" do |f| %>
+                      <%= f.select :teacher,
+                          options_for_select(User::TEACHERS, user.teacher),
+                          {},
+                          class: "text-xs px-2 py-1 border border-gray-300 rounded",
+                          onchange: "this.form.requestSubmit()" %>
+                    <% end %>
+                  </td>
+                  <td class="px-4 py-3 text-sm"><%= user.updated_at.strftime('%Y-%m-%d') %></td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="flex gap-2">
+                      <%= link_to "승인", approve_admin_user_path(user), 
+                                  method: :patch,
+                                  data: { turbo_method: :patch },
+                                  class: "text-green-600 hover:text-green-800 text-sm" %>
+                      <%= link_to "거부", reject_admin_user_path(user), 
+                                  method: :patch,
+                                  data: { turbo_method: :patch, turbo_confirm: "정말 거부하시겠습니까?" },
+                                  class: "text-red-600 hover:text-red-800 text-sm" %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+          보류된 회원이 없습니다.
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <!-- 승인된 회원 목록 -->
+    <div class="pt-2">
+      <h3 class="text-lg font-medium mb-4 text-gray-800">승인된 회원</h3>
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">비밀번호</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @approved_users.each do |user| %>
+              <tr>
+                <td class="px-4 py-3 text-sm"><%= user.name %></td>
+                <td class="px-4 py-3 text-sm"><%= user.username %></td>
+                <td class="px-4 py-3 text-sm">
+                  <span class="text-xs text-gray-500">암호화됨</span>
+                  <button onclick="resetPassword('<%= user.username %>')" class="ml-2 text-xs text-blue-600 hover:text-blue-800">초기화</button>
+                </td>
+                <td class="px-4 py-3 text-sm">
+                  <%= form_with url: update_teacher_admin_user_path(user), method: :patch, style: "display: inline-block;" do |f| %>
+                    <%= f.select :teacher,
+                        options_for_select(User::TEACHERS, user.teacher),
+                        {},
+                        class: "text-xs px-2 py-1 border border-gray-300 rounded",
+                        onchange: "this.form.requestSubmit()" %>
+                  <% end %>
+                </td>
+                <td class="px-4 py-3 text-sm"><%= user.created_at.strftime('%Y-%m-%d') %></td>
+                <td class="px-4 py-3 text-sm">
+                  <div class="flex gap-2">
+                    <% unless user.is_admin? %>
+                      <%= link_to "보류", hold_admin_user_path(user), 
+                                  method: :patch,
+                                  data: { turbo_method: :patch },
+                                  class: "link-hold" %>
+                      <%= link_to "삭제", admin_user_path(user), 
+                                  method: :delete,
+                                  data: { turbo_method: :delete, turbo_confirm: "정말 삭제하시겠습니까?" },
+                                  class: "text-red-600 hover:text-red-800 text-sm" %>
+                    <% else %>
+                      <span class="text-gray-400 text-sm">관리자</span>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% end %>
+  
+  <div class="mt-6">
+    <%= link_to "관리자 대시보드로", admin_root_path, class: "text-gray-600 text-sm" %>
+  </div>
+</div>
+
+<script>
+function resetPassword(username) {
+  const newPassword = prompt(`${username}의 새 비밀번호를 입력하세요 (최소 6자):`);
+  if (newPassword && newPassword.length >= 6) {
+    // 비밀번호 재설정 폼 제출
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/admin/users/' + username + '/reset_password';
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'authenticity_token';
+    csrfInput.value = csrfToken;
+    
+    const methodInput = document.createElement('input');
+    methodInput.type = 'hidden';
+    methodInput.name = '_method';
+    methodInput.value = 'patch';
+    
+    const passwordInput = document.createElement('input');
+    passwordInput.type = 'hidden';
+    passwordInput.name = 'password';
+    passwordInput.value = newPassword;
+    
+    form.appendChild(csrfInput);
+    form.appendChild(methodInput);
+    form.appendChild(passwordInput);
+    document.body.appendChild(form);
+    form.submit();
+  } else if (newPassword) {
+    alert('비밀번호는 최소 6자 이상이어야 합니다.');
+  }
+}
+</script>
