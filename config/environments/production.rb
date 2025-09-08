@@ -84,11 +84,17 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   # Enable DNS rebinding protection and other `Host` header attacks.
-  config.hosts = [
-    "portal.monemusic.com",
-    "monemusic.com",
-    "localhost"
-  ]
+  if ENV['RAILS_HOSTS'].present?
+    config.hosts = ENV['RAILS_HOSTS'].split(',')
+  else
+    config.hosts = [
+      "portal.monemusic.com",
+      "practice.monemusic.com",
+      "makeup.monemusic.com",
+      "monemusic.com",
+      "localhost"
+    ]
+  end
   
   # Skip DNS rebinding protection for the default health check endpoint.
   config.host_authorization = { exclude: ->(request) { request.path == "/up" } }

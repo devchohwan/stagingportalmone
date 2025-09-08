@@ -1,0 +1,50 @@
+# Name of your application. Used to uniquely configure containers.
+service: practice-monemusic
+
+# Name of the container image.
+image: amuguona/practice-monemusic
+
+# Deploy to these servers.
+servers:
+  web:
+    - 115.68.195.125
+
+# Enable SSL auto certification via Let's Encrypt
+proxy:
+  ssl: true
+  host: practice.monemusic.com
+  app_port: 3000
+
+# Credentials for your image host.
+registry:
+  username: amuguona
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Inject ENV variables into containers
+env:
+  secret:
+    - RAILS_MASTER_KEY
+  clear:
+    RAILS_LOG_TO_STDOUT: true
+    RAILS_SERVE_STATIC_FILES: true
+    RAILS_HOSTS: "practice.monemusic.com"
+
+# Use a persistent storage volume for sqlite database files
+volumes:
+  - "practice_storage:/rails/storage"
+  - "practice_db:/rails/db"
+
+# Bridge fingerprinted assets
+asset_path: /rails/public/assets
+
+# Configure the image builder.
+builder:
+  arch: amd64
+
+# Use root ssh user
+ssh:
+  user: root
+
+# Configure rolling deploys
+allow_empty_roles: false
