@@ -83,7 +83,7 @@
                 data-name="<%= reservation.user.name %>"
                 data-username="<%= reservation.user.username %>"
                 data-status="<%= reservation.status %>"
-                data-date="<%= reservation.start_time.strftime('%Y-%m-%d') %>">
+                data-date="<%= reservation.start_time&.strftime('%Y-%m-%d') || '' %>">
               <td class="px-4 py-2 text-sm font-medium"><%= reservation.user.name %></td>
               <td class="px-4 py-2 text-sm"><%= reservation.user.username %></td>
               <td class="px-4 py-2 text-sm">
@@ -99,9 +99,9 @@
                   <% end %>
                 <% end %>
               </td>
-              <td class="px-4 py-2 text-sm"><%= reservation.start_time.strftime('%Y-%m-%d') %></td>
+              <td class="px-4 py-2 text-sm"><%= reservation.start_time&.strftime('%Y-%m-%d') || 'N/A' %></td>
               <td class="px-4 py-2 text-sm">
-                <%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>
+                <%= reservation.start_time&.strftime('%H:%M') || 'N/A' %> - <%= reservation.end_time&.strftime('%H:%M') || 'N/A' %>
               </td>
               <td class="px-4 py-2">
                 <% if service_type == 'makeup' %>
