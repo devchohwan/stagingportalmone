@@ -32,8 +32,8 @@ env:
 
 # Use a persistent storage volume for sqlite database files
 volumes:
-  - "makeup_storage:/rails/storage"
-  - "makeup_db:/rails/db"
+  - "portal_monemusic_storage:/rails/storage"
+  - "portal_monemusic_db:/rails/db"
 
 # Bridge fingerprinted assets
 asset_path: /rails/public/assets
