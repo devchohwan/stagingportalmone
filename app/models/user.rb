@@ -13,6 +13,7 @@ class User < ApplicationRecord
   
   scope :admins, -> { where(is_admin: true) }
   scope :regular_users, -> { where(is_admin: false) }
+  scope :approved, -> { where(status: ['active', 'approved']) }
   
   def admin?
     is_admin
