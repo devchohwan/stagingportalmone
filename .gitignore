@@ -55,3 +55,4 @@ copy_*.rb
 # Ignore Kamal secrets
 /.kamal/secrets
 .env
+.kamal/secrets
