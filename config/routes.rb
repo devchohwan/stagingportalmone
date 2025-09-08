@@ -20,7 +20,7 @@ Rails.application.routes.draw do
   
   get "password_reset", to: "password_resets#new"
   post "password_reset", to: "password_resets#create"
-  get "password_reset/edit", to: "password_resets#edit"
+  get "password_reset/edit", to: "password_resets#edit", as: :password_reset_edit
   patch "password_reset", to: "password_resets#update"
   
   # Admin routes

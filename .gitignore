@@ -51,3 +51,7 @@ copy_*.rb
 
 # Ignore node modules
 /node_modules
+
+# Ignore Kamal secrets
+/.kamal/secrets
+.env
