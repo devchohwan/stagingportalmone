@@ -103,6 +103,19 @@ ssh:
 
 # Use accessory services (secrets come from .kamal/secrets).
 accessories:
+  postgres:
+    image: postgres:16
+    host: 115.68.195.125
+    port: 5432
+    env:
+      clear:
+        POSTGRES_USER: monemusic
+        POSTGRES_DB: monemusic_production
+      secret:
+        - POSTGRES_PASSWORD
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+    
   practice:
     image: amuguona/portal-monemusic
     host: 115.68.195.125
@@ -113,12 +126,15 @@ accessories:
         RAILS_ENV: production
         RAILS_LOG_TO_STDOUT: true
         RAILS_SERVE_STATIC_FILES: true
+        DB_HOST: 115.68.195.125
+        DB_PORT: 5432
       secret:
         - RAILS_MASTER_KEY
+        - DB_USERNAME
+        - DB_PASSWORD
     cmd: "./bin/rails server -p 3001 -b 0.0.0.0"
     volumes:
       - "practice_storage:/rails/storage"
-      - "portal_monemusic_db:/rails/db"
     
   makeup:
     image: amuguona/portal-monemusic
@@ -130,9 +146,12 @@ accessories:
         RAILS_ENV: production
         RAILS_LOG_TO_STDOUT: true
         RAILS_SERVE_STATIC_FILES: true
+        DB_HOST: 115.68.195.125
+        DB_PORT: 5432
       secret:
         - RAILS_MASTER_KEY
+        - DB_USERNAME
+        - DB_PASSWORD
     cmd: "./bin/rails server -p 3002 -b 0.0.0.0"
     volumes:
       - "makeup_storage:/rails/storage"
-      - "portal_monemusic_db:/rails/db"
