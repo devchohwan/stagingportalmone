@@ -198,14 +198,10 @@ class Admin::ReservationsController < ApplicationController
   end
   
   def fetch_makeup_reservations
-    # 과거 예약 자동 완료 처리 (보충수업 시스템 DB 직접 업데이트)
-    MakeupReservation.where(status: 'active')
-                     .where('end_time < ?', Time.current)
-                     .update_all(status: 'completed')
-    
-    # 보충수업 시스템 DB 직접 읽기 - MakeupReservation 모델 사용
-    @reservations = MakeupReservation.includes(:user, :room)
-                                     .order(start_time: :desc)
+    # 보충수업은 rooms 1,2에 대한 예약만 조회
+    @reservations = Reservation.includes(:user, :room)
+                               .where(room_id: [1, 2])
+                               .order(start_time: :desc)
     
     Rails.logger.info "Makeup reservations found: #{@reservations.count}"
     
