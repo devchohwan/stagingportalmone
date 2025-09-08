@@ -7,7 +7,7 @@ class SessionsController < ApplicationController
     user = User.find_by(username: params[:username])
     
     if user && user.authenticate(params[:password])
-      if user.approved?
+      if user.active? || user.approved?
         # 세션에 사용자 ID 저장 (DB 중심)
         session[:current_user_id] = user.id
         

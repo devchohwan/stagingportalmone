@@ -9,7 +9,7 @@ class User < ApplicationRecord
   validates :name, presence: true
   validates :phone, format: { with: /\A(010|011|016|017|018|019)\d{7,8}\z/, message: "올바른 휴대폰 번호를 입력해주세요" }, allow_blank: true
   
-  enum :status, { pending: 'pending', approved: 'approved', on_hold: 'on_hold', rejected: 'rejected' }, default: 'pending'
+  enum :status, { pending: 'pending', active: 'active', approved: 'approved', on_hold: 'on_hold', rejected: 'rejected' }, default: 'pending'
   
   scope :admins, -> { where(is_admin: true) }
   scope :regular_users, -> { where(is_admin: false) }
