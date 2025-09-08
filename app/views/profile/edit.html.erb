@@ -11,7 +11,7 @@
       <p class="text-gray-600">계정 정보를 관리하고 보안을 강화하세요</p>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 gap-6 max-w-2xl mx-auto">
       <!-- 비밀번호 변경 카드 -->
       <div class="bg-white p-8 rounded-xl shadow-lg">
         <div class="mb-6">
@@ -97,16 +97,42 @@
               <label for="new_phone" class="block text-sm font-medium text-gray-700 mb-1">
                 새 전화번호
               </label>
-              <input id="new_phone" 
-                     name="phone" 
-                     type="tel" 
-                     required 
-                     maxlength="11"
-                     pattern="[0-9]{10,11}"
-                     class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
-                     placeholder="01012345678"
-                     oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+              <div class="flex gap-2">
+                <input id="new_phone" 
+                       name="phone" 
+                       type="tel" 
+                       required 
+                       maxlength="11"
+                       pattern="[0-9]{10,11}"
+                       class="flex-1 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
+                       placeholder="01012345678"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                <button type="button" 
+                        id="verify-phone-btn"
+                        onclick="sendPhoneVerification()"
+                        class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors">
+                  인증하기
+                </button>
+              </div>
               <p class="mt-1 text-xs text-gray-500">* 숫자만 입력 (하이픈 제외)</p>
+              
+              <!-- 인증번호 입력 필드 (초기에는 숨김) -->
+              <div id="verification-code-section" class="mt-2 hidden">
+                <div class="flex gap-2">
+                  <input type="text" 
+                         id="verification-code"
+                         placeholder="인증번호 6자리 입력"
+                         maxlength="6"
+                         class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 sm:text-sm">
+                  <button type="button"
+                          onclick="verifyCode()"
+                          class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors">
+                    확인
+                  </button>
+                </div>
+                <p id="timer-display" class="text-xs text-gray-500 mt-1"></p>
+              </div>
+              <p id="phone-verify-status" class="text-xs mt-1"></p>
             </div>
           </div>
           
@@ -138,3 +164,142 @@
     </div>
   </div>
 </div>
+
+<script>
+let verificationTimer;
+let timeLeft = 180; // 3분
+let isPhoneVerified = false;
+
+function sendPhoneVerification() {
+  const phoneInput = document.getElementById('new_phone');
+  const phone = phoneInput.value.replace(/-/g, '');
+  
+  // 전화번호 유효성 검사
+  if (!phone || phone.length !== 11) {
+    alert('올바른 전화번호를 입력해주세요. (예: 01012345678)');
+    return;
+  }
+  
+  // 인증번호 발송 API 호출
+  fetch('/api/send-verification', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ phone: phone })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (!data.success) {
+      alert(data.message || '인증번호 발송에 실패했습니다.');
+      return;
+    }
+    console.log('인증번호 발송 성공:', data.message);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('인증번호 발송 중 오류가 발생했습니다.');
+  });
+  
+  // UI 업데이트
+  document.getElementById('verification-code-section').classList.remove('hidden');
+  const btn = document.getElementById('verify-phone-btn');
+  btn.textContent = '재발송';
+  btn.classList.remove('bg-violet-600', 'hover:bg-violet-700');
+  btn.classList.add('bg-gray-500', 'hover:bg-gray-600');
+  
+  // 상태 메시지
+  const statusEl = document.getElementById('phone-verify-status');
+  statusEl.textContent = '인증번호가 발송되었습니다.';
+  statusEl.classList.add('text-green-600');
+  statusEl.classList.remove('text-red-600');
+  
+  // 타이머 시작
+  startTimer();
+}
+
+function startTimer() {
+  // 이전 타이머가 있으면 초기화
+  if (verificationTimer) {
+    clearInterval(verificationTimer);
+  }
+  
+  timeLeft = 180; // 3분 리셋
+  
+  verificationTimer = setInterval(() => {
+    timeLeft--;
+    
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    
+    document.getElementById('timer-display').textContent = 
+      `남은 시간: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (timeLeft <= 0) {
+      clearInterval(verificationTimer);
+      document.getElementById('timer-display').textContent = '시간 초과 - 재발송 버튼을 클릭하세요';
+      document.getElementById('timer-display').classList.add('text-red-600');
+    }
+  }, 1000);
+}
+
+function verifyCode() {
+  const code = document.getElementById('verification-code').value;
+  
+  if (!code || code.length !== 6) {
+    alert('6자리 인증번호를 입력해주세요.');
+    return;
+  }
+  
+  // 인증번호 확인 API 호출
+  fetch('/api/verify-code', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ code: code })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (!data.success) {
+      alert(data.message || '인증번호가 일치하지 않습니다.');
+      return;
+    }
+    
+    // 인증 성공 처리
+    isPhoneVerified = true;
+    clearInterval(verificationTimer);
+    
+    // UI 업데이트
+    document.getElementById('verification-code-section').classList.add('hidden');
+    document.getElementById('verify-phone-btn').style.display = 'none';
+    document.getElementById('new_phone').setAttribute('readonly', true);
+    document.getElementById('new_phone').classList.add('bg-gray-50');
+    
+    // 상태 메시지
+    const statusEl = document.getElementById('phone-verify-status');
+    statusEl.textContent = '✓ 인증이 완료되었습니다.';
+    statusEl.classList.add('text-green-600');
+    statusEl.classList.remove('text-red-600');
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('인증 확인 중 오류가 발생했습니다.');
+  });
+}
+
+// 폼 제출 시 인증 확인
+document.addEventListener('DOMContentLoaded', function() {
+  const phoneForm = document.querySelector('form[action="<%= update_phone_path %>"]');
+  if (phoneForm) {
+    phoneForm.addEventListener('submit', function(e) {
+      if (!isPhoneVerified) {
+        e.preventDefault();
+        alert('전화번호 인증을 완료해주세요.');
+      }
+    });
+  }
+});
+</script>

@@ -33,7 +33,7 @@ class ProfileController < ApplicationController
       Rails.logger.info "Password changed successfully for user: #{current_user.username}"
       
       # 세션 유지
-      flash[:profile_success] = '비밀번호가 성공적으로 변경되었습니다.'
+      flash[:notice] = '비밀번호가 성공적으로 변경되었습니다.'
       redirect_to services_path
     else
       flash[:alert] = '비밀번호 변경에 실패했습니다. 다시 시도해주세요.'
@@ -58,7 +58,7 @@ class ProfileController < ApplicationController
     if current_user.update(phone: phone)
       Rails.logger.info "Phone updated successfully: #{phone}"
       
-      flash[:profile_success] = '전화번호가 성공적으로 변경되었습니다.'
+      flash[:notice] = '전화번호가 성공적으로 변경되었습니다.'
       redirect_to services_path
     else
       flash[:alert] = '전화번호 변경에 실패했습니다. 다시 시도해주세요.'

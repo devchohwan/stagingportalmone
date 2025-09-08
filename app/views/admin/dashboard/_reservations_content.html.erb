@@ -78,6 +78,7 @@
         </thead>
         <tbody class="divide-y divide-gray-200">
           <% reservations.each do |reservation| %>
+            <% next unless reservation.user %>
             <tr class="reservation-row <%= 'bg-yellow-50' if reservation.status == 'pending' %>" 
                 data-name="<%= reservation.user.name %>"
                 data-username="<%= reservation.user.username %>"

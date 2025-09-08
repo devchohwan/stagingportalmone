@@ -1,8 +1,8 @@
 <div class="min-h-screen bg-gray-50">
-  <% if flash[:profile_success].present? %>
+  <% if flash[:notice].present? %>
     <script>
       // 메시지를 sessionStorage에 저장된 것과 비교
-      var message = '<%= flash[:profile_success] %>';
+      var message = '<%= flash[:notice] %>';
       var messageKey = 'profile_alert_' + Date.now();
       var lastAlert = sessionStorage.getItem('last_profile_alert');
       

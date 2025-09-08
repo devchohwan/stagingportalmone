@@ -13,6 +13,9 @@ class Reservation < ApplicationRecord
   scope :past, -> { where('end_time < ?', Time.current) }
   scope :today, -> { where(start_time: Date.current.beginning_of_day..Date.current.end_of_day) }
   
+  # 상태 변경 시 페널티 처리
+  after_update :handle_status_change
+  
   # 시간 속성을 KST로 변환
   def start_time
     time = super
@@ -41,6 +44,29 @@ class Reservation < ApplicationRecord
       '완료'
     else
       status
+    end
+  end
+  
+  private
+  
+  def handle_status_change
+    return unless saved_change_to_status?
+    
+    penalty = user.current_month_penalty
+    
+    case status
+    when 'cancelled'
+      # cancelled_by가 admin이면 페널티 부과 안함
+      unless cancelled_by == 'admin'
+        penalty.increment!(:cancel_count)
+      end
+    when 'no_show'
+      penalty.increment!(:no_show_count)
+    end
+    
+    # 총 2회 이상이면 차단
+    if penalty.cancel_count + penalty.no_show_count >= 2
+      penalty.update!(is_blocked: true)
     end
   end
 end

@@ -2,7 +2,7 @@ class MakeupUser < MakeupBase
   self.table_name = 'users'
   
   has_many :reservations, class_name: 'Reservation', foreign_key: 'user_id'
-  has_many :penalties, class_name: 'Penalty', foreign_key: 'user_id'
+  has_many :penalties, class_name: '::Penalty', foreign_key: 'user_id'
   
   # 승인된 사용자 스코프
   scope :approved, -> { where(status: 'approved') }

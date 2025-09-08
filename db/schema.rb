@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_05_093850) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_08_042837) do
   create_table "penalties", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "month"
@@ -40,6 +40,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_05_093850) do
     t.string "status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "cancelled_by"
     t.index ["room_id"], name: "index_reservations_on_room_id"
     t.index ["user_id"], name: "index_reservations_on_user_id"
   end
@@ -65,7 +66,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_05_093850) do
     t.string "teacher"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["email"], name: "index_users_on_email"
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 

@@ -3,10 +3,10 @@ require "active_support/core_ext/integer/time"
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
-  # Service URLs for development
-  config.portal_url = "http://localhost:3000"  # Portal server
-  config.practice_url = "http://localhost:3001"  # Practice server
-  config.makeup_url = "http://localhost:3002"  # Makeup server
+  # Service URLs for practice environment
+  config.portal_url = "http://localhost:3000"    # Portal server
+  config.practice_url = "http://localhost:3001"  # Practice server  
+  config.makeup_url = "http://localhost:3002"    # Makeup server
 
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
@@ -43,7 +43,7 @@ Rails.application.configure do
   config.action_mailer.perform_caching = false
 
   # Set localhost to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
+  config.action_mailer.default_url_options = { host: "localhost", port: 3001 }
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log

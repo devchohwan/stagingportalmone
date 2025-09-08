@@ -138,6 +138,28 @@
             </div>
           </div>
         </div>
+        
+        <!-- 전체 통계 요약 섹션 추가 -->
+        <div class="mt-8 p-4 bg-gray-100 rounded-xl">
+          <div class="flex items-center justify-around text-sm">
+            <div class="text-center">
+              <p class="text-gray-600">전체 회원</p>
+              <p class="font-bold text-gray-900"><%= User.count %>명</p>
+            </div>
+            <div class="text-center border-l border-gray-300 pl-4">
+              <p class="text-gray-600">전체 예약</p>
+              <p class="font-bold text-gray-900"><%= Reservation.count %>건</p>
+            </div>
+            <div class="text-center border-l border-gray-300 pl-4">
+              <p class="text-gray-600">활성 예약</p>
+              <p class="font-bold text-gray-900"><%= Reservation.where(status: 'active').count %>건</p>
+            </div>
+            <div class="text-center border-l border-gray-300 pl-4">
+              <p class="text-gray-600">페널티 부과</p>
+              <p class="font-bold text-gray-900"><%= Penalty.where('no_show_count > 0 OR cancel_count > 0').count %>명</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -408,9 +430,15 @@
     };
     
     // 페널티 초기화 함수 (글로벌 함수)
-    window.resetPenalty = function(userId, system) {
+    window.resetPenalty = function(userId, system, event) {
       if(confirm('이 사용자의 페널티를 초기화하시겠습니까?')) {
         const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reset_penalty` : `/admin/practice/users/${userId}/reset_penalty`;
+        
+        // 초기화 버튼 비활성화
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = '처리중...';
+        
         fetch(url, {
           method: 'PATCH',
           headers: {
@@ -419,11 +447,41 @@
           }
         }).then(response => {
           if (response.ok) {
-            alert('페널티가 초기화되었습니다.');
-            window.changeTab('penalty');
+            // 해당 행 찾기
+            const row = button.closest('tr');
+            if (row) {
+              // 성공 메시지 표시
+              button.textContent = '초기화됨';
+              button.className = 'text-green-600 font-medium cursor-default';
+              
+              // 페이드 아웃 효과 후 행 제거
+              row.style.transition = 'opacity 0.5s ease-out';
+              row.style.opacity = '0.5';
+              
+              setTimeout(() => {
+                row.style.opacity = '0';
+                setTimeout(() => {
+                  row.remove();
+                  
+                  // 남은 행이 없으면 "페널티가 있는 회원이 없습니다" 메시지 표시
+                  const tbody = document.querySelector('.user-table-body');
+                  if (tbody && tbody.children.length === 0) {
+                    const emptyMessage = document.createElement('tr');
+                    emptyMessage.innerHTML = '<td colspan="9" class="text-center py-4 text-gray-500">페널티가 있는 회원이 없습니다.</td>';
+                    tbody.appendChild(emptyMessage);
+                  }
+                }, 500);
+              }, 100);
+            }
           } else {
             alert('페널티 초기화에 실패했습니다.');
+            button.disabled = false;
+            button.textContent = '초기화';
           }
+        }).catch(error => {
+          alert('오류가 발생했습니다: ' + error.message);
+          button.disabled = false;
+          button.textContent = '초기화';
         });
       }
     };

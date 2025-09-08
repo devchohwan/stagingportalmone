@@ -219,14 +219,22 @@ function updateReservationStatus(reservationId, status, service) {
 
 function deleteReservation(reservationId, service) {
   if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
-    fetch(`/admin/reservations/${reservationId}`, {
+    // URL에 서비스 타입 추가
+    const url = `/admin/reservations/${reservationId}?service=${service}`;
+    
+    fetch(url, {
       method: 'DELETE',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-      }
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ service: service })
     }).then(response => {
       if (response.redirected) {
         window.location.href = response.url;
+      } else if (response.ok) {
+        // 페이지 새로고침
+        location.reload();
       } else {
         alert('삭제에 실패했습니다.');
       }

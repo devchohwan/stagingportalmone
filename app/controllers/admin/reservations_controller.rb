@@ -160,7 +160,11 @@ class Admin::ReservationsController < ApplicationController
     else
       # 연습실 시스템 예약 상태 변경
       reservation = Reservation.find(params[:id])
-      if reservation.update(status: params[:status])
+      # cancelled 상태로 변경 시 cancelled_by를 'admin'으로 설정
+      update_attrs = { status: params[:status] }
+      update_attrs[:cancelled_by] = 'admin' if params[:status] == 'cancelled'
+      
+      if reservation.update(update_attrs)
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
           format.json { head :ok }
