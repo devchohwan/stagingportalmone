@@ -1,372 +1,671 @@
-<div class="min-h-screen bg-gray-50">
-  <div class="max-w-6xl mx-auto py-8 px-4">
-    <h2 class="text-2xl font-bold mb-6">통합 회원 관리</h2>
+<style>
+  .users-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+  }
+  
+  .users-header {
+    padding: 25px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .users-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+  }
+  
+  .tab-nav {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+    background: #f7fafc;
+    padding: 5px;
+    border-radius: 10px;
+  }
+  
+  .tab-btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    background: transparent;
+    color: #4a5568;
+  }
+  
+  .tab-btn:hover {
+    background: #edf2f7;
+    color: #2d3748;
+  }
+  
+  .tab-btn.active {
+    background: #ffffff;
+    color: #667eea;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .search-filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .search-input {
+    flex: 1;
+    min-width: 250px;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .filter-select {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: white;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .users-content {
+    padding: 25px;
+  }
+  
+  .users-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .table-header {
+    background: #f8fafc;
+  }
+  
+  .table-header th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .table-header th:first-child {
+    border-radius: 8px 0 0 0;
+  }
+  
+  .table-header th:last-child {
+    border-radius: 0 8px 0 0;
+  }
+  
+  .user-row {
+    transition: background-color 0.2s ease;
+  }
+  
+  .user-row:hover {
+    background: #f8fafc;
+  }
+  
+  .user-row td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+  }
+  
+  .user-row.waiting-row {
+    background: #fffbeb;
+  }
+  
+  .user-row.hold-row {
+    background: #fef3f2;
+  }
+  
+  .user-row.penalty-row {
+    background: #fef2f2;
+  }
+  
+  .user-name {
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #fa709a, #fee140);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+  }
+  
+  .admin-badge::after {
+    content: '👑';
+    margin-left: 4px;
+  }
+  
+  .phone-input {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    width: 120px;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+  }
+  
+  .phone-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  }
+  
+  .phone-update-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .phone-update-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+  }
+  
+  .teacher-select {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .teacher-select:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .status-waiting {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .status-hold {
+    background: #fed7aa;
+    color: #c2410c;
+  }
+  
+  .status-blocked {
+    background: #fecaca;
+    color: #991b1b;
+  }
+  
+  .status-warning {
+    background: #fed7aa;
+    color: #c2410c;
+  }
+  
+  .status-normal {
+    background: #dcfce7;
+    color: #166534;
+  }
+  
+  .system-badge {
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .system-practice {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+  
+  .system-makeup {
+    background: #fce7f3;
+    color: #be185d;
+  }
+  
+  .action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 6px;
+  }
+  
+  .action-btn:hover {
+    transform: translateY(-1px);
+  }
+  
+  .btn-approve {
+    background: #10b981;
+    color: white;
+  }
+  
+  .btn-approve:hover {
+    background: #059669;
+  }
+  
+  .btn-hold {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .btn-hold:hover {
+    background: #d97706;
+  }
+  
+  .btn-reject {
+    background: #ef4444;
+    color: white;
+  }
+  
+  .btn-reject:hover {
+    background: #dc2626;
+  }
+  
+  .btn-reset {
+    background: #8b5cf6;
+    color: white;
+  }
+  
+  .btn-reset:hover {
+    background: #7c3aed;
+  }
+  
+  .btn-text {
+    background: none;
+    color: #667eea;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-text:hover {
+    background: #eef2ff;
+    color: #5a67d8;
+  }
+  
+  .penalty-count {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  .penalty-high {
+    color: #dc2626;
+  }
+  
+  .penalty-medium {
+    color: #f59e0b;
+  }
+  
+  .penalty-low {
+    color: #6b7280;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+  }
+  
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+  
+  .empty-state-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+</style>
+
+<div class="users-container">
+  <div class="users-header">
+    <h2 class="users-title">👥 회원 관리</h2>
     
-    <!-- 탭 선택 -->
-    <div class="flex gap-4 mb-4 border-b">
-      <button onclick="changeTab('approved')"
-              class="tab-btn <%= 'active' if @tab == 'approved' %> pb-2 px-1">
+    <!-- 탭 네비게이션 -->
+    <div class="tab-nav">
+      <button onclick="changeTab('approved')" class="tab-btn <%= 'active' if @tab == 'approved' %>">
         승인된 회원
       </button>
-      <button onclick="changeTab('waiting')"
-              class="tab-btn <%= 'active' if @tab == 'waiting' %> pb-2 px-1">
+      <button onclick="changeTab('waiting')" class="tab-btn <%= 'active' if @tab == 'waiting' %>">
         승인 대기
       </button>
-      <button onclick="changeTab('hold')"
-              class="tab-btn <%= 'active' if @tab == 'hold' %> pb-2 px-1">
+      <button onclick="changeTab('hold')" class="tab-btn <%= 'active' if @tab == 'hold' %>">
         보류
       </button>
-      <button onclick="changeTab('penalty')"
-              class="tab-btn <%= 'active' if @tab == 'penalty' %> pb-2 px-1">
+      <button onclick="changeTab('penalty')" class="tab-btn <%= 'active' if @tab == 'penalty' %>">
         페널티
       </button>
     </div>
     
-    <!-- 검색 및 필터 기능 -->
-    <div class="mb-4 flex gap-2">
+    <!-- 검색 및 필터 -->
+    <div class="search-filters">
       <input type="text" 
              id="user-search" 
              placeholder="이름이나 아이디로 검색..." 
-             class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+             class="search-input"
              onkeyup="searchUsers()">
       
-      <select id="system-filter"
-              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-              onchange="filterBySystem()">
+      <select id="system-filter" class="filter-select" onchange="filterBySystem()">
         <option value="">전체 시스템</option>
         <option value="practice">연습실</option>
         <option value="makeup">보충수업</option>
       </select>
     </div>
-    
+  </div>
+
+  <div class="users-content">
     <!-- 승인 대기 탭 -->
-    <% if @tab == 'waiting' && @pending_users.any? %>
-      <div class="bg-white rounded-lg shadow">
-        <table class="w-full">
-          <thead class="bg-gray-50">
+    <% if @tab == 'waiting' %>
+      <% if @pending_users&.any? %>
+        <table class="users-table">
+          <thead class="table-header">
             <tr>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
+              <th>이름</th>
+              <th>아이디</th>
+              <th>전화번호</th>
+              <th>담당</th>
+              <th>가입일</th>
+              <th>상태</th>
+              <th>작업</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 user-table-body">
+          <tbody class="user-table-body">
             <% @pending_users.each do |user| %>
-              <tr class="user-row bg-yellow-50" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
-                <td class="px-4 py-2 text-sm font-medium"><%= user['name'] %></td>
-                <td class="px-4 py-2 text-sm"><%= user['username'] %></td>
-                <td class="px-4 py-2">
+              <tr class="user-row waiting-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+                <td><span class="user-name"><%= user['name'] %></span></td>
+                <td><%= user['username'] %></td>
+                <td>
                   <input type="tel" 
                          id="phone-pending-<%= user['id'] %>"
                          value="<%= user['phone'] || '' %>" 
                          placeholder="미등록"
-                         class="text-sm px-2 py-0.5 border border-gray-300 rounded w-24">
+                         class="phone-input">
                   <button onclick="updatePhone(<%= user['id'] %>, 'pending', '<%= user['system'] %>')" 
-                          class="text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">확인</button>
+                          class="phone-update-btn">확인</button>
                 </td>
-                <td class="px-4 py-2">
+                <td>
                   <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
-                          class="text-xs px-2 py-1 border border-gray-300 rounded">
+                          class="teacher-select">
                     <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
                       <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                     <% end %>
                   </select>
                 </td>
-                <td class="px-4 py-2 text-xs text-gray-500"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d %H:%M') %></td>
-                <td class="px-4 py-2">
-                  <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">대기중</span>
+                <td style="font-size: 0.8rem; color: #6b7280;"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+                <td>
+                  <span class="status-badge status-waiting">대기중</span>
                 </td>
-                <td class="px-4 py-2">
+                <td>
                   <button onclick="approveUser(<%= user['id'] %>, '<%= user['system'] %>')" 
-                          class="text-green-600 hover:text-green-800 text-sm cursor-pointer mr-2">승인</button>
+                          class="action-btn btn-approve">승인</button>
                   <button onclick="holdUser(<%= user['id'] %>, '<%= user['system'] %>')"
-                          class="text-orange-600 hover:text-orange-800 text-sm cursor-pointer mr-2">보류</button>
+                          class="action-btn btn-hold">보류</button>
                   <button onclick="rejectUser(<%= user['id'] %>, '<%= user['system'] %>')"
-                          class="text-red-600 hover:text-red-800 text-sm cursor-pointer">거부</button>
+                          class="action-btn btn-reject">거부</button>
                 </td>
               </tr>
             <% end %>
           </tbody>
         </table>
-      </div>
+      <% else %>
+        <div class="empty-state">
+          <div class="empty-state-icon">⏳</div>
+          <div class="empty-state-text">승인 대기 중인 회원이 없습니다</div>
+        </div>
+      <% end %>
     <% end %>
 
     <!-- 보류 탭 -->
-    <% if @tab == 'hold' && @on_hold_users.any? %>
-      <div class="bg-white rounded-lg shadow">
-        <table class="w-full">
-          <thead class="bg-gray-50">
+    <% if @tab == 'hold' %>
+      <% if @on_hold_users&.any? %>
+        <table class="users-table">
+          <thead class="table-header">
             <tr>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
+              <th>이름</th>
+              <th>아이디</th>
+              <th>전화번호</th>
+              <th>담당</th>
+              <th>가입일</th>
+              <th>상태</th>
+              <th>작업</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 user-table-body">
+          <tbody class="user-table-body">
             <% @on_hold_users.each do |user| %>
-              <tr class="user-row bg-orange-50" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
-                <td class="px-4 py-2 text-sm font-medium"><%= user['name'] %></td>
-                <td class="px-4 py-2 text-sm"><%= user['username'] %></td>
-                <td class="px-4 py-2">
+              <tr class="user-row hold-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+                <td><span class="user-name"><%= user['name'] %></span></td>
+                <td><%= user['username'] %></td>
+                <td>
                   <input type="tel" 
                          id="phone-hold-<%= user['id'] %>"
                          value="<%= user['phone'] || '' %>" 
                          placeholder="미등록"
-                         class="text-sm px-2 py-0.5 border border-gray-300 rounded w-24">
+                         class="phone-input">
                   <button onclick="updatePhone(<%= user['id'] %>, 'hold', '<%= user['system'] %>')" 
-                          class="text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">확인</button>
+                          class="phone-update-btn">확인</button>
                 </td>
-                <td class="px-4 py-2">
+                <td>
                   <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
-                          class="text-xs px-2 py-1 border border-gray-300 rounded">
+                          class="teacher-select">
                     <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
                       <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                     <% end %>
                   </select>
                 </td>
-                <td class="px-4 py-2 text-xs text-gray-500"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d %H:%M') %></td>
-                <td class="px-4 py-2">
-                  <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">보류중</span>
+                <td style="font-size: 0.8rem; color: #6b7280;"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+                <td>
+                  <span class="status-badge status-hold">보류중</span>
                 </td>
-                <td class="px-4 py-2">
+                <td>
                   <button onclick="approveUser(<%= user['id'] %>, '<%= user['system'] %>')" 
-                          class="text-green-600 hover:text-green-800 text-sm cursor-pointer mr-2">승인</button>
+                          class="action-btn btn-approve">승인</button>
                   <button onclick="rejectUser(<%= user['id'] %>, '<%= user['system'] %>')" 
-                          class="text-red-600 hover:text-red-800 text-sm cursor-pointer">삭제</button>
+                          class="action-btn btn-reject">삭제</button>
                 </td>
               </tr>
             <% end %>
           </tbody>
         </table>
-      </div>
+      <% else %>
+        <div class="empty-state">
+          <div class="empty-state-icon">🔄</div>
+          <div class="empty-state-text">보류 중인 회원이 없습니다</div>
+        </div>
+      <% end %>
     <% end %>
 
     <!-- 승인된 회원 탭 -->
     <% if @tab == 'approved' %>
-      <div class="bg-white rounded-lg shadow">
-        <table class="w-full">
-          <thead class="bg-gray-50">
-        <tr>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">비밀번호</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">삭제</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-200 user-table-body">
-        <% @approved_users.each do |user| %>
-          <tr class="user-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
-            <td class="px-4 py-2 text-sm">
-              <%= user['name'] %>
-              <% if user['is_admin'] %>
-                <span class="text-xs bg-violet-100 text-violet-800 px-2 py-0.5 rounded-full ml-2">관리자</span>
-              <% end %>
-            </td>
-            <td class="px-4 py-2 text-sm"><%= user['username'] %></td>
-            <td class="px-4 py-2">
-              <input type="tel" 
-                     id="phone-approved-<%= user['id'] %>"
-                     value="<%= user['phone'] || '' %>" 
-                     placeholder="-"
-                     class="text-sm px-2 py-0.5 border border-gray-300 rounded w-24">
-              <button onclick="updatePhone(<%= user['id'] %>, 'approved', '<%= user['system'] %>')" 
-                      class="text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">확인</button>
-            </td>
-            <td class="px-4 py-2">
-              <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
-                      class="text-xs px-2 py-1 border border-gray-300 rounded">
-                <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
-                  <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
-                <% end %>
-              </select>
-            </td>
-            <td class="px-4 py-2">
-              <button onclick="resetPassword('<%= user['id'] %>', '<%= user['username'] %>', '<%= user['system'] %>')" 
-                      class="text-blue-600 hover:text-blue-800 text-sm cursor-pointer">재설정</button>
-            </td>
-            <td class="px-4 py-2">
-              <% unless user['is_admin'] %>
-                <button onclick="holdUser(<%= user['id'] %>)" 
-                        class="btn-hold-orange mr-2">보류</button>
-                <button onclick="deleteUser(<%= user['id'] %>, '<%= user['system'] %>')" 
-                        class="text-red-600 hover:text-red-800 text-sm cursor-pointer">삭제</button>
-              <% else %>
-                <span class="text-xs text-gray-400">-</span>
-              <% end %>
-            </td>
-          </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    <% end %>
-
-    <!-- 페널티 탭 -->
-    <% if @tab == 'penalty' && @users_with_penalties&.any? %>
-      <div class="bg-white rounded-lg shadow">
-        <table class="w-full">
-          <thead class="bg-gray-50">
+      <% if @approved_users&.any? %>
+        <table class="users-table">
+          <thead class="table-header">
             <tr>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">시스템</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">담당</th>
-              <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">노쇼</th>
-              <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">취소</th>
-              <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">총횟수</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+              <th>이름</th>
+              <th>아이디</th>
+              <th>전화번호</th>
+              <th>담당</th>
+              <th>비밀번호</th>
+              <th>관리</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 user-table-body">
-            <% @users_with_penalties.each do |user| %>
-              <% total_count = user['no_show_count'] + user['cancel_count'] %>
-              <% is_blocked = user['is_blocked'] || (user['no_show_count'] >= 3) %>
-              <tr class="user-row <%= 'bg-red-50' if is_blocked %>" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
-                <td class="px-4 py-2 text-sm font-medium"><%= user['name'] %></td>
-                <td class="px-4 py-2 text-sm"><%= user['username'] %></td>
-                <td class="px-4 py-2 text-sm">
-                  <% if user['system'] == 'makeup' %>
-                    <span class="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">보충수업</span>
-                  <% else %>
-                    <span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">연습실</span>
+          <tbody class="user-table-body">
+            <% @approved_users.each do |user| %>
+              <tr class="user-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+                <td>
+                  <span class="user-name"><%= user['name'] %></span>
+                  <% if user['is_admin'] %>
+                    <span class="admin-badge">관리자</span>
                   <% end %>
                 </td>
-                <td class="px-4 py-2 text-sm"><%= user['teacher'] %></td>
-                <td class="px-4 py-2 text-center">
-                  <span class="text-lg font-semibold <%= user['no_show_count'] > 0 ? 'text-red-600' : 'text-gray-400' %>">
-                    <%= user['no_show_count'] %>
-                  </span>
+                <td><%= user['username'] %></td>
+                <td>
+                  <input type="tel" 
+                         id="phone-approved-<%= user['id'] %>"
+                         value="<%= user['phone'] || '' %>" 
+                         placeholder="미등록"
+                         class="phone-input">
+                  <button onclick="updatePhone(<%= user['id'] %>, 'approved', '<%= user['system'] %>')" 
+                          class="phone-update-btn">확인</button>
                 </td>
-                <td class="px-4 py-2 text-center">
-                  <span class="text-lg font-semibold <%= user['cancel_count'] > 0 ? 'text-yellow-600' : 'text-gray-400' %>">
-                    <%= user['cancel_count'] %>
-                  </span>
+                <td>
+                  <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
+                          class="teacher-select">
+                    <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
+                      <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                    <% end %>
+                  </select>
                 </td>
-                <td class="px-4 py-2 text-center">
-                  <span class="text-lg font-bold <%= total_count >= 5 ? 'text-red-600' : (total_count >= 3 ? 'text-orange-600' : 'text-gray-900') %>">
-                    <%= total_count %>
-                  </span>
+                <td>
+                  <button onclick="resetPassword('<%= user['id'] %>', '<%= user['username'] %>', '<%= user['system'] %>')" 
+                          class="btn-text">재설정</button>
                 </td>
-                <td class="px-4 py-2">
-                  <% if is_blocked %>
-                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">차단됨</span>
-                  <% elsif total_count >= 3 %>
-                    <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">주의</span>
+                <td>
+                  <% unless user['is_admin'] %>
+                    <button onclick="holdUser(<%= user['id'] %>, '<%= user['system'] %>')" 
+                            class="action-btn btn-hold">보류</button>
+                    <button onclick="deleteUser(<%= user['id'] %>, '<%= user['system'] %>')" 
+                            class="action-btn btn-reject">삭제</button>
                   <% else %>
-                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">정상</span>
+                    <span style="color: #9ca3af;">-</span>
                   <% end %>
-                </td>
-                <td class="px-4 py-2">
-                  <button onclick="resetPenalty(<%= user['id'] %>, '<%= user['system'] %>', event)" 
-                          class="text-violet-600 hover:text-violet-900 font-medium cursor-pointer">
-                    초기화
-                  </button>
                 </td>
               </tr>
             <% end %>
           </tbody>
         </table>
-      </div>
+      <% else %>
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <div class="empty-state-text">승인된 회원이 없습니다</div>
+        </div>
+      <% end %>
     <% end %>
 
-    <!-- 승인 대기 탭 -->
-    <% if @tab == 'waiting' %>
-      <% if @pending_users.empty? %>
-        <p class="text-gray-500">승인 대기 중인 회원이 없습니다.</p>
-      <% end %>
-    <% end %>
-    
-    <!-- 보류 탭 -->
-    <% if @tab == 'hold' %>
-      <% if @on_hold_users.empty? %>
-        <p class="text-gray-500">보류 중인 회원이 없습니다.</p>
-      <% end %>
-    <% end %>
-    
     <!-- 페널티 탭 -->
     <% if @tab == 'penalty' %>
-      <% if @users_with_penalties.nil? || @users_with_penalties.empty? %>
-        <p class="text-gray-500">페널티가 있는 회원이 없습니다.</p>
+      <% if @users_with_penalties&.any? %>
+        <table class="users-table">
+          <thead class="table-header">
+            <tr>
+              <th>이름</th>
+              <th>아이디</th>
+              <th>시스템</th>
+              <th>담당</th>
+              <th style="text-align: center;">노쇼</th>
+              <th style="text-align: center;">취소</th>
+              <th style="text-align: center;">총횟수</th>
+              <th>상태</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody class="user-table-body">
+            <% @users_with_penalties.each do |user| %>
+              <% total_count = user['no_show_count'] + user['cancel_count'] %>
+              <% is_blocked = user['is_blocked'] || (user['no_show_count'] >= 3) %>
+              <tr class="user-row penalty-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+                <td><span class="user-name"><%= user['name'] %></span></td>
+                <td><%= user['username'] %></td>
+                <td>
+                  <% if user['system'] == 'makeup' %>
+                    <span class="system-badge system-makeup">보충수업</span>
+                  <% else %>
+                    <span class="system-badge system-practice">연습실</span>
+                  <% end %>
+                </td>
+                <td><%= user['teacher'] %></td>
+                <td style="text-align: center;">
+                  <span class="penalty-count <%= user['no_show_count'] > 0 ? 'penalty-high' : 'penalty-low' %>">
+                    <%= user['no_show_count'] %>
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <span class="penalty-count <%= user['cancel_count'] > 0 ? 'penalty-medium' : 'penalty-low' %>">
+                    <%= user['cancel_count'] %>
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <span class="penalty-count <%= total_count >= 5 ? 'penalty-high' : (total_count >= 3 ? 'penalty-medium' : 'penalty-low') %>">
+                    <%= total_count %>
+                  </span>
+                </td>
+                <td>
+                  <% if is_blocked %>
+                    <span class="status-badge status-blocked">차단됨</span>
+                  <% elsif total_count >= 3 %>
+                    <span class="status-badge status-warning">주의</span>
+                  <% else %>
+                    <span class="status-badge status-normal">정상</span>
+                  <% end %>
+                </td>
+                <td>
+                  <button onclick="resetPenalty(<%= user['id'] %>, '<%= user['system'] %>', event)" 
+                          class="action-btn btn-reset">초기화</button>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="empty-state">
+          <div class="empty-state-icon">✅</div>
+          <div class="empty-state-text">페널티가 있는 회원이 없습니다</div>
+        </div>
       <% end %>
     <% end %>
   </div>
 </div>
-
-<style>
-.tab-btn {
-  color: #666;
-  font-weight: normal;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-}
-.tab-btn.active {
-  color: #7c3aed;
-  font-weight: bold;
-  border-bottom: 2px solid #7c3aed;
-}
-.tab-btn:hover {
-  color: #7c3aed;
-}
-
-.btn-approve {
-  background-color: #16a34a;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.btn-approve:hover {
-  background-color: #15803d;
-}
-
-.btn-hold {
-  background-color: #f97316;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.btn-hold:hover {
-  background-color: #ea580c;
-}
-
-.btn-reject {
-  background-color: #ef4444;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.btn-reject:hover {
-  background-color: #dc2626;
-}
-
-.link-hold {
-  color: #f97316;
-  font-size: 14px;
-}
-.link-hold:hover {
-  color: #ea580c;
-  cursor: pointer;
-}
-
-.btn-hold-orange {
-  color: #f97316;
-  font-size: 14px;
-}
-.btn-hold-orange:hover {
-  color: #ea580c;
-  cursor: pointer;
-}
-</style>

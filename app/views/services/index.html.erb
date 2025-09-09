@@ -1,79 +1,207 @@
-<div class="min-h-screen bg-gray-50">
-  <% if flash[:notice].present? %>
-    <script>
-      // 메시지를 sessionStorage에 저장된 것과 비교
-      var message = '<%= flash[:notice] %>';
-      var messageKey = 'profile_alert_' + Date.now();
-      var lastAlert = sessionStorage.getItem('last_profile_alert');
-      
-      // 이전에 표시한 메시지와 다르거나 처음이면 표시
-      if (lastAlert !== message) {
-        alert(message);
-        sessionStorage.setItem('last_profile_alert', message);
-        
-        // 3초 후 자동으로 삭제 (같은 메시지 반복 방지)
-        setTimeout(function() {
-          sessionStorage.removeItem('last_profile_alert');
-        }, 3000);
-      }
-    </script>
-  <% end %>
+<style>
+  .services-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+  }
   
-  <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-    <div class="text-center">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">
-        안녕하세요, <%= @user.name %>님
-      </h1>
-      <p class="text-gray-600 mb-8">이용하실 서비스를 선택해주세요</p>
-    </div>
+  .services-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+  
+  .services-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+  
+  .services-subtitle {
+    font-size: 1.2rem;
+    color: #718096;
+    margin-bottom: 0;
+  }
+  
+  .services-grid {
+    max-width: 800px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+  }
+  
+  .service-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+  
 
-    <div class="max-w-md mx-auto space-y-6 mt-10">
-      <!-- 연습실 예약 -->
-      <%= link_to practice_path, 
-          class: "block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow" do %>
-        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white mb-4">
-          📅
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">연습실 예약</h3>
-        <p class="text-gray-500">연습실 예약 현황을 확인하고 새로운 예약을 진행합니다</p>
-      <% end %>
+  
+  .service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e0;
+  }
+  
+  .service-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: white;
+    font-weight: bold;
+  }
+  
+  .practice-icon {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
+  
+  .makeup-icon {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+  }
+  
+  .password-icon {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+  }
+  
+  .admin-icon {
+    background: linear-gradient(135deg, #fa709a, #fee140);
+  }
+  
+  .service-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+  
+  .service-description {
+    color: #718096;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  .admin-card {
+    border: 2px solid #fa709a;
+    background: #ffffff;
+  }
+  
+  .admin-card::after {
+    content: '👑';
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+  }
+  
+  .logout-section {
+    text-align: center;
+    margin-top: 50px;
+  }
+  
+  .logout-link {
+    color: #718096;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+  }
+  
+  .logout-link:hover {
+    color: #2d3748;
+    text-decoration: none;
+  }
+  
+  @media (max-width: 768px) {
+    .services-title {
+      font-size: 2rem;
+    }
+    
+    .services-grid {
+      grid-template-columns: 1fr;
+      max-width: 400px;
+    }
+    
+    .service-card {
+      padding: 25px;
+    }
+  }
+</style>
 
-      <!-- 보충수업 관리 -->
-      <%= link_to makeup_path,
-          class: "block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow" do %>
-        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white mb-4">
-          📚
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">보충수업 관리</h3>
-        <p class="text-gray-500">보충수업 일정을 확인하고 관리합니다</p>
-      <% end %>
+<% if flash[:notice].present? %>
+  <script>
+    var message = '<%= flash[:notice] %>';
+    var lastAlert = sessionStorage.getItem('last_profile_alert');
+    
+    if (lastAlert !== message) {
+      alert(message);
+      sessionStorage.setItem('last_profile_alert', message);
       
-      <!-- 비밀번호 변경 -->
-      <a href="<%= edit_profile_path %>" 
-         class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-gray-500 text-white mb-4">
-          🔒
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">비밀번호 변경</h3>
-        <p class="text-gray-500">계정 보안을 위해 비밀번호를 변경합니다</p>
-      </a>
-      
-      <!-- 관리자 대시보드 (관리자만 표시) -->
-      <% if @user.is_admin %>
-        <a href="/admin" 
-           class="block p-6 bg-red-50 border-2 border-red-500 rounded-lg shadow hover:shadow-lg transition-shadow">
-          <div class="flex items-center justify-center h-12 w-12 rounded-md bg-red-500 text-white mb-4">
-            ⚙️
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">관리자 대시보드</h3>
-          <p class="text-gray-500">연습실 및 보충수업 통합 관리 시스템</p>
-        </a>
-      <% end %>
-    </div>
+      setTimeout(function() {
+        sessionStorage.removeItem('last_profile_alert');
+      }, 3000);
+    }
+  </script>
+<% end %>
 
-    <div class="mt-8 text-center">
-      <%= link_to "로그아웃", logout_path, 
-          class: "text-gray-600 hover:text-gray-900 underline" %>
-    </div>
+<div class="services-container">
+  <div class="services-header">
+    <h1 class="services-title">
+      안녕하세요, <%= @user.name %>님
+    </h1>
+    <p class="services-subtitle">이용하실 서비스를 선택해주세요</p>
+  </div>
+
+  <div class="services-grid">
+    <%= link_to practice_path, class: "service-card" do %>
+      <div class="service-icon practice-icon">
+        📅
+      </div>
+      <h3 class="service-title">연습실 예약</h3>
+      <p class="service-description">연습실 예약 현황을 확인하고 새로운 예약을 진행합니다</p>
+    <% end %>
+
+    <%= link_to makeup_path, class: "service-card" do %>
+      <div class="service-icon makeup-icon">
+        📚
+      </div>
+      <h3 class="service-title">보충수업 관리</h3>
+      <p class="service-description">보충수업 일정을 확인하고 관리합니다</p>
+    <% end %>
+    
+    <%= link_to edit_profile_path, class: "service-card" do %>
+      <div class="service-icon password-icon">
+        🔒
+      </div>
+      <h3 class="service-title">비밀번호 변경</h3>
+      <p class="service-description">계정 보안을 위해 비밀번호를 변경합니다</p>
+    <% end %>
+    
+    <% if @user.is_admin %>
+      <%= link_to "/admin", class: "service-card admin-card" do %>
+        <div class="service-icon admin-icon">
+          ⚙️
+        </div>
+        <h3 class="service-title">관리자 대시보드</h3>
+        <p class="service-description">연습실 및 보충수업 통합 관리 시스템</p>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="logout-section">
+    <%= link_to "로그아웃", logout_path, class: "logout-link" %>
   </div>
 </div>

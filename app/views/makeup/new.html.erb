@@ -1,0 +1,589 @@
+<style>
+  .reserve-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .reserve-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .reserve-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+  }
+  
+  .content-wrapper {
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .step-section {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    padding: 25px;
+  }
+  
+  .step-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+  }
+  
+  .calendar-container {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
+  }
+  
+  .confirmation-card {
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.05), rgba(245, 87, 108, 0.05));
+    border: 2px solid rgba(240, 147, 251, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .confirmation-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+  
+  .confirmation-text {
+    color: #4a5568;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  
+  .back-link {
+    color: #718096;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+    text-align: center;
+    display: block;
+    margin-top: 30px;
+  }
+  
+  .back-link:hover {
+    color: #2d3748;
+    text-decoration: none;
+  }
+  
+  /* Calendar specific styles */
+  .calendar {
+    width: 100%;
+  }
+  
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .calendar-nav-btn {
+    color: #718096;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+  
+  .calendar-nav-btn:hover {
+    color: #2d3748;
+    background-color: #f7fafc;
+  }
+  
+  .calendar-month-title {
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+  
+  .calendar-weekday {
+    font-weight: 600;
+    color: #718096;
+    font-size: 0.75rem;
+    padding: 8px 0;
+  }
+  
+  .calendar-day-cell {
+    padding: 12px;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .calendar-day-cell:hover:not(.past-day):not(.monday-closed) {
+    background-color: #f7fafc;
+    border-color: #f093fb;
+  }
+  
+  .calendar-day-cell.selected {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    border-color: #f093fb;
+  }
+  
+  .calendar-day-cell.not-current-month {
+    opacity: 0.3;
+  }
+  
+  .calendar-day-cell.past-day,
+  .calendar-day-cell.monday-closed {
+    cursor: not-allowed;
+    opacity: 0.4;
+    background-color: #f9fafb;
+  }
+  
+  .calendar-day-cell.today {
+    color: #059669;
+    font-weight: bold;
+  }
+  
+  .calendar-day-cell.monday-closed {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+  }
+  
+  .day-number {
+    font-size: 0.9rem;
+  }
+  
+  .day-label {
+    font-size: 0.7rem;
+    margin-top: 2px;
+  }
+  
+  .today .day-label {
+    color: #059669;
+  }
+  
+  .monday-closed .day-label {
+    color: #9ca3af;
+  }
+  
+  /* Time slot styles */
+  .time-slots-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .period-section {
+    margin-bottom: 15px;
+  }
+  
+  .period-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    color: #2d3748;
+  }
+  
+  .time-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  
+  .time-slot-btn {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+  
+  .time-slot-btn:hover:not(.disabled):not(.selected) {
+    background-color: #f7fafc;
+    border-color: #f093fb;
+  }
+  
+  .time-slot-btn.selected {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    border-color: #f093fb;
+  }
+  
+  .time-slot-btn.disabled,
+  .time-slot-btn:disabled {
+    background-color: #f9fafb;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  
+  /* Room selection styles */
+  .rooms-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .room-btn {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .room-btn:hover:not(.unavailable):not(.selected) {
+    border-color: #f093fb;
+    background-color: #f7fafc;
+  }
+  
+  .room-btn.selected {
+    background-color: rgba(240, 147, 251, 0.1);
+    border-color: #f093fb;
+  }
+  
+  .room-btn.unavailable {
+    cursor: not-allowed;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    opacity: 0.75;
+  }
+  
+  .room-name {
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .room-btn.unavailable .room-name {
+    color: #9ca3af;
+  }
+  
+  .room-info {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .status-unavailable {
+    font-size: 0.75rem;
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  @media (max-width: 768px) {
+    .reserve-title {
+      font-size: 1.6rem;
+    }
+    
+    .reserve-container {
+      padding: 20px 15px;
+    }
+    
+    .content-wrapper {
+      max-width: 100%;
+    }
+  }
+</style>
+
+<div class="reserve-container">
+  <div class="reserve-header">
+    <h1 class="reserve-title">보충수업 예약하기</h1>
+  </div>
+
+  <div class="content-wrapper">
+    <% if flash[:alert] %>
+      <script>
+        alert('이미 예약하셨습니다. 예약한 시간을 먼저 사용해주세요');
+      </script>
+    <% end %>
+    
+    <div>
+      <!-- Step 1: 날짜 선택 -->
+      <div class="step-section" data-reservation-target="dateSection">
+        <h3 class="step-title">1. 날짜 선택</h3>
+        <div id="calendar-container" class="calendar-container">
+          <%= render partial: 'calendar', locals: { date: @date, selected_date: nil } %>
+        </div>
+      </div>
+      
+      <!-- Step 2: 시간 선택 -->
+      <div class="step-section hidden" data-reservation-target="timeSection">
+        <h3 class="step-title">2. 시간 선택</h3>
+        <div id="time-slots-container">
+          <!-- Time slots will be loaded here -->
+        </div>
+      </div>
+      
+      <!-- Step 3: 좌석 선택 -->
+      <div class="step-section hidden" data-reservation-target="roomSection">
+        <h3 class="step-title">3. 좌석 선택</h3>
+        <div id="rooms-container">
+          <!-- Available rooms will be loaded here -->
+        </div>
+      </div>
+      
+      <!-- 예약 확인 -->
+      <div class="hidden" data-reservation-target="confirmSection">
+        <%= form_with url: makeup_path, method: :post, local: true, data: { reservation_target: "form", turbo: false } do |f| %>
+          <%= hidden_field_tag "makeup_lesson[makeup_room_id]", nil, data: { reservation_target: "roomId" } %>
+          <%= hidden_field_tag "makeup_lesson[start_time]", nil, data: { reservation_target: "startTime" } %>
+          <%= hidden_field_tag "makeup_lesson[end_time]", nil, data: { reservation_target: "endTime" } %>
+          
+          <div class="confirmation-card">
+            <h3 class="confirmation-title">예약 정보 확인</h3>
+            <div class="confirmation-text" data-reservation-target="summary"></div>
+          </div>
+          
+          <button type="button" class="btn-primary" id="reservation-submit-btn" onclick="window.confirmMakeupReservation()">예약하기</button>
+        <% end %>
+      </div>
+    </div>
+
+    <%= link_to "← 뒤로가기", makeup_path, class: "back-link" %>
+  </div>
+</div>
+
+<script>
+(function() {
+  // 보충수업 예약 JavaScript - isolated scope
+  var selectedDate = null;
+  var selectedTime = null;
+  var selectedRoom = null;
+
+function selectDate(element) {
+  selectedDate = element.getAttribute('data-date');
+  console.log('날짜 선택:', selectedDate);
+  
+  // 시각적 선택 업데이트
+  var dateElements = document.querySelectorAll('[data-date]');
+  for (var i = 0; i < dateElements.length; i++) {
+    dateElements[i].classList.remove('selected');
+  }
+  element.classList.add('selected');
+  
+  // 시간 슬롯 로드
+  fetch('/makeup/time_slots?date=' + selectedDate)
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('time-slots-container').innerHTML = html;
+      var timeSection = document.querySelector('[data-reservation-target="timeSection"]');
+      if (timeSection) {
+        timeSection.classList.remove('hidden');
+        console.log('시간 선택 섹션 표시');
+      }
+      hideSection('roomSection');
+      hideSection('confirmSection');
+    })
+    .catch(function(error) {
+      console.error('시간 슬롯 로드 오류:', error);
+    });
+}
+
+function selectTime(element) {
+  selectedTime = {
+    time: element.getAttribute('data-time'),
+    display: element.getAttribute('data-display')
+  };
+  console.log('시간 선택:', selectedTime);
+  
+  // 시각적 선택 업데이트
+  var timeElements = document.querySelectorAll('.time-slot-btn');
+  for (var i = 0; i < timeElements.length; i++) {
+    timeElements[i].classList.remove('selected');
+  }
+  element.classList.add('selected');
+  
+  // 좌석 로드
+  var startDateTime = new Date(selectedTime.time);
+  var endDateTime = new Date(startDateTime.getTime() + 30 * 60000);
+  
+  fetch('/makeup/available_rooms?start_time=' + encodeURIComponent(selectedTime.time) + '&end_time=' + endDateTime.toISOString())
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('rooms-container').innerHTML = html;
+      var roomSection = document.querySelector('[data-reservation-target="roomSection"]');
+      if (roomSection) {
+        roomSection.classList.remove('hidden');
+        console.log('좌석 선택 섹션 표시');
+      }
+      hideSection('confirmSection');
+    })
+    .catch(function(error) {
+      console.error('좌석 로드 오류:', error);
+    });
+}
+
+function selectRoom(element) {
+  selectedRoom = {
+    id: element.getAttribute('data-room-id'),
+    number: element.getAttribute('data-room-number')
+  };
+  console.log('좌석 선택:', selectedRoom);
+  
+  // 시각적 선택 업데이트
+  var roomElements = document.querySelectorAll('.room-btn');
+  for (var i = 0; i < roomElements.length; i++) {
+    roomElements[i].classList.remove('selected');
+  }
+  element.classList.add('selected');
+  
+  // 확인 섹션 표시
+  showConfirmation();
+}
+
+function showConfirmation() {
+  var selectedDateTime = new Date(selectedTime.time);
+  var endDateTime = new Date(selectedDateTime.getTime() + 30 * 60000);
+  
+  // 폼 필드 설정
+  var roomIdField = document.querySelector('[data-reservation-target="roomId"]');
+  var startTimeField = document.querySelector('[data-reservation-target="startTime"]');
+  var endTimeField = document.querySelector('[data-reservation-target="endTime"]');
+  
+  if (roomIdField) roomIdField.value = selectedRoom.id;
+  if (startTimeField) startTimeField.value = selectedTime.time;
+  if (endTimeField) endTimeField.value = endDateTime.toISOString();
+  
+  // 요약 정보 업데이트
+  var dateObj = new Date(selectedDate);
+  var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  var weekday = weekdays[dateObj.getDay()];
+  var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
+  
+  var summaryElement = document.querySelector('[data-reservation-target="summary"]');
+  if (summaryElement) {
+    summaryElement.innerHTML = 
+      '<div>날짜: ' + formattedDate + '</div>' +
+      '<div>시간: ' + selectedTime.display + ' - ' + endDateTime.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', hour12: false}) + '</div>' +
+      '<div>좌석: ' + selectedRoom.number + '번</div>';
+  }
+  
+  var confirmSection = document.querySelector('[data-reservation-target="confirmSection"]');
+  if (confirmSection) {
+    confirmSection.classList.remove('hidden');
+    console.log('예약 확인 섹션 표시');
+  }
+}
+
+function hideSection(target) {
+  var section = document.querySelector('[data-reservation-target="' + target + '"]');
+  if (section) {
+    section.classList.add('hidden');
+  }
+}
+
+window.confirmMakeupReservation = function() {
+  if (!selectedDate || !selectedTime || !selectedRoom) {
+    alert('예약 정보가 불완전합니다.');
+    return false;
+  }
+
+  var dateObj = new Date(selectedDate);
+  var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  var weekday = weekdays[dateObj.getDay()];
+  var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
+  
+  var confirmMessage = '예약을 진행하시겠습니까?\n\n날짜: ' + formattedDate + '\n시간: ' + selectedTime.display + '\n좌석: ' + selectedRoom.number + '번';
+  
+  if (confirm(confirmMessage)) {
+    var submitBtn = document.getElementById('reservation-submit-btn');
+    var form = document.querySelector('[data-reservation-target="form"]');
+    
+    if (submitBtn) {
+      // 중복 제출 방지
+      if (submitBtn.disabled) {
+        alert('이미 예약 요청이 처리 중입니다.');
+        return false;
+      }
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = '예약 중...';
+    }
+    
+    // 폼 제출 - Rails UJS를 통해 제출하여 CSRF 토큰이 자동으로 포함됨
+    if (form) {
+      // form이 이미 form_with로 생성되어 CSRF 토큰을 포함하고 있음
+      // requestSubmit을 사용하여 Rails의 form validation과 CSRF 처리가 작동하도록 함
+      if (form.requestSubmit) {
+        // 숨겨진 submit 버튼을 만들어 form을 제출
+        var hiddenSubmit = document.createElement('input');
+        hiddenSubmit.type = 'submit';
+        hiddenSubmit.style.display = 'none';
+        form.appendChild(hiddenSubmit);
+        hiddenSubmit.click();
+        form.removeChild(hiddenSubmit);
+      } else {
+        form.submit();
+      }
+    }
+    return true;
+  }
+  return false;
+};
+
+// 전역 함수로 등록
+window.selectDate = selectDate;
+window.selectTime = selectTime;
+window.selectRoom = selectRoom;
+
+// 폼 제출 이벤트는 제거 - onclick에서 이미 처리됨
+// confirmMakeupReservation 함수가 onclick에서 호출되므로
+// 중복 호출 방지
+
+console.log('보충수업 예약 JavaScript 로드 완료');
+})(); // IIFE 종료
+</script>

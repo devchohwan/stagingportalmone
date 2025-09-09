@@ -1,106 +1,313 @@
-<div class="max-w-md mx-auto">
-  <div class="text-center py-8">
-    <h1 class="text-2xl font-bold mb-2">모네뮤직 연습실에 어서오세요!<br><br></h1>
+<style>
+  .practice-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .practice-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .practice-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+  }
+  
+  .content-wrapper {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .user-info-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 30px;
+  }
+  
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  }
+  
+  .btn-secondary {
+    background: #f7fafc;
+    color: #4a5568;
+    padding: 15px 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: block;
+    transition: all 0.3s ease;
+    border: 2px solid #e2e8f0;
+  }
+  
+  .btn-secondary:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    transform: translateY(-2px);
+  }
+  
+  .btn-disabled {
+    background: #e2e8f0;
+    color: #a0aec0;
+    padding: 15px 20px;
+    border-radius: 12px;
+    text-align: center;
+    display: block;
+    cursor: not-allowed;
+  }
+  
+  .warning-card {
+    background: #fffbeb;
+    border: 2px solid #fbbf24;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .warning-text {
+    color: #92400e;
+    font-weight: 600;
+  }
+  
+  .warning-subtext {
+    color: #b45309;
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+  
+  .info-section {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 30px;
+    overflow: hidden;
+  }
+  
+  .info-header {
+    padding: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background: #ffffff;
+    color: #4a5568;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .info-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  
+  .info-arrow {
+    position: absolute;
+    right: 20px;
+    transition: transform 0.3s ease;
+    color: #718096;
+  }
+  
+  .info-content {
+    padding: 25px;
+  }
+  
+  .info-welcome {
+    font-weight: 600;
+    color: #2d3748;
+    text-align: center;
+    padding: 15px 0;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+  }
+  
+  .info-section-title {
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+  }
+  
+  .info-list {
+    margin-left: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .info-list li {
+    margin-bottom: 6px;
+    color: #4a5568;
+    line-height: 1.5;
+  }
+  
+  .info-footer {
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    color: #4a5568;
+    line-height: 1.6;
+  }
+  
+  .back-link {
+    color: #718096;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+  }
+  
+  .back-link:hover {
+    color: #2d3748;
+    text-decoration: none;
+  }
+  
+  @media (max-width: 768px) {
+    .practice-title {
+      font-size: 2rem;
+    }
     
+    .practice-container {
+      padding: 20px 15px;
+    }
+  }
+</style>
+
+<div class="practice-container">
+  <div class="practice-header">
+    <h1 class="practice-title">모네뮤직 연습실에 어서오세요!</h1>
+  </div>
+
+  <div class="content-wrapper">
     <% if logged_in? %>
-      <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-        <p class="text-sm">로그인 정보: <strong><%= current_user.name %></strong> (<%= current_user.username %>)</p>
+      <div class="user-info-card">
+        <p class="text-sm"><strong><%= current_user.name %></strong> (<%= current_user.username %>)</p>
         <p class="text-xs text-gray-600">담당: <%= current_user.teacher %> | 전화: <%= current_user.phone || '미등록' %></p>
       </div>
+      
       <% if current_user.approved? %>
-        <div class="space-y-4">
+        <div class="action-buttons">
           <% if current_user.blocked? %>
-            <button onclick="alert('월 2회 이상 노쇼/취소하여 이용이 제한되었습니다')" class="block w-full bg-gray-400 text-white py-3 px-4 rounded-lg font-medium cursor-not-allowed opacity-75">예약하기 (제한됨)</button>
+            <button onclick="alert('월 2회 이상 노쇼/취소하여 이용이 제한되었습니다')" class="btn-disabled">예약하기 (제한됨)</button>
           <% else %>
-            <%= link_to "예약하기", "#", class: "block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700", onclick: "alert('예약 기능은 준비 중입니다'); return false;" %>
+            <%= link_to "예약하기", practice_reserve_path, class: "btn-primary" %>
           <% end %>
-          <%= link_to "내 예약 확인", "#", class: "block w-full bg-gray-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-700", onclick: "alert('예약 확인 기능은 준비 중입니다'); return false;" %>
+          <%= link_to "내 예약 확인", practice_my_reservations_path, class: "btn-secondary" %>
         </div>
       <% else %>
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p class="text-yellow-800">회원가입 승인 대기중입니다.</p>
-          <p class="text-sm text-yellow-600 mt-2">승인까지 최대 하루가 소요됩니다.</p>
+        <div class="warning-card">
+          <p class="warning-text">회원가입 승인 대기중입니다.</p>
+          <p class="warning-subtext">승인까지 최대 하루가 소요됩니다.</p>
         </div>
       <% end %>
     <% else %>
-      <div class="space-y-4">
-        <%= link_to "로그인", Rails.configuration.portal_url, class: "block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700" %>
-        <%= link_to "회원가입", "#{Rails.configuration.portal_url}/register", class: "block w-full bg-gray-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-700" %>
+      <div class="action-buttons">
+        <%= link_to "로그인", Rails.configuration.portal_url, class: "btn-primary" %>
+        <%= link_to "회원가입", "#{Rails.configuration.portal_url}/register", class: "btn-secondary" %>
+      </div>
+    <% end %>
+
+    <div class="info-section">
+      <details class="group">
+        <summary class="info-header list-none">
+          <h2 class="info-title">이용안내 펼쳐보기 (필독!)</h2>
+          <span class="info-arrow group-open:rotate-180">▼</span>
+        </summary>
+        
+        <div class="info-content">
+          <p class="info-welcome">모네뮤직 연습실에 오신 걸 환영합니다😊</p>
+          
+          <div>
+            <h3 class="info-section-title">📱 예약 규칙</h3>
+            <ul class="info-list">
+              <li>• 예약한 시간을 사용해야 다음 예약 가능!</li>
+              <li>• 예약 취소는 시작 30분 전까지예요.</li>
+              <li>• 월 2회 노쇼/취소 시 당월 이용 정지됩니다</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="info-section-title">📍 이용 시간</h3>
+            <ul class="info-list">
+              <li>• 운영시간: 13:00 ~ 21:30</li>
+              <li>• 브레이크타임(17:30~18:30)엔 이용불가!</li>
+              <li>• 1회 30분, 1일 1회 이용 가능</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="info-section-title">🎤 이용 수칙</h3>
+            <ul class="info-list">
+              <li>• 1인 1실 (동반 입장 불가합니다)</li>
+              <li>• 반입 금지: 음식물, 음료(물 제외), 담배/전자담배</li>
+              <li>• 퇴실 5분 전부터 정리를 시작해주세요!</li>
+              <li>• 퇴실 시 페브리즈 꼭 뿌려주세요</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="info-section-title">⚠️ 주의사항</h3>
+            <ul class="info-list">
+              <li>• 다음 이용자를 위해 시간 엄수해주세요!</li>
+              <li>• 노쇼 방지를 위해 불시 점검이 있을 수 있습니다</li>
+              <li>• 규정 위반 시 이용 제한될 수 있습니다</li>
+              <li>• 방음스폰지로 인해 문이 힘을 꽉 줘서 닫지 않으면 자동으로 열리는 현상이 있습니다! 문을 꽉 닫아주세요😌</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="info-section-title">👥 이용 대상</h3>
+            <p class="info-list">
+              모든 수강생분들이 쓰실 수 있어요!<br>
+              (보컬/기타/믹스/작곡)
+            </p>
+          </div>
+          
+          <div class="info-footer">
+            <p>
+              모네뮤직 모든 동료들의<br>
+              쾌적한 연습 환경을 위해 협조 부탁드립니다🎵
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <% if logged_in? %>
+      <div class="mt-6">
+        <%= link_to "← 메인으로 돌아가기", root_path, class: "back-link" %>
       </div>
     <% end %>
   </div>
-  
-  <div class="mt-4 bg-white rounded-lg shadow">
-    <details class="group">
-      <summary class="p-4 cursor-pointer list-none flex justify-center items-center relative">
-        <h2 class="font-bold text-blue-600 text-center">이용안내 펼쳐보기 (필독!)</h2>
-        <span class="text-gray-400 group-open:rotate-180 transition-transform absolute right-4">▼</span>
-      </summary>
-      
-      <div class="px-4 pb-4 space-y-4 text-sm">
-        <p class="font-medium text-gray-800 text-center py-2 text-lg">모네뮤직 연습실에 오신 걸 환영합니다😊</p>
-        
-        <div>
-          <h3 class="font-bold mb-2">📱 예약 규칙</h3>
-          <ul class="space-y-1 ml-4">
-            <li>• 예약한 시간을 사용해야 다음 예약 가능!</li>
-            <li>• 예약 취소는 시작 30분 전까지예요.</li>
-            <li>• 월 2회 노쇼/취소 시 당월 이용 정지됩니다</li>
-          </ul>
-        </div>
-        
-        <div>
-          <h3 class="font-bold mb-2">📍 이용 시간</h3>
-          <ul class="space-y-1 ml-4">
-            <li>• 운영시간: 13:00 ~ 21:30</li>
-            <li>• 브레이크타임(17:30~18:30)엔 이용불가!</li>
-            <li>• 1회 30분, 1일 1회 이용 가능</li>
-          </ul>
-        </div>
-        
-        <div>
-          <h3 class="font-bold mb-2">🎤 이용 수칙</h3>
-          <ul class="space-y-1 ml-4">
-            <li>• 1인 1실 (동반 입장 불가합니다)</li>
-            <li>• 반입 금지: 음식물, 음료(물 제외), 담배/전자담배</li>
-            <li>• 퇴실 5분 전부터 정리를 시작해주세요!</li>
-            <li>• 퇴실 시 페브리즈 꼭 뿌려주세요</li>
-          </ul>
-        </div>
-        
-        <div>
-          <h3 class="font-bold mb-2">⚠️ 주의사항</h3>
-          <ul class="space-y-1 ml-4">
-            <li>• 다음 이용자를 위해 시간 엄수해주세요!</li>
-            <li>• 노쇼 방지를 위해 불시 점검이 있을 수 있습니다</li>
-            <li>• 규정 위반 시 이용 제한될 수 있습니다</li>
-            <li>• 방음스폰지로 인해 문이 힘을 꽉 줘서 닫지 않으면 자동으로 열리는 현상이 있습니다! 문을 꽉 닫아주세요😌</li>
-          </ul>
-        </div>
-        
-        <div>
-          <h3 class="font-bold mb-2">👥 이용 대상</h3>
-          <p class="space-y-1 ml-4">
-            모든 수강생분들이 쓰실 수 있어요!<br>
-            (보컬/기타/믹스/작곡)
-          </p>
-        </div>
-        
-        <div class="pt-4 border-t">
-          <p class="text-center text-gray-700">
-            <br>
-            모네뮤직 모든 동료들의<br>
-            쾌적한 연습 환경을 위해 협조 부탁드립니다🎵
-            <br><br>
-          </p>
-        </div>
-      </div>
-    </details>
-  </div>
-  
-  <% if logged_in? %>
-    <div class="mt-6">
-      <%= link_to "← 메인으로 돌아가기", root_path, class: "text-gray-600 text-sm inline-flex items-center hover:text-gray-800" %>
-    </div>
-  <% end %>
 </div>

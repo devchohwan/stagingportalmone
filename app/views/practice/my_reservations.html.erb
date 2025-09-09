@@ -1,0 +1,367 @@
+<style>
+  .reservations-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .reservations-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .reservations-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+  }
+  
+  .content-wrapper {
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .filter-section {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .filter-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+  }
+  
+  .filter-select,
+  .filter-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+  }
+  
+  .filter-select:focus,
+  .filter-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .filter-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: inline-block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    flex: 1;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  }
+  
+  .btn-secondary {
+    background: #f7fafc;
+    color: #4a5568;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: inline-block;
+    transition: all 0.3s ease;
+    border: 2px solid #e2e8f0;
+    font-size: 0.9rem;
+  }
+  
+  .btn-secondary:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    transform: translateY(-1px);
+  }
+  
+  .reservations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .reservation-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    transition: all 0.3s ease;
+  }
+  
+  .reservation-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .reservation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+  }
+  
+  .reservation-info h3 {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+  }
+  
+  .reservation-detail {
+    font-size: 0.9rem;
+    color: #718096;
+    margin-bottom: 4px;
+  }
+  
+  .reservation-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .status-active {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+  
+  .status-using {
+    background-color: #fed7aa;
+    color: #c2410c;
+  }
+  
+  .status-completed {
+    background-color: #dbeafe;
+    color: #1e40af;
+  }
+  
+  .status-cancelled {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+  
+  .status-no-show {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+  
+  .status-default {
+    background-color: #f3f4f6;
+    color: #374151;
+  }
+  
+  .cancel-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .cancel-btn {
+    color: #dc2626;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .cancel-btn:hover {
+    color: #b91c1c;
+    text-decoration: none;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .empty-text {
+    color: #718096;
+    margin-bottom: 20px;
+    font-size: 1rem;
+  }
+  
+  .back-link {
+    color: #718096;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+    text-align: center;
+    display: block;
+    margin-top: 30px;
+  }
+  
+  .back-link:hover {
+    color: #2d3748;
+    text-decoration: none;
+  }
+  
+  .outlet-icon {
+    font-size: 0.75rem;
+  }
+  
+  @media (max-width: 768px) {
+    .reservations-title {
+      font-size: 1.6rem;
+    }
+    
+    .reservations-container {
+      padding: 20px 15px;
+    }
+    
+    .content-wrapper {
+      max-width: 100%;
+    }
+    
+    .filter-row {
+      flex-direction: column;
+    }
+    
+    .filter-buttons {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<div class="reservations-container">
+  <div class="reservations-header">
+    <h1 class="reservations-title">내 예약</h1>
+  </div>
+
+  <div class="content-wrapper">
+    <% if flash[:notice] %>
+      <div class="alert" style="background: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <%= flash[:notice] %>
+      </div>
+    <% end %>
+    
+    <% if flash[:alert] %>
+      <div class="alert" style="background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+    <!-- 필터 -->
+    <div class="filter-section">
+      <%= form_with url: practice_my_reservations_path, method: :get, class: "filter-form" do |f| %>
+        <div class="filter-row">
+          <%= f.select :status, 
+              options_for_select([
+                ['전체 상태', ''],
+                ['이용 전', 'active'],
+                ['완료', 'completed'],
+                ['취소', 'cancelled'],
+                ['노쇼', 'no_show']
+              ], params[:status]),
+              {},
+              class: "filter-select" %>
+          
+          <%= f.date_field :date, 
+              value: params[:date],
+              class: "filter-input" %>
+        </div>
+        
+        <div class="filter-buttons">
+          <%= f.submit "검색", class: "btn-primary" %>
+          
+          <% if params[:status].present? || params[:date].present? %>
+            <%= link_to "초기화", practice_my_reservations_path, class: "btn-secondary" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="reservations-list">
+      <% if @reservations.any? %>
+        <% @reservations.each do |reservation| %>
+          <div class="reservation-card">
+            <div class="reservation-header">
+              <div class="reservation-info">
+                <h3><%= reservation.start_time.strftime('%Y년 %m월 %d일') %></h3>
+                <p class="reservation-detail">
+                  <%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>
+                </p>
+                <p class="reservation-detail"><%= reservation.room.number %>번 연습실</p>
+              </div>
+              <div class="reservation-status">
+                <% if reservation.room.has_outlet %>
+                  <span class="outlet-icon">🔌</span>
+                <% end %>
+                <% status_text = reservation.status_display %>
+                <% case status_text %>
+                <% when '이용 전' %>
+                  <span class="status-badge status-active">이용 전</span>
+                <% when '이용 중' %>
+                  <span class="status-badge status-using">이용 중</span>
+                <% when '완료', 'completed' %>
+                  <span class="status-badge status-completed">완료</span>
+                <% when 'cancelled' %>
+                  <span class="status-badge status-cancelled">취소</span>
+                <% when 'no_show' %>
+                  <span class="status-badge status-no-show">노쇼</span>
+                <% else %>
+                  <span class="status-badge status-default"><%= status_text %></span>
+                <% end %>
+              </div>
+            </div>
+            
+            <% if reservation.cancellable? %>
+              <div class="cancel-section">
+                <%= link_to "예약 취소", cancel_practice_reservation_path(reservation), 
+                            data: { 
+                              turbo_method: :patch,
+                              turbo_confirm: "예약 정보\n\n날짜: #{reservation.start_time.strftime('%Y년 %m월 %d일')}\n시간: #{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}\n연습실: #{reservation.room.number}번\n\n예약을 취소하시겠습니까?"
+                            },
+                            class: "cancel-btn" %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="empty-state">
+          <p class="empty-text">예약이 없습니다.</p>
+          <%= link_to "예약하기", practice_reserve_path, class: "btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+
+    <%= link_to "← 뒤로가기", practice_path, class: "back-link" %>
+  </div>
+</div>
+

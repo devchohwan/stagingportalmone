@@ -2,8 +2,11 @@ class MakeupReservation < MakeupBase
   self.table_name = 'makeup_reservations'
   
   # 관계 설정
-  belongs_to :user, class_name: 'MakeupUser', foreign_key: 'user_id'
-  belongs_to :room, class_name: 'MakeupRoom', foreign_key: 'makeup_room_id'
+  belongs_to :user, foreign_key: 'user_id'
+  belongs_to :makeup_room, foreign_key: 'makeup_room_id'
+  
+  # 별지
+  alias_method :room, :makeup_room
   
   # 스코프
   scope :active, -> { where(status: 'active') }
@@ -18,14 +21,29 @@ class MakeupReservation < MakeupBase
   def start_time
     time = super
     return nil unless time
-    # UTC로 저장된 시간을 KST로 변환 (9시간 추가)
-    time + 9.hours
+    # UTC로 저장된 시간을 KST로 변환
+    time.in_time_zone('Asia/Seoul')
   end
   
   def end_time
     time = super
     return nil unless time
-    # UTC로 저장된 시간을 KST로 변환 (9시간 추가)
-    time + 9.hours
+    # UTC로 저장된 시간을 KST로 변환
+    time.in_time_zone('Asia/Seoul')
+  end
+  
+  def status_display
+    case status
+    when 'pending' then '승인 대기'
+    when 'active' then '활성'
+    when 'cancelled' then '취소됨'
+    when 'completed' then '완료'
+    when 'no_show' then '노쇼'
+    else status
+    end
+  end
+  
+  def cancellable?
+    (status == 'pending' || status == 'active') && start_time > 30.minutes.from_now
   end
 end

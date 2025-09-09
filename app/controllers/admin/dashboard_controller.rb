@@ -249,7 +249,7 @@ class Admin::DashboardController < ApplicationController
   private
   
   def authenticate_admin!
-    unless session[:jwt_token] && session[:user] && session[:user]['is_admin']
+    unless logged_in? && current_user.admin?
       redirect_to login_path, alert: "관리자 권한이 필요합니다"
     end
   end

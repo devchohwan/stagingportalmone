@@ -1,32 +1,371 @@
-<div class="min-h-screen bg-gray-50">
-  <div class="max-w-6xl mx-auto py-8 px-4">
-    <h2 class="text-2xl font-bold mb-6">예약 관리</h2>
+<style>
+  .reservations-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+  }
+  
+  .reservations-header {
+    padding: 25px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .reservations-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+  }
+  
+  .service-nav {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+    background: #f7fafc;
+    padding: 5px;
+    border-radius: 10px;
+  }
+  
+  .service-btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    background: transparent;
+    color: #4a5568;
+  }
+  
+  .service-btn:hover {
+    background: #edf2f7;
+    color: #2d3748;
+  }
+  
+  .service-btn.active {
+    background: #ffffff;
+    color: #f093fb;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .filters-container {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .search-input {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: #f093fb;
+    box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
+  }
+  
+  .filter-select {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: white;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+  }
+  
+  .filter-select:focus {
+    outline: none;
+    border-color: #f093fb;
+    box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
+  }
+  
+  .filter-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-btn-primary {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+  }
+  
+  .filter-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+  }
+  
+  .filter-btn-secondary {
+    background: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .filter-btn-secondary:hover {
+    background: #edf2f7;
+    color: #2d3748;
+  }
+  
+  .reservations-content {
+    padding: 25px;
+  }
+  
+  .reservations-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .table-header {
+    background: #f8fafc;
+  }
+  
+  .table-header th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .table-header th:first-child {
+    border-radius: 8px 0 0 0;
+  }
+  
+  .table-header th:last-child {
+    border-radius: 0 8px 0 0;
+  }
+  
+  .reservation-row {
+    transition: background-color 0.2s ease;
+  }
+  
+  .reservation-row:hover {
+    background: #f8fafc;
+  }
+  
+  .reservation-row td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+  }
+  
+  .reservation-row.pending-row {
+    background: #fffbeb;
+  }
+  
+  .user-name {
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .room-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .outlet-icon {
+    font-size: 0.8rem;
+  }
+  
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .status-pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .status-active {
+    background: #dcfce7;
+    color: #166534;
+  }
+  
+  .status-waiting {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  
+  .status-completed {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+  
+  .status-cancelled {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  
+  .status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  
+  .status-no-show {
+    background: #fecaca;
+    color: #991b1b;
+  }
+  
+  .action-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .action-btn:hover {
+    transform: translateY(-1px);
+  }
+  
+  .btn-approve {
+    background: #10b981;
+    color: white;
+  }
+  
+  .btn-approve:hover {
+    background: #059669;
+  }
+  
+  .btn-reject {
+    background: #ef4444;
+    color: white;
+  }
+  
+  .btn-reject:hover {
+    background: #dc2626;
+  }
+  
+  .btn-delete {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .btn-delete:hover {
+    background: #d97706;
+  }
+  
+  .status-select {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .status-select:focus {
+    outline: none;
+    border-color: #f093fb;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+  }
+  
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+  
+  .empty-state-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+  
+  @media (max-width: 1024px) {
+    .filters-container {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
     
-    <!-- 탭 선택 -->
-    <div class="flex gap-4 mb-4 border-b">
-      <button onclick="loadReservationsTab('practice')"
-              class="reservation-tab-btn <%= service_type != 'makeup' ? 'active' : '' %> pb-2 px-1">
-        연습실 예약
+    .filter-btn {
+      padding: 10px 16px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .reservations-table {
+      font-size: 0.8rem;
+    }
+    
+    .table-header th,
+    .reservation-row td {
+      padding: 10px 8px;
+    }
+    
+    .action-controls {
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .action-btn {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+    }
+  }
+</style>
+
+<div class="reservations-container">
+  <div class="reservations-header">
+    <h2 class="reservations-title">📅 예약 관리</h2>
+    
+    <!-- 서비스 선택 네비게이션 -->
+    <div class="service-nav">
+      <button onclick="loadReservationsTab('practice')" class="service-btn <%= service_type != 'makeup' ? 'active' : '' %>">
+        🎹 연습실 예약
       </button>
-      <button onclick="loadReservationsTab('makeup')"
-              class="reservation-tab-btn <%= service_type == 'makeup' ? 'active' : '' %> pb-2 px-1">
-        보충수업 예약
+      <button onclick="loadReservationsTab('makeup')" class="service-btn <%= service_type == 'makeup' ? 'active' : '' %>">
+        📚 보충수업 예약
       </button>
     </div>
-  
-  <!-- 검색 기능 (수정된 부분) -->
-  <div class="mb-4">
-    <form id="reservation-filter-form" class="flex gap-2 flex-wrap">
+    
+    <!-- 검색 및 필터 -->
+    <div class="filters-container">
       <input type="text" 
              id="reservation-search"
-             name="search"
              placeholder="이름이나 아이디로 검색..."
-             class="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-violet-500 focus:border-transparent"
-             value=""
-             onkeyup="searchReservations()"
-             oninput="searchReservations()">
+             class="search-input"
+             onkeyup="searchReservations()">
       
-      <select id="reservation-status" name="status" class="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-violet-500 focus:border-transparent" onchange="filterReservations()">
+      <select id="reservation-status" class="filter-select" onchange="filterReservations()">
         <option value="">전체 상태</option>
         <% if service_type == 'makeup' %>
           <option value="pending">승인 대기</option>
@@ -45,146 +384,153 @@
       
       <input type="date" 
              id="reservation-date"
-             name="date"
-             class="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-violet-500 focus:border-transparent"
+             class="filter-select"
+             style="min-width: 140px;"
              onchange="filterReservations()">
       
-      <button type="button" onclick="filterReservations()" 
-              class="px-3 py-1.5 text-sm bg-violet-600 text-white rounded hover:bg-violet-700">
+      <button type="button" onclick="filterReservations()" class="filter-btn filter-btn-primary">
         검색
       </button>
       
-      <button type="button" onclick="resetReservationFilters()" 
-              class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+      <button type="button" onclick="resetReservationFilters()" class="filter-btn filter-btn-secondary">
         초기화
       </button>
-    </form>
+    </div>
   </div>
-  
-  <!-- 예약 목록 -->
-  <div class="bg-white rounded-lg shadow">
+
+  <div class="reservations-content">
     <% if reservations && reservations.any? %>
-      <table class="w-full">
-        <thead class="bg-gray-50">
+      <table class="reservations-table">
+        <thead class="table-header">
           <tr>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">아이디</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"><%= service_type == 'makeup' ? '수업' : '연습실' %></th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">날짜</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">시간</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
+            <th>이름</th>
+            <th>아이디</th>
+            <th><%= service_type == 'makeup' ? '담당' : '연습실' %></th>
+            <th>날짜</th>
+            <th>시간</th>
+            <th>상태</th>
+            <th>관리</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
+        <tbody>
           <% reservations.each do |reservation| %>
             <% next unless reservation.user %>
-            <tr class="reservation-row <%= 'bg-yellow-50' if reservation.status == 'pending' %>" 
+            <tr class="reservation-row <%= 'pending-row' if reservation.status == 'pending' %>" 
                 data-name="<%= reservation.user.name %>"
                 data-username="<%= reservation.user.username %>"
                 data-status="<%= reservation.status %>"
                 data-date="<%= reservation.start_time&.strftime('%Y-%m-%d') || '' %>">
-              <td class="px-4 py-2 text-sm font-medium"><%= reservation.user.name %></td>
-              <td class="px-4 py-2 text-sm"><%= reservation.user.username %></td>
-              <td class="px-4 py-2 text-sm">
+              
+              <td><span class="user-name"><%= reservation.user.name %></span></td>
+              <td><%= reservation.user.username %></td>
+              <td>
                 <% if service_type == 'makeup' %>
-                  <%= reservation.subject if reservation.respond_to?(:subject) %> 보충
-                  <% if reservation.user.respond_to?(:teacher) && reservation.user.teacher %>
-                    <span class="text-xs text-gray-500">(<%= reservation.user.teacher %>)</span>
-                  <% end %>
+                  <div class="room-info">
+                    <% # 회원의 담당 선생님 표시 %>
+                    <% if reservation.user && reservation.user.teacher.present? %>
+                      <%= reservation.user.teacher %>
+                    <% else %>
+                      <span style="color: #9ca3af;">미지정</span>
+                    <% end %>
+                  </div>
                 <% else %>
-                  <%= reservation.room.number %>번
-                  <% if reservation.room.respond_to?(:has_outlet) && reservation.room.has_outlet %>
-                    <span title="콘센트 있음">🔌</span>
-                  <% end %>
+                  <div class="room-info">
+                    <%= reservation.room.number %>번
+                    <% if reservation.room.respond_to?(:has_outlet) && reservation.room.has_outlet %>
+                      <span class="outlet-icon" title="콘센트 있음">🔌</span>
+                    <% end %>
+                  </div>
                 <% end %>
               </td>
-              <td class="px-4 py-2 text-sm"><%= reservation.start_time&.strftime('%Y-%m-%d') || 'N/A' %></td>
-              <td class="px-4 py-2 text-sm">
+              <td><%= reservation.start_time&.strftime('%Y-%m-%d') || 'N/A' %></td>
+              <td>
                 <%= reservation.start_time&.strftime('%H:%M') || 'N/A' %> - <%= reservation.end_time&.strftime('%H:%M') || 'N/A' %>
               </td>
-              <td class="px-4 py-2">
+              <td>
                 <% if service_type == 'makeup' %>
                   <% case reservation.status %>
                   <% when 'pending' %>
-                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">승인 대기</span>
+                    <span class="status-badge status-pending">승인 대기</span>
                   <% when 'active' %>
                     <% if reservation.start_time > Time.current %>
-                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">수업 대기</span>
+                      <span class="status-badge status-waiting">수업 대기</span>
                     <% else %>
-                      <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">완료</span>
+                      <span class="status-badge status-completed">완료</span>
                     <% end %>
                   <% when 'completed' %>
-                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">완료</span>
+                    <span class="status-badge status-completed">완료</span>
                   <% when 'cancelled' %>
                     <% if reservation.cancelled_by == 'admin' %>
-                      <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">거절됨</span>
+                      <span class="status-badge status-rejected">거절됨</span>
                     <% else %>
-                      <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">취소</span>
+                      <span class="status-badge status-cancelled">취소</span>
                     <% end %>
                   <% when 'no_show' %>
-                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">노쇼</span>
+                    <span class="status-badge status-no-show">노쇼</span>
                   <% else %>
-                    <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full"><%= reservation.status %></span>
+                    <span class="status-badge status-cancelled"><%= reservation.status %></span>
                   <% end %>
                 <% else %>
                   <% case reservation.status %>
                   <% when 'pending' %>
-                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">대기</span>
+                    <span class="status-badge status-pending">대기</span>
                   <% when 'active' %>
-                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">이용 전</span>
+                    <span class="status-badge status-active">이용 전</span>
                   <% when 'completed' %>
-                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">완료</span>
+                    <span class="status-badge status-completed">완료</span>
                   <% when 'cancelled' %>
-                    <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">취소</span>
+                    <span class="status-badge status-cancelled">취소</span>
                   <% when 'no_show' %>
-                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">노쇼</span>
+                    <span class="status-badge status-no-show">노쇼</span>
                   <% else %>
-                    <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full"><%= reservation.status %></span>
+                    <span class="status-badge status-cancelled"><%= reservation.status %></span>
                   <% end %>
                 <% end %>
               </td>
-              <td class="px-4 py-2">
-                <% if service_type == 'makeup' && reservation.status == 'pending' %>
-                  <button onclick="updateReservationStatus(<%= reservation.id %>, 'active', 'makeup')" 
-                          class="text-green-600 hover:text-green-800 text-sm cursor-pointer mr-2">승인</button>
-                  <button onclick="updateReservationStatus(<%= reservation.id %>, 'cancelled', 'makeup')" 
-                          class="text-red-600 hover:text-red-800 text-sm cursor-pointer mr-2">거절</button>
-                <% end %>
-                <select onchange="updateReservationStatus(<%= reservation.id %>, this.value, '<%= service_type %>')" 
-                        class="text-xs px-2 py-1 border border-gray-300 rounded mr-2">
-                  <% if service_type == 'makeup' %>
-                    <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>승인 대기</option>
-                    <option value="active" <%= 'selected' if reservation.status == 'active' %>>수업 대기</option>
-                    <option value="completed" <%= 'selected' if reservation.status == 'completed' %>>완료</option>
-                    <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>><%= reservation.cancelled_by == 'admin' ? '거절됨' : '취소' %></option>
-                    <option value="no_show" <%= 'selected' if reservation.status == 'no_show' %>>노쇼</option>
-                  <% else %>
-                    <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>대기</option>
-                    <option value="active" <%= 'selected' if reservation.status == 'active' %>>이용 전</option>
-                    <option value="completed" <%= 'selected' if reservation.status == 'completed' %>>완료</option>
-                    <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>>취소</option>
-                    <option value="no_show" <%= 'selected' if reservation.status == 'no_show' %>>노쇼</option>
+              <td>
+                <div class="action-controls">
+                  <% if service_type == 'makeup' && reservation.status == 'pending' %>
+                    <button onclick="updateReservationStatus(<%= reservation.id %>, 'active', 'makeup')" 
+                            class="action-btn btn-approve">승인</button>
+                    <button onclick="updateReservationStatus(<%= reservation.id %>, 'cancelled', 'makeup')" 
+                            class="action-btn btn-reject">거절</button>
                   <% end %>
-                </select>
-                <button onclick="deleteReservation(<%= reservation.id %>, '<%= service_type %>')" 
-                        class="text-red-600 hover:text-red-800 text-sm cursor-pointer">삭제</button>
+                  
+                  <select onchange="updateReservationStatus(<%= reservation.id %>, this.value, '<%= service_type %>')" 
+                          class="status-select">
+                    <% if service_type == 'makeup' %>
+                      <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>승인 대기</option>
+                      <option value="active" <%= 'selected' if reservation.status == 'active' %>>수업 대기</option>
+                      <option value="completed" <%= 'selected' if reservation.status == 'completed' %>>완료</option>
+                      <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>><%= reservation.cancelled_by == 'admin' ? '거절됨' : '취소' %></option>
+                      <option value="no_show" <%= 'selected' if reservation.status == 'no_show' %>>노쇼</option>
+                    <% else %>
+                      <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>대기</option>
+                      <option value="active" <%= 'selected' if reservation.status == 'active' %>>이용 전</option>
+                      <option value="completed" <%= 'selected' if reservation.status == 'completed' %>>완료</option>
+                      <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>>취소</option>
+                      <option value="no_show" <%= 'selected' if reservation.status == 'no_show' %>>노쇼</option>
+                    <% end %>
+                  </select>
+                  
+                  <button onclick="deleteReservation(<%= reservation.id %>, '<%= service_type %>')" 
+                          class="action-btn btn-delete">삭제</button>
+                </div>
               </td>
             </tr>
           <% end %>
         </tbody>
       </table>
     <% else %>
-      <p class="text-gray-500 p-8 text-center">예약이 없습니다.</p>
+      <div class="empty-state">
+        <div class="empty-state-icon">📅</div>
+        <div class="empty-state-text">예약이 없습니다</div>
+      </div>
     <% end %>
-  </div>
   </div>
 </div>
 
 <script>
-// 예약 관리 전역 함수들 - 클라이언트 사이드 필터링으로 간단하게 구현
-
-// 검색 함수들을 즉시 실행 함수로 감싸서 확실히 로드되게 함
 (function() {
   // 검색 기능
   window.searchReservations = function() {
@@ -261,16 +607,7 @@
     });
   };
 
-  // 통합 필터 적용 (검색 버튼용)
-  window.applyReservationFilters = function() {
-    window.filterReservations();
-  };
-
-  console.log('예약 관리 필터링 함수들이 로드되었습니다.');
-})();
-
-// 기존 함수들
-  
+  // 상태 업데이트
   window.updateReservationStatus = function(reservationId, status, service) {
     fetch(`/admin/reservations/${reservationId}/update_status`, {
       method: 'PATCH',
@@ -288,6 +625,7 @@
     });
   };
 
+  // 예약 삭제
   window.deleteReservation = function(reservationId, service) {
     if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
       fetch(`/admin/reservations/${reservationId}`, {
@@ -306,56 +644,7 @@
       });
     }
   };
-  
-  window.applyReservationFilters = function() {
-    const service = window.currentReservationService || 'practice';
-    const search = document.getElementById('reservation-search')?.value || '';
-    const status = document.getElementById('reservation-status')?.value || '';
-    const date = document.getElementById('reservation-date')?.value || '';
-    
-    // URL 파라미터 구성
-    const params = new URLSearchParams();
-    params.append('service', service);
-    if (search) params.append('search', search);
-    if (status) params.append('status', status);
-    if (date) params.append('date', date);
-    
-    // 서버에서 필터링된 데이터 가져오기
-    fetch(`/admin/reservations/content?${params.toString()}`)
-      .then(response => response.text())
-      .then(html => {
-        document.getElementById('reservations-content-area').innerHTML = html;
-      })
-      .catch(error => {
-        console.error('Filter error:', error);
-      });
-  };
-  
-  window.resetReservationFilters = function() {
-    document.getElementById('reservation-search').value = '';
-    document.getElementById('reservation-status').value = '';
-    document.getElementById('reservation-date').value = '';
-    
-    // 필터 초기화 후 데이터 다시 로드
-    const service = window.currentReservationService || 'practice';
-    window.loadReservationsTab(service);
-  };
 
+  console.log('예약 관리 함수들이 로드되었습니다.');
+})();
 </script>
-
-<style>
-.reservation-tab-btn {
-  color: #666;
-  font-weight: normal;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-}
-.reservation-tab-btn.active {
-  color: #7c3aed;
-  font-weight: bold;
-  border-bottom: 2px solid #7c3aed;
-}
-.reservation-tab-btn:hover {
-  color: #7c3aed;
-}
-</style>

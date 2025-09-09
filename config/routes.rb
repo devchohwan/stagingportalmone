@@ -13,9 +13,32 @@ Rails.application.routes.draw do
   
   # 연습실 페이지
   get "practice", to: "practice#index"
+  get "practice/reserve", to: "practice#reserve"
+  post "practice/reservations", to: "practice#create_reservation"
+  get "practice/my_reservations", to: "practice#my_reservations"
+  patch "practice/reservations/:id/cancel", to: "practice#cancel_reservation", as: :cancel_practice_reservation
+  
+  # 예약 관련 partial views
+  get "practice/calendar", to: "practice#calendar"
+  get "practice/time_slots", to: "practice#time_slots"
+  get "practice/available_rooms", to: "practice#available_rooms"
+  get "practice/time_slots", to: "practice#time_slots"
+  get "practice/available_rooms", to: "practice#available_rooms"
   
   # 보충수업 페이지
   get "makeup", to: "makeup#index"
+  get "makeup/new", to: "makeup#new"
+  post "makeup", to: "makeup#create"
+  get "makeup/my_lessons", to: "makeup#my_lessons"
+  
+  # 보충수업 예약 관련 partial views - MUST be before :id routes
+  get "makeup/calendar", to: "makeup#calendar"
+  get "makeup/time_slots", to: "makeup#time_slots"
+  get "makeup/available_rooms", to: "makeup#available_rooms"
+  
+  # Dynamic routes MUST be last
+  get "makeup/:id", to: "makeup#show", as: :makeup_lesson
+  patch "makeup/:id/cancel", to: "makeup#cancel", as: :cancel_makeup_lesson
   
   get "profile/edit", to: "profile#edit", as: :edit_profile
   patch "profile/update_password", to: "profile#update_password", as: :update_password

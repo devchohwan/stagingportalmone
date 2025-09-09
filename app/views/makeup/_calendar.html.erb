@@ -1,0 +1,55 @@
+<%
+  start_date = date.beginning_of_month
+  end_date = date.end_of_month
+  weeks = (start_date.beginning_of_week(:sunday)..end_date.end_of_week(:sunday)).to_a.each_slice(7)
+  today = Date.current
+%>
+
+<div class="calendar" data-month="<%= date.strftime('%Y-%m') %>">
+  <div class="calendar-header">
+    <button class="calendar-nav-btn">←</button>
+    <h3 class="calendar-month-title"><%= date.strftime('%Y년 %m월') %></h3>
+    <button class="calendar-nav-btn">→</button>
+  </div>
+  
+  <div class="calendar-grid">
+    <% %w[일 월 화 수 목 금 토].each do |day| %>
+      <div class="calendar-weekday"><%= day %></div>
+    <% end %>
+    
+    <% weeks.each do |week| %>
+      <% week.each do |day| %>
+        <%
+          is_today = day == today
+          is_past = day < today
+          is_current_month = day.month == date.month
+          is_monday = day.wday == 1  # 월요일 체크
+          
+          css_classes = []
+          css_classes << "calendar-day-cell"
+          css_classes << "not-current-month" unless is_current_month
+          css_classes << "past-day" if is_past && !is_today
+          css_classes << "today" if is_today
+          css_classes << "monday-closed" if is_monday
+          
+          # 클릭 가능한지 확인
+          is_clickable = is_current_month && !is_past && !is_monday
+        %>
+        
+        <div class="<%= css_classes.join(' ') %>" 
+             data-date="<%= day.strftime('%Y-%m-%d') %>"
+             <% if is_clickable %>
+               data-clickable="true"
+               onclick="selectDate(this)"
+             <% end %>>
+          <div class="day-number"><%= day.day %></div>
+          <% if is_today %>
+            <div class="day-label">오늘</div>
+          <% elsif is_monday && is_current_month %>
+            <div class="day-label">휴무</div>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,23 @@
+<div class="rooms-container">
+  <% rooms_data.each do |room_data| %>
+    <% room = room_data[:room] %>
+    <% available = room_data[:available] %>
+    
+    <div class="room-btn <%= 'unavailable' unless available %>" 
+         <% if available %>
+           data-room-id="<%= room.id %>"
+           data-room-number="<%= room.number %>"
+           onclick="window.selectRoom(this)"
+         <% end %>>
+      <span class="room-name"><%= room.number %>번 연습실</span>
+      <div class="room-info">
+        <% unless available %>
+          <span class="status-unavailable">사용중</span>
+        <% end %>
+        <% if [2, 4, 7, 8].include?(room.number) %>
+          <span class="outlet-icon">🔌</span>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

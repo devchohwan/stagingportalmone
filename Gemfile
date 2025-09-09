@@ -27,8 +27,8 @@ gem "httparty"
 # JWT token handling
 gem "jwt"
 
-# Tailwind CSS
-gem "tailwindcss-rails"
+# Tailwind CSS (disabled - using inline CSS instead)
+# gem "tailwindcss-rails"
 
 # SMS service - CoolSMS (Solapi)
 gem "coolsms"
