@@ -29,7 +29,7 @@
 
     <div class="max-w-md mx-auto space-y-6 mt-10">
       <!-- 연습실 예약 -->
-      <a href="<%= Rails.configuration.practice_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>" 
+      <a href="<%= Rails.configuration.practice_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>"
          class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
         <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white mb-4">
           📅
@@ -39,7 +39,7 @@
       </a>
 
       <!-- 보충수업 관리 -->
-      <a href="<%= Rails.configuration.makeup_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>" 
+      <a href="<%= Rails.configuration.makeup_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>"
          class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
         <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white mb-4">
           📚

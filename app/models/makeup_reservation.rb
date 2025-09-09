@@ -1,9 +1,9 @@
 class MakeupReservation < MakeupBase
-  self.table_name = 'reservations'
+  self.table_name = 'makeup_reservations'
   
   # 관계 설정
   belongs_to :user, class_name: 'MakeupUser', foreign_key: 'user_id'
-  belongs_to :room, class_name: 'MakeupRoom', foreign_key: 'room_id'
+  belongs_to :room, class_name: 'MakeupRoom', foreign_key: 'makeup_room_id'
   
   # 스코프
   scope :active, -> { where(status: 'active') }

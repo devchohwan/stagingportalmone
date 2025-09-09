@@ -5,7 +5,7 @@ Rails.application.configure do
 
   # Service URLs for production
   config.portal_url = "https://portal.monemusic.com"
-  config.practice_url = "https://practice.monemusic.com"
+  config.practice_url = "https://pt.monemusic.com"
   config.makeup_url = "https://makeup.monemusic.com"
 
   # Code is not reloaded between requests.
@@ -89,7 +89,7 @@ Rails.application.configure do
   else
     config.hosts = [
       "portal.monemusic.com",
-      "practice.monemusic.com",
+      "pt.monemusic.com",
       "makeup.monemusic.com",
       "monemusic.com",
       "localhost"

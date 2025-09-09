@@ -1,7 +1,6 @@
-Rails.application.config.session_store :cookie_store, 
+Rails.application.config.session_store :active_record_store,
   key: '_monemusic_session',
-  domain: :all,
-  tld_length: 2,
-  same_site: :lax,
-  secure: false,
-  httponly: true
+  domain: Rails.env.production? ? '.monemusic.com' : :all,
+  secure: Rails.env.production?,
+  httponly: true,
+  same_site: :lax

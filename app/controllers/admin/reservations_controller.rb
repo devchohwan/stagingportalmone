@@ -198,10 +198,9 @@ class Admin::ReservationsController < ApplicationController
   end
   
   def fetch_makeup_reservations
-    # 보충수업은 rooms 1,2에 대한 예약만 조회
-    @reservations = Reservation.includes(:user, :room)
-                               .where(room_id: [1, 2])
-                               .order(start_time: :desc)
+    # 보충수업은 makeup_reservations 테이블에서 조회
+    @reservations = MakeupReservation.includes(:user, :room)
+                                     .order(start_time: :desc)
     
     Rails.logger.info "Makeup reservations found: #{@reservations.count}"
     

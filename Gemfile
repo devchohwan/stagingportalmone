@@ -33,6 +33,9 @@ gem "tailwindcss-rails"
 # SMS service - CoolSMS (Solapi)
 gem "coolsms"
 
+# ActiveRecord session store
+gem "activerecord-session_store"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 
