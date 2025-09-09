@@ -20,7 +20,7 @@ servers:
 proxy:
   ssl: true
   host: portal.monemusic.com
-  app_port: 3000
+  app_port: 80
 
 # Credentials for your image host.
 registry:
