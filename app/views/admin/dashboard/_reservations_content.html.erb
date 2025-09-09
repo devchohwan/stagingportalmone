@@ -363,9 +363,9 @@
              id="reservation-search"
              placeholder="이름이나 아이디로 검색..."
              class="search-input"
-             onkeyup="searchReservations()">
+             onkeyup="window.searchReservations && window.searchReservations()">
       
-      <select id="reservation-status" class="filter-select" onchange="filterReservations()">
+      <select id="reservation-status" class="filter-select" onchange="window.filterReservations && window.filterReservations()">
         <option value="">전체 상태</option>
         <% if service_type == 'makeup' %>
           <option value="pending">승인 대기</option>
@@ -386,13 +386,13 @@
              id="reservation-date"
              class="filter-select"
              style="min-width: 140px;"
-             onchange="filterReservations()">
+             onchange="window.filterReservations && window.filterReservations()">
       
-      <button type="button" onclick="filterReservations()" class="filter-btn filter-btn-primary">
+      <button type="button" onclick="window.filterReservations && window.filterReservations()" class="filter-btn filter-btn-primary">
         검색
       </button>
       
-      <button type="button" onclick="resetReservationFilters()" class="filter-btn filter-btn-secondary">
+      <button type="button" onclick="window.resetReservationFilters && window.resetReservationFilters()" class="filter-btn filter-btn-secondary">
         초기화
       </button>
     </div>
@@ -613,15 +613,19 @@
       method: 'PATCH',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({ status: status, service: service })
     }).then(response => {
-      if (response.ok || response.redirected) {
+      if (response.ok) {
         window.loadReservationsTab(service);
       } else {
         alert('상태 변경에 실패했습니다.');
       }
+    }).catch(error => {
+      console.error('Error:', error);
+      alert('상태 변경에 실패했습니다.');
     });
   };
 
@@ -632,15 +636,19 @@
         method: 'DELETE',
         headers: {
           'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({ service: service })
       }).then(response => {
-        if (response.ok || response.redirected) {
+        if (response.ok) {
           window.loadReservationsTab(service);
         } else {
           alert('삭제에 실패했습니다.');
         }
+      }).catch(error => {
+        console.error('Error:', error);
+        alert('삭제에 실패했습니다.');
       });
     }
   };

@@ -122,7 +122,7 @@ class Admin::ReservationsController < ApplicationController
         redirect_params[:service] = service if service.present?
         redirect_to admin_reservations_path(redirect_params), notice: '예약이 삭제되었습니다.'
       }
-      format.json { head :ok }
+      format.json { render json: { success: true, message: '예약이 삭제되었습니다.' } }
     end
   end
   
@@ -149,12 +149,12 @@ class Admin::ReservationsController < ApplicationController
       if reservation.update(update_attrs)
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
-          format.json { head :ok }
+          format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
         end
       else
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), alert: '상태 변경에 실패했습니다.' }
-          format.json { head :unprocessable_entity }
+          format.json { render json: { success: false, error: '상태 변경에 실패했습니다.' }, status: :unprocessable_entity }
         end
       end
     else
@@ -167,12 +167,12 @@ class Admin::ReservationsController < ApplicationController
       if reservation.update(update_attrs)
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
-          format.json { head :ok }
+          format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
         end
       else
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), alert: '상태 변경에 실패했습니다.' }
-          format.json { head :unprocessable_entity }
+          format.json { render json: { success: false, error: '상태 변경에 실패했습니다.' }, status: :unprocessable_entity }
         end
       end
     end

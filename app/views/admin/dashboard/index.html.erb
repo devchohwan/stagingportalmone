@@ -429,6 +429,125 @@
         .then(response => response.text())
         .then(html => {
           contentArea.innerHTML = html;
+          
+          // 예약 관리 관련 함수들을 전역에 등록
+          window.searchReservations = function() {
+            const searchInput = document.getElementById('reservation-search');
+            if (!searchInput) return;
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            const rows = document.querySelectorAll('.reservation-row');
+            
+            rows.forEach(row => {
+              const name = (row.getAttribute('data-name') || '').toLowerCase();
+              const username = (row.getAttribute('data-username') || '').toLowerCase();
+              
+              if (searchTerm === '' || name.includes(searchTerm) || username.includes(searchTerm)) {
+                row.style.display = '';
+              } else {
+                row.style.display = 'none';
+              }
+            });
+          };
+        
+          window.filterReservations = function() {
+            const statusFilter = document.getElementById('reservation-status')?.value || '';
+            const dateFilter = document.getElementById('reservation-date')?.value || '';
+            const searchTerm = (document.getElementById('reservation-search')?.value || '').toLowerCase();
+            const rows = document.querySelectorAll('.reservation-row');
+            
+            rows.forEach(row => {
+              let visible = true;
+              
+              // 검색어 필터
+              if (searchTerm) {
+                const name = (row.getAttribute('data-name') || '').toLowerCase();
+                const username = (row.getAttribute('data-username') || '').toLowerCase();
+                if (!name.includes(searchTerm) && !username.includes(searchTerm)) {
+                  visible = false;
+                }
+              }
+              
+              // 상태 필터
+              if (statusFilter && visible) {
+                const status = row.getAttribute('data-status');
+                if (status !== statusFilter) {
+                  visible = false;
+                }
+              }
+              
+              // 날짜 필터
+              if (dateFilter && visible) {
+                const date = row.getAttribute('data-date');
+                if (date !== dateFilter) {
+                  visible = false;
+                }
+              }
+              
+              row.style.display = visible ? '' : 'none';
+            });
+          };
+        
+          window.resetReservationFilters = function() {
+            const searchInput = document.getElementById('reservation-search');
+            const statusSelect = document.getElementById('reservation-status');
+            const dateInput = document.getElementById('reservation-date');
+            
+            if (searchInput) searchInput.value = '';
+            if (statusSelect) statusSelect.value = '';
+            if (dateInput) dateInput.value = '';
+            
+            const rows = document.querySelectorAll('.reservation-row');
+            rows.forEach(row => {
+              row.style.display = '';
+            });
+          };
+        
+          window.updateReservationStatus = function(reservationId, status, service) {
+            fetch(`/admin/reservations/${reservationId}/update_status`, {
+              method: 'PATCH',
+              headers: {
+                'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({ status: status, service: service })
+            }).then(response => {
+              if (response.ok) {
+                window.loadReservationsTab(service);
+              } else {
+                alert('상태 변경에 실패했습니다.');
+              }
+            }).catch(error => {
+              console.error('Error:', error);
+              alert('상태 변경에 실패했습니다.');
+            });
+          };
+        
+          window.deleteReservation = function(reservationId, service) {
+            if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
+              fetch(`/admin/reservations/${reservationId}`, {
+                method: 'DELETE',
+                headers: {
+                  'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({ service: service })
+              }).then(response => {
+                if (response.ok) {
+                  window.loadReservationsTab(service);
+                } else {
+                  alert('삭제에 실패했습니다.');
+                }
+              }).catch(error => {
+                console.error('Error:', error);
+                alert('삭제에 실패했습니다.');
+              });
+            }
+          };
+          
+          console.log('예약 관리 함수들이 등록되었습니다.');
         })
         .catch(error => {
           console.error('Error loading reservations:', error);
@@ -587,7 +706,7 @@
 
     // 예약 관리 함수들
     window.updateReservationStatus = function(reservationId, status, service) {
-      fetch(`/admin/reservations/${reservationId}/update_status.json`, {
+      fetch(`/admin/reservations/${reservationId}/update_status`, {
         method: 'PATCH',
         headers: {
           'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
@@ -601,12 +720,15 @@
         } else {
           alert('상태 변경에 실패했습니다.');
         }
+      }).catch(error => {
+        console.error('Error:', error);
+        alert('상태 변경에 실패했습니다.');
       });
     };
 
     window.deleteReservation = function(reservationId, service) {
       if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
-        fetch(`/admin/reservations/${reservationId}.json`, {
+        fetch(`/admin/reservations/${reservationId}`, {
           method: 'DELETE',
           headers: {
             'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
@@ -620,34 +742,29 @@
           } else {
             alert('삭제에 실패했습니다.');
           }
+        }).catch(error => {
+          console.error('Error:', error);
+          alert('삭제에 실패했습니다.');
         });
       }
     };
 
-    // 검색 및 필터링 함수들
+    // 검색 기능
     window.searchUsers = function() {
       const searchInput = document.getElementById('user-search');
-      const systemFilter = document.getElementById('system-filter');
       if (!searchInput) return;
       
       const searchTerm = searchInput.value.toLowerCase();
-      const systemValue = systemFilter ? systemFilter.value : '';
       const rows = document.querySelectorAll('.user-row');
       
       rows.forEach(row => {
         const name = (row.getAttribute('data-name') || '').toLowerCase();
         const username = (row.getAttribute('data-username') || '').toLowerCase();
-        const system = row.getAttribute('data-system') || '';
         
         let matchSearch = searchTerm === '' || name.includes(searchTerm) || username.includes(searchTerm);
-        let matchSystem = systemValue === '' || system === systemValue;
         
-        row.style.display = (matchSearch && matchSystem) ? '' : 'none';
+        row.style.display = matchSearch ? '' : 'none';
       });
-    };
-
-    window.filterBySystem = function() {
-      searchUsers();
     };
   }
   

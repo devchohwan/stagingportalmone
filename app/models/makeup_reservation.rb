@@ -35,7 +35,7 @@ class MakeupReservation < MakeupBase
   def status_display
     case status
     when 'pending' then '승인 대기'
-    when 'active' then '활성'
+    when 'active' then '수업 대기'
     when 'cancelled' then '취소됨'
     when 'completed' then '완료'
     when 'no_show' then '노쇼'
