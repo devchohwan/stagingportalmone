@@ -19,6 +19,16 @@ class User < ApplicationRecord
     is_admin
   end
   
+  # Override enum approved? method to include both 'active' and 'approved' status
+  def approved?
+    status == 'active' || status == 'approved'
+  end
+  
+  # Check if user is blocked (penalty system)
+  def blocked?
+    current_month_penalty.is_blocked
+  end
+  
   def display_name
     "#{name} (#{username})"
   end

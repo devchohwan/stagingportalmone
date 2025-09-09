@@ -29,24 +29,24 @@
 
     <div class="max-w-md mx-auto space-y-6 mt-10">
       <!-- 연습실 예약 -->
-      <a href="<%= Rails.configuration.practice_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>"
-         class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+      <%= link_to practice_path, 
+          class: "block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow" do %>
         <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white mb-4">
           📅
         </div>
         <h3 class="text-lg font-medium text-gray-900 mb-2">연습실 예약</h3>
         <p class="text-gray-500">연습실 예약 현황을 확인하고 새로운 예약을 진행합니다</p>
-      </a>
+      <% end %>
 
       <!-- 보충수업 관리 -->
-      <a href="<%= Rails.configuration.makeup_url %>/auth/transfer?user_id=<%= session[:current_user_id] %>&token=<%= Base64.encode64(session[:current_user_id].to_s + Time.now.to_i.to_s).strip %>"
-         class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+      <%= link_to makeup_path,
+          class: "block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow" do %>
         <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white mb-4">
           📚
         </div>
         <h3 class="text-lg font-medium text-gray-900 mb-2">보충수업 관리</h3>
         <p class="text-gray-500">보충수업 일정을 확인하고 관리합니다</p>
-      </a>
+      <% end %>
       
       <!-- 비밀번호 변경 -->
       <a href="<%= edit_profile_path %>" 

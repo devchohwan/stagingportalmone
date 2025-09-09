@@ -1,0 +1,79 @@
+<div class="max-w-md mx-auto">
+  <div class="text-center py-8">
+    <h1 class="text-2xl font-bold mb-2">모네뮤직 보충수업에 어서오세요!<br><br></h1>
+    
+    <% if user_signed_in? %>
+      <% if current_user.approved? %>
+        <div class="space-y-4">
+          <% if current_user.blocked? %>
+            <button onclick="alert('월 2회 이상 노쇼/취소하여 이용이 제한되었습니다')" class="block w-full bg-gray-400 text-white py-3 px-4 rounded-lg font-medium cursor-not-allowed opacity-75">예약하기 (제한됨)</button>
+          <% else %>
+            <%= link_to "예약하기", "#", class: "block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700", onclick: "alert('예약 기능은 준비 중입니다'); return false;" %>
+          <% end %>
+          <%= link_to "내 예약 확인", "#", class: "block w-full bg-gray-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-700", onclick: "alert('예약 확인 기능은 준비 중입니다'); return false;" %>
+        </div>
+      <% else %>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p class="text-yellow-800">회원가입 승인 대기중입니다.</p>
+          <p class="text-sm text-yellow-600 mt-2">승인까지 최대 하루가 소요됩니다.</p>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="space-y-4">
+        <%= link_to "로그인", Rails.configuration.portal_url, class: "block w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700" %>
+        <%= link_to "회원가입", "#{Rails.configuration.portal_url}/register", class: "block w-full bg-gray-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-700" %>
+      </div>
+    <% end %>
+  </div>
+  
+  <div class="mt-4 bg-white rounded-lg shadow">
+    <details class="group">
+      <summary class="p-4 cursor-pointer list-none flex justify-center items-center relative">
+        <h2 class="font-bold text-blue-600 text-center">이용안내 펼쳐보기 (필독!)</h2>
+        <span class="text-gray-400 group-open:rotate-180 transition-transform absolute right-4">▼</span>
+      </summary>
+      
+      <div class="px-4 pb-4 space-y-4 text-sm">
+        <p class="font-medium text-gray-800 text-center py-2 text-lg">모네뮤직 보충수업에 오신 걸 환영합니다😊</p>
+        
+        <div>
+          <h3 class="font-bold mb-2">😀 보충수업은,</h3>
+          <p class="ml-4">
+            주 1회 정규 수업 후<br>
+            보충수업 선생님과 함께<br>
+            지난 수업을 복습하는 수업입니다!<br><br>
+            
+            이렇게 했을 때<br>
+            혼자 연습하는 것보다<br>
+            월등한 실력향상이 있었어요!
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="font-bold mb-2">🚶 방문하실 거라면!</h3>
+          <p class="ml-4">
+            신청 양식을 작성하셔서<br>
+            예약하신 뒤,<br>
+            학원에 직접 방문해<br>
+            수업을 들으실 수 있어요!
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="font-bold mb-2">📱 학원에 오기 어려우신 분들의 경우,</h3>
+          <p class="ml-4">
+            궁금한 점, 복습하고 싶은 내용을<br>
+            질문하시거나 녹음해서 보내주시면<br>
+            친절히 답변해드리겠습니다😁<br><br>
+          </p>
+        </div>
+      </div>
+    </details>
+  </div>
+  
+  <% if user_signed_in? %>
+    <div class="mt-6">
+      <%= link_to "← 메인으로 돌아가기", root_path, class: "text-gray-600 text-sm inline-flex items-center hover:text-gray-800" %>
+    </div>
+  <% end %>
+</div>

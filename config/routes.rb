@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  root "sessions#new"
+  root "services#index"  # 메인 페이지를 services로 변경
   
   get "login", to: "sessions#new"
   post "login", to: "sessions#create"
@@ -11,8 +11,11 @@ Rails.application.routes.draw do
   
   get "services", to: "services#index"
   
-  # 세션 전달 라우트
-  get "auth/transfer", to: "auth#transfer"
+  # 연습실 페이지
+  get "practice", to: "practice#index"
+  
+  # 보충수업 페이지
+  get "makeup", to: "makeup#index"
   
   get "profile/edit", to: "profile#edit", as: :edit_profile
   patch "profile/update_password", to: "profile#update_password", as: :update_password
