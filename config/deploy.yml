@@ -86,7 +86,6 @@ asset_path: /rails/public/assets
 # Configure the image builder.
 builder:
   arch: amd64
-  cache: false  # Prevent Ruby 3.2.2 alpine cache issue
 
   # # Build image via remote server (useful for faster amd64 builds on arm64 computers)
   # remote: ssh://docker@docker-builder-server
