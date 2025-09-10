@@ -4,6 +4,8 @@ class ApplicationController < ActionController::Base
   
   helper_method :current_user, :logged_in?, :user_signed_in?, :authenticate_user!
   
+  before_action :update_reservation_statuses
+  
   private
   
   def current_user
@@ -37,5 +39,16 @@ class ApplicationController < ActionController::Base
     unless current_user&.is_admin
       redirect_to services_path, alert: "권한이 없습니다"
     end
+  end
+  
+  def update_reservation_statuses
+    # 모든 페이지 접속 시 과거 예약 상태 업데이트
+    # active 또는 in_use 상태인 예약들 확인
+    Reservation.where(status: ['active', 'in_use']).find_each do |reservation|
+      reservation.update_status_by_time!
+    end
+  rescue => e
+    # 에러가 발생해도 페이지 로딩은 계속
+    Rails.logger.error "Failed to update reservation statuses: #{e.message}"
   end
 end

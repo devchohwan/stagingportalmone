@@ -655,40 +655,43 @@
               </td>
               <td>
                 <% if service_type == 'makeup' %>
+                  <% status_text = reservation.status_display %>
                   <% case reservation.status %>
                   <% when 'pending' %>
-                    <span class="status-badge status-pending">승인 대기</span>
+                    <span class="status-badge status-pending"><%= status_text %></span>
                   <% when 'active' %>
-                    <% if reservation.start_time > Time.current %>
-                      <span class="status-badge status-waiting">수업 대기</span>
-                    <% else %>
-                      <span class="status-badge status-completed">완료</span>
-                    <% end %>
+                    <span class="status-badge status-waiting"><%= status_text %></span>
                   <% when 'completed' %>
-                    <span class="status-badge status-completed">완료</span>
+                    <span class="status-badge status-completed"><%= status_text %></span>
                   <% when 'cancelled' %>
-                    <span class="status-badge status-cancelled">취소</span>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% when 'rejected' %>
-                    <span class="status-badge status-rejected">거절됨</span>
+                    <span class="status-badge status-rejected"><%= status_text %></span>
                   <% when 'no_show' %>
-                    <span class="status-badge status-no-show">노쇼</span>
+                    <span class="status-badge status-no-show"><%= status_text %></span>
                   <% else %>
-                    <span class="status-badge status-cancelled"><%= reservation.status %></span>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% end %>
                 <% else %>
+                  <% # 연습실 예약 - status_display 사용 %>
+                  <% status_text = reservation.status_display %>
                   <% case reservation.status %>
-                  <% when 'pending' %>
-                    <span class="status-badge status-pending">대기</span>
-                  <% when 'active' %>
-                    <span class="status-badge status-active">이용 전</span>
+                  <% when 'active', 'in_use' %>
+                    <% if status_text == '이용 전' %>
+                      <span class="status-badge status-active"><%= status_text %></span>
+                    <% elsif status_text == '이용 중' %>
+                      <span class="status-badge status-in-use"><%= status_text %></span>
+                    <% else %>
+                      <span class="status-badge status-completed"><%= status_text %></span>
+                    <% end %>
                   <% when 'completed' %>
-                    <span class="status-badge status-completed">완료</span>
+                    <span class="status-badge status-completed"><%= status_text %></span>
                   <% when 'cancelled' %>
-                    <span class="status-badge status-cancelled">취소</span>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% when 'no_show' %>
-                    <span class="status-badge status-no-show">노쇼</span>
+                    <span class="status-badge status-no-show"><%= status_text %></span>
                   <% else %>
-                    <span class="status-badge status-cancelled"><%= reservation.status %></span>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% end %>
                 <% end %>
               </td>
