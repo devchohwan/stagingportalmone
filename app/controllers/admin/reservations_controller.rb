@@ -193,7 +193,8 @@ class Admin::ReservationsController < ApplicationController
       update_attrs[:cancelled_by] = 'admin' if params[:status] == 'cancelled'
       # rejected 상태는 거절로 처리 (페널티 없음)
       
-      if reservation.update(update_attrs)
+      # 관리자는 validation 무시하고 강제 업데이트
+      if reservation.update_columns(update_attrs)
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
@@ -213,7 +214,8 @@ class Admin::ReservationsController < ApplicationController
       update_attrs[:cancelled_by] = 'admin' if params[:status] == 'cancelled'
       # rejected 상태는 거절로 처리 (페널티 없음)
       
-      if reservation.update(update_attrs)
+      # 관리자는 validation 무시하고 강제 업데이트
+      if reservation.update_columns(update_attrs)
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
