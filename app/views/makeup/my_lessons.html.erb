@@ -197,9 +197,14 @@
   }
   
   .cancel-btn {
+    background: none;
+    border: none;
     color: #dc2626;
     font-size: 0.9rem;
-    text-decoration: none;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
     transition: color 0.3s ease;
   }
   
@@ -338,15 +343,16 @@
             
             <% if reservation.cancellable? %>
               <div class="cancel-section">
-                <%= link_to "예약 취소", cancel_makeup_lesson_path(reservation), 
+                <%= button_to "예약 취소", cancel_makeup_lesson_path(reservation), 
+                            method: :patch,
                             data: { 
                               turbo: false,
-                              turbo_method: :patch,
                               reservation_date: reservation.start_time.strftime('%Y년 %m월 %d일'),
                               reservation_time: "#{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}",
                               reservation_room: "#{reservation.makeup_room.number}석"
                             },
-                            class: "cancel-btn reservation-cancel-btn" %>
+                            class: "cancel-btn reservation-cancel-btn",
+                            form: { style: "display: inline;" } %>
               </div>
             <% end %>
           </div>
@@ -364,58 +370,34 @@
 </div>
 
 <script>
-// 이벤트 리스너 중복 등록 방지
-if (!window.makeupCancelListenerAdded) {
-  window.makeupCancelListenerAdded = true;
-  
-  document.addEventListener('DOMContentLoaded', function() {
-    // 이벤트 위임 방식으로 처리 (동적으로 추가되는 요소도 처리)
-    document.addEventListener('click', function(event) {
-      const button = event.target.closest('.reservation-cancel-btn');
-      if (!button) return;
-      
-      event.preventDefault();
-      event.stopPropagation();
-      
-      // Get reservation info from data attributes
-      const date = button.dataset.reservationDate;
-      const time = button.dataset.reservationTime;
-      const room = button.dataset.reservationRoom;
-      
-      // Create confirm message
-      const confirmMessage = `예약 정보\n\n날짜: ${date}\n시간: ${time}\n좌석: ${room}\n\n예약을 취소하시겠습니까?`;
-      
-      // Show confirm dialog
-      const userConfirmed = confirm(confirmMessage);
-      
-      if (userConfirmed === true) {
-        // If user confirms (확인 버튼), proceed with the cancellation
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = button.href;
-        
-        // Add CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'authenticity_token';
-        csrfInput.value = csrfToken;
-        
-        // Add method input for PATCH
-        const methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'patch';
-        
-        form.appendChild(csrfInput);
-        form.appendChild(methodInput);
-        document.body.appendChild(form);
-        form.submit();
-      } else {
-        // User clicked cancel (취소 버튼) - do nothing
-        console.log('예약 취소가 취소되었습니다.');
-      }
-    });
+// button_to로 변경했으므로 커스텀 confirm 대화상자 처리
+document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('submit', function(event) {
+    const form = event.target;
+    const button = form.querySelector('.reservation-cancel-btn');
+    
+    if (!button) return;
+    
+    event.preventDefault();
+    
+    // Get reservation info from data attributes
+    const date = button.dataset.reservationDate;
+    const time = button.dataset.reservationTime;
+    const room = button.dataset.reservationRoom;
+    
+    // Create confirm message
+    const confirmMessage = `예약 정보\n\n날짜: ${date}\n시간: ${time}\n좌석: ${room}\n\n예약을 취소하시겠습니까?`;
+    
+    // Show confirm dialog
+    const userConfirmed = confirm(confirmMessage);
+    
+    if (userConfirmed === true) {
+      // If user confirms, submit the form
+      form.submit();
+    } else {
+      // User clicked cancel - do nothing
+      console.log('예약 취소가 취소되었습니다.');
+    }
   });
-}
+});
 </script>

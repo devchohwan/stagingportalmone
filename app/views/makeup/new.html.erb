@@ -461,10 +461,10 @@
       <div class="step-section hidden" data-reservation-target="contentSection">
         <h3 class="step-title">4. 보충수업 받고 싶은 내용</h3>
         <textarea id="lesson-content" 
-                  placeholder="어떤 부분을 보충수업 받고 싶으신지 자세히 적어주세요.
-예: 특정 곡의 어려운 부분, 테크닉 교정, 음악 이론 등" 
+                  placeholder="보충수업 받고 싶으신 내용을 적어주세요😊" 
                   style="width: 100%; min-height: 150px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"
-                  oninput="checkAndProceed()"></textarea>
+                  onblur="if(this.value.trim()) showConfirmation()"></textarea>
+        <p style="margin-top: 10px; font-size: 0.85rem; color: #6b7280;">내용을 입력하고 다른 곳을 클릭하면 확인 단계로 진행됩니다.</p>
       </div>
       
       <!-- 예약 확인 -->
@@ -490,11 +490,10 @@
 </div>
 
 <script>
-(function() {
-  // 보충수업 예약 JavaScript - isolated scope
-  var selectedDate = null;
-  var selectedTime = null;
-  var selectedRoom = null;
+// 보충수업 예약 JavaScript - 전역 스코프로 수정
+var selectedDate = null;
+var selectedTime = null;
+var selectedRoom = null;
 
 function selectDate(element) {
   selectedDate = element.getAttribute('data-date');
@@ -582,46 +581,23 @@ function selectRoom(element) {
   hideSection('confirmSection');
 }
 
-// 텍스트 입력 시 자동으로 다음 단계로
-function checkAndProceed() {
-  var lessonContent = document.getElementById('lesson-content').value.trim();
-  if (lessonContent.length >= 10) { // 최소 10자 이상 입력했을 때
-    // 잠시 딜레이 후 자동 진행
-    clearTimeout(window.proceedTimer);
-    window.proceedTimer = setTimeout(function() {
-      proceedToConfirmation();
-    }, 500);
-  }
-}
-
-function proceedToConfirmation() {
-  var lessonContent = document.getElementById('lesson-content').value.trim();
-  if (!lessonContent) {
-    return; // 내용이 없으면 진행하지 않음
-  }
-  
-  // 내용 저장
-  var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
-  if (lessonContentField) {
-    lessonContentField.value = lessonContent;
-  }
-  
-  // 확인 섹션 표시
-  showConfirmation();
-}
-
 function showConfirmation() {
   var selectedDateTime = new Date(selectedTime.time);
   var endDateTime = new Date(selectedDateTime.getTime() + 30 * 60000);
+  
+  // lesson content 가져오기
+  var lessonContent = document.getElementById('lesson-content').value;
   
   // 폼 필드 설정
   var roomIdField = document.querySelector('[data-reservation-target="roomId"]');
   var startTimeField = document.querySelector('[data-reservation-target="startTime"]');
   var endTimeField = document.querySelector('[data-reservation-target="endTime"]');
+  var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
   
   if (roomIdField) roomIdField.value = selectedRoom.id;
   if (startTimeField) startTimeField.value = selectedTime.time;
   if (endTimeField) endTimeField.value = endDateTime.toISOString();
+  if (lessonContentField) lessonContentField.value = lessonContent;
   
   // 요약 정보 업데이트
   var dateObj = new Date(selectedDate);
@@ -655,10 +631,6 @@ function hideSection(target) {
   }
 }
 
-// 함수들을 window에 노출
-window.proceedToConfirmation = proceedToConfirmation;
-window.checkAndProceed = checkAndProceed;
-
 window.confirmMakeupReservation = function() {
   if (!selectedDate || !selectedTime || !selectedRoom) {
     alert('예약 정보가 불완전합니다.');
@@ -677,7 +649,6 @@ window.confirmMakeupReservation = function() {
     var form = document.querySelector('[data-reservation-target="form"]');
     
     if (submitBtn) {
-      // 중복 제출 방지
       if (submitBtn.disabled) {
         alert('이미 예약 요청이 처리 중입니다.');
         return false;
@@ -687,12 +658,8 @@ window.confirmMakeupReservation = function() {
       submitBtn.textContent = '예약 중...';
     }
     
-    // 폼 제출 - Rails UJS를 통해 제출하여 CSRF 토큰이 자동으로 포함됨
     if (form) {
-      // form이 이미 form_with로 생성되어 CSRF 토큰을 포함하고 있음
-      // requestSubmit을 사용하여 Rails의 form validation과 CSRF 처리가 작동하도록 함
       if (form.requestSubmit) {
-        // 숨겨진 submit 버튼을 만들어 form을 제출
         var hiddenSubmit = document.createElement('input');
         hiddenSubmit.type = 'submit';
         hiddenSubmit.style.display = 'none';
@@ -708,22 +675,11 @@ window.confirmMakeupReservation = function() {
   return false;
 };
 
-// 승인 대기 중 메시지 표시 함수
 window.showPendingMessage = function() {
   alert('⏳ 예약 승인중인 자리입니다.\n\n' +
         '관리자 승인 후 예약이 확정되므로\n' +
         '다른 좌석을 선택해주세요.');
 };
 
-// 전역 함수로 등록
-window.selectDate = selectDate;
-window.selectTime = selectTime;
-window.selectRoom = selectRoom;
-
-// 폼 제출 이벤트는 제거 - onclick에서 이미 처리됨
-// confirmMakeupReservation 함수가 onclick에서 호출되므로
-// 중복 호출 방지
-
 console.log('보충수업 예약 JavaScript 로드 완료');
-})(); // IIFE 종료
 </script>

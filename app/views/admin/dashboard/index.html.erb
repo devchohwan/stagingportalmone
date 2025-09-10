@@ -1016,4 +1016,32 @@
       loadReservationsTab();
     }
   });
+  
+  // 보충수업 내용 모달 함수들을 전역으로 정의 (AJAX 로드 전에도 사용 가능하도록)
+  window.showLessonContent = function(reservationId) {
+    fetch('/admin/reservations/' + reservationId + '/lesson_content')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('modal-user-name').textContent = data.user_name;
+          document.getElementById('modal-date').textContent = data.date;
+          document.getElementById('modal-time').textContent = data.time;
+          document.getElementById('modal-lesson-content').textContent = data.lesson_content || '내용이 없습니다.';
+          document.getElementById('lesson-content-modal').classList.add('show');
+        } else {
+          alert('예약 정보를 불러올 수 없습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('오류가 발생했습니다.');
+      });
+  }
+
+  window.closeLessonModal = function() {
+    var modal = document.getElementById('lesson-content-modal');
+    if (modal) {
+      modal.classList.remove('show');
+    }
+  }
 </script>
