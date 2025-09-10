@@ -25,13 +25,28 @@ class Reservation < ApplicationRecord
   # Rails가 자동으로 한국 시간대로 변환해줌
   
   def status_display
-    case status
-    when 'active' then '이용 전'
-    when 'in_use' then '이용 중'
-    when 'completed' then '완료'
-    when 'cancelled' then '취소'
-    when 'no_show' then '노쇼'
-    else status
+    # 실시간으로 현재 시간과 비교해서 표시
+    if status == 'active' || status == 'in_use'
+      current_time = Time.current.in_time_zone('Asia/Seoul')
+      reservation_start = start_time
+      reservation_end = end_time
+      
+      if current_time < reservation_start
+        '이용 전'
+      elsif current_time >= reservation_start && current_time < reservation_end
+        '이용 중'
+      elsif current_time >= reservation_end
+        '완료'
+      else
+        status
+      end
+    else
+      case status
+      when 'completed' then '완료'
+      when 'cancelled' then '취소'
+      when 'no_show' then '노쇼'
+      else status
+      end
     end
   end
   
