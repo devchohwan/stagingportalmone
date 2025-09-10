@@ -26,9 +26,9 @@ class Admin::DashboardController < ApplicationController
   def users
     @tab = params[:tab] || 'approved'
     
-    @pending_users = User.pending.select(:id, :username, :name, :phone, :teacher, :created_at, :status, :online_verification_image).to_a
-    @on_hold_users = User.on_hold.select(:id, :username, :name, :phone, :teacher, :created_at, :status, :online_verification_image).to_a
-    @approved_users = User.approved.select(:id, :username, :name, :phone, :teacher, :created_at, :status, :is_admin, :online_verification_image).to_a  # admin 포함 모든 승인된 사용자
+    @pending_users = User.pending.to_a
+    @on_hold_users = User.on_hold.to_a
+    @approved_users = User.approved.to_a  # admin 포함 모든 승인된 사용자
     
     # 페널티가 있는 사용자 - 연습실과 보충수업 모두 포함
     practice_penalties = User.approved.select { |u| 
