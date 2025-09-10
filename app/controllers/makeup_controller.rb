@@ -62,6 +62,18 @@ class MakeupController < ApplicationController
       return
     end
     
+    # 하루 한 번 제한 확인
+    reservation_date = start_time.to_date
+    existing_today = current_user.makeup_reservations
+                                 .where(status: ['pending', 'active', 'completed'])
+                                 .where('DATE(start_time) = ?', reservation_date)
+                                 .exists?
+    
+    if existing_today
+      redirect_to makeup_new_path, alert: '하루에 한 번만 보충수업을 예약할 수 있습니다.'
+      return
+    end
+    
     @reservation = current_user.makeup_reservations.build(reservation_params)
     @reservation.status = 'pending'  # 관리자 승인 대기 상태
     

@@ -34,6 +34,18 @@ class PracticeController < ApplicationController
       return
     end
     
+    # 하루 한 번 제한 확인
+    reservation_date = Time.parse(reservation_params[:start_time]).to_date
+    existing_today = current_user.reservations
+                                 .where(status: ['active', 'completed', 'in_use'])
+                                 .where('DATE(start_time) = ?', reservation_date)
+                                 .exists?
+    
+    if existing_today
+      redirect_to practice_reserve_path, alert: '하루에 한 번만 예약할 수 있습니다.'
+      return
+    end
+    
     @reservation = current_user.reservations.build(reservation_params)
     @reservation.status = 'active' # status 기본값 설정
     
