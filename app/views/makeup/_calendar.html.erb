@@ -22,6 +22,7 @@
         <%
           is_today = day == today
           is_past = day < today
+          is_same_day = day == today  # 당일인지 체크
           is_current_month = day.month == date.month
           is_monday = day.wday == 1  # 월요일 체크
           
@@ -30,10 +31,11 @@
           css_classes << "not-current-month" unless is_current_month
           css_classes << "past-day" if is_past && !is_today
           css_classes << "today" if is_today
+          css_classes << "same-day-disabled" if is_same_day  # 당일 예약 불가 스타일
           css_classes << "monday-closed" if is_monday
           
-          # 클릭 가능한지 확인
-          is_clickable = is_current_month && !is_past && !is_monday
+          # 클릭 가능한지 확인 (당일 예약 불가 추가)
+          is_clickable = is_current_month && !is_past && !is_monday && !is_same_day
         %>
         
         <div class="<%= css_classes.join(' ') %>" 
@@ -44,7 +46,7 @@
              <% end %>>
           <div class="day-number"><%= day.day %></div>
           <% if is_today %>
-            <div class="day-label">오늘</div>
+            <div class="day-label">오늘 (예약불가)</div>
           <% elsif is_monday && is_current_month %>
             <div class="day-label">휴무</div>
           <% end %>

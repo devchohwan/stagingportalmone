@@ -124,6 +124,14 @@ a:hover {
   border-color: #059669;
 }
 
+.calendar-day.same-day-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
 /* Time slots */
 .time-slot-btn {
   padding: 0.5rem 0.75rem;

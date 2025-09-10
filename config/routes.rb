@@ -70,6 +70,7 @@ Rails.application.routes.draw do
       member do
         patch :update_status
         patch :approve_reservation
+        get :lesson_content
       end
     end
     

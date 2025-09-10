@@ -8,6 +8,21 @@ class MakeupReservation < MakeupBase
   # 별지
   alias_method :room, :makeup_room
   
+  # 검증
+  validate :no_same_day_reservation
+  
+  private
+  
+  def no_same_day_reservation
+    return unless start_time.present?
+    
+    if start_time.to_date == Date.current
+      errors.add(:start_time, '당일 예약은 불가능합니다')
+    end
+  end
+  
+  public
+  
   # 스코프
   scope :active, -> { where(status: 'active') }
   scope :today, -> { 

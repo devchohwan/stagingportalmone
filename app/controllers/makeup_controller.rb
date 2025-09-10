@@ -55,6 +55,13 @@ class MakeupController < ApplicationController
       return
     end
     
+    # 당일 예약 방지 체크
+    start_time = Time.parse(reservation_params[:start_time])
+    if start_time.to_date == Date.current
+      redirect_to makeup_new_path, alert: '당일 예약은 불가능합니다. 다른 날짜를 선택해주세요.'
+      return
+    end
+    
     @reservation = current_user.makeup_reservations.build(reservation_params)
     @reservation.status = 'pending'  # 관리자 승인 대기 상태
     
@@ -191,7 +198,7 @@ class MakeupController < ApplicationController
   end
   
   def reservation_params
-    params.require(:makeup_lesson).permit(:makeup_room_id, :start_time, :end_time)
+    params.require(:makeup_lesson).permit(:makeup_room_id, :start_time, :end_time, :lesson_content)
   end
   
   def generate_time_slots(date)
