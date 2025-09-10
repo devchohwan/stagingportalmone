@@ -463,8 +463,8 @@
         <textarea id="lesson-content" 
                   placeholder="어떤 부분을 보충수업 받고 싶으신지 자세히 적어주세요.
 예: 특정 곡의 어려운 부분, 테크닉 교정, 음악 이론 등" 
-                  style="width: 100%; min-height: 150px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
-        <button type="button" class="btn-primary" style="margin-top: 15px;" onclick="proceedToConfirmation()">다음</button>
+                  style="width: 100%; min-height: 150px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"
+                  oninput="checkAndProceed()"></textarea>
       </div>
       
       <!-- 예약 확인 -->
@@ -582,11 +582,22 @@ function selectRoom(element) {
   hideSection('confirmSection');
 }
 
+// 텍스트 입력 시 자동으로 다음 단계로
+function checkAndProceed() {
+  var lessonContent = document.getElementById('lesson-content').value.trim();
+  if (lessonContent.length >= 10) { // 최소 10자 이상 입력했을 때
+    // 잠시 딜레이 후 자동 진행
+    clearTimeout(window.proceedTimer);
+    window.proceedTimer = setTimeout(function() {
+      proceedToConfirmation();
+    }, 500);
+  }
+}
+
 function proceedToConfirmation() {
   var lessonContent = document.getElementById('lesson-content').value.trim();
   if (!lessonContent) {
-    alert('보충수업 받고 싶은 내용을 입력해주세요.');
-    return;
+    return; // 내용이 없으면 진행하지 않음
   }
   
   // 내용 저장
@@ -644,8 +655,9 @@ function hideSection(target) {
   }
 }
 
-// proceedToConfirmation을 window에 노출
+// 함수들을 window에 노출
 window.proceedToConfirmation = proceedToConfirmation;
+window.checkAndProceed = checkAndProceed;
 
 window.confirmMakeupReservation = function() {
   if (!selectedDate || !selectedTime || !selectedRoom) {

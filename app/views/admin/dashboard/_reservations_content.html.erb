@@ -990,36 +990,40 @@
 
   console.log('예약 관리 함수들이 로드되었습니다.');
   
-  // 보충수업 내용 모달 표시
-  window.showLessonContent = function(reservationId) {
-    // AJAX로 예약 정보 가져오기
-    fetch('/admin/reservations/' + reservationId + '/lesson_content')
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // 모달 내용 업데이트
-          document.getElementById('modal-user-name').textContent = data.user_name;
-          document.getElementById('modal-date').textContent = data.date;
-          document.getElementById('modal-time').textContent = data.time;
-          document.getElementById('modal-lesson-content').textContent = data.lesson_content || '내용이 없습니다.';
-          
-          // 모달 표시
-          document.getElementById('lesson-content-modal').classList.add('show');
-        } else {
-          alert('예약 정보를 불러올 수 없습니다.');
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('오류가 발생했습니다.');
-      });
-  };
-  
-  // 모달 닫기
-  window.closeLessonModal = function() {
-    document.getElementById('lesson-content-modal').classList.remove('show');
-  };
 })();
+
+// 보충수업 내용 모달 표시 - 전역 함수로 정의
+function showLessonContent(reservationId) {
+  // AJAX로 예약 정보 가져오기
+  fetch('/admin/reservations/' + reservationId + '/lesson_content')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // 모달 내용 업데이트
+        document.getElementById('modal-user-name').textContent = data.user_name;
+        document.getElementById('modal-date').textContent = data.date;
+        document.getElementById('modal-time').textContent = data.time;
+        document.getElementById('modal-lesson-content').textContent = data.lesson_content || '내용이 없습니다.';
+        
+        // 모달 표시
+        document.getElementById('lesson-content-modal').classList.add('show');
+      } else {
+        alert('예약 정보를 불러올 수 없습니다.');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('오류가 발생했습니다.');
+    });
+}
+
+// 모달 닫기 - 전역 함수로 정의
+function closeLessonModal() {
+  var modal = document.getElementById('lesson-content-modal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
 </script>
 
 <!-- 보충수업 내용 모달 -->
