@@ -32,6 +32,8 @@ class MakeupReservation < MakeupBase
     time.in_time_zone('Asia/Seoul')
   end
   
+  STATUSES = %w[pending active completed cancelled rejected no_show].freeze
+  
   def status_display
     case status
     when 'pending' then '승인 대기'

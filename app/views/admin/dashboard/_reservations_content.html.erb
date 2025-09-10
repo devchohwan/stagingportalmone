@@ -697,7 +697,7 @@
                   <% if service_type == 'makeup' && reservation.status == 'pending' %>
                     <button onclick="updateReservationStatus(<%= reservation.id %>, 'active', 'makeup')" 
                             class="action-btn btn-approve">승인</button>
-                    <button onclick="updateReservationStatus(<%= reservation.id %>, 'cancelled', 'makeup')" 
+                    <button onclick="updateReservationStatus(<%= reservation.id %>, 'rejected', 'makeup')" 
                             class="action-btn btn-reject">거절</button>
                   <% end %>
                   

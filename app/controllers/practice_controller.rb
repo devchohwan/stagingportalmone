@@ -3,10 +3,14 @@ class PracticeController < ApplicationController
   before_action :set_reservation, only: [:cancel_reservation]
   
   def index
-    # 현재 활성 예약 확인
+    # 과거 예약 자동 상태 업데이트
     if logged_in?
+      # 상태 업데이트가 필요한 예약들 처리
+      current_user.reservations.where(status: ['active', 'in_use']).each(&:update_status_by_time!)
+      
+      # 현재 활성 예약 확인
       @current_reservation = current_user.reservations
-        .where(status: 'active')
+        .where(status: ['active', 'in_use'])
         .where('start_time > ?', Time.current)
         .first
     end
@@ -43,6 +47,9 @@ class PracticeController < ApplicationController
   end
   
   def my_reservations
+    # 과거 예약 자동 상태 업데이트
+    current_user.reservations.where(status: ['active', 'in_use']).each(&:update_status_by_time!)
+    
     @reservations = current_user.reservations.includes(:room)
     
     # 상태 필터링

@@ -10,10 +10,8 @@ class Admin::ReservationsController < ApplicationController
       # 보충수업 시스템에서 데이터 가져오기
       fetch_makeup_reservations
     else
-      # 과거 예약 자동 완료 처리 (연습실 시스템)
-      Reservation.where(status: 'active')
-                 .where('end_time < ?', Time.current) 
-                 .update_all(status: 'completed')
+      # 예약 상태 자동 업데이트 (연습실 시스템)
+      Reservation.where(status: ['active', 'in_use']).each(&:update_status_by_time!)
       
       # 연습실 시스템 (기존 로직)
       @reservations = Reservation.includes(:user, :room)
@@ -191,7 +189,7 @@ class Admin::ReservationsController < ApplicationController
       # cancelled 상태로 변경 시 cancelled_by를 'admin'으로 설정
       update_attrs = { status: params[:status] }
       update_attrs[:cancelled_by] = 'admin' if params[:status] == 'cancelled'
-      # rejected 상태는 거절로 처리 (페널티 없음)
+      # rejected 상태는 거절로 처리 (페널티 없음, cancelled_by 설정하지 않음)
       
       # 관리자는 validation 무시하고 강제 업데이트
       if reservation.update_columns(update_attrs)
@@ -243,11 +241,7 @@ class Admin::ReservationsController < ApplicationController
     @reservation = Reservation.find(params[:id])
   end
   
-  def authenticate_admin!
-    unless session[:user] && session[:user]['is_admin']
-      redirect_to login_path, alert: "관리자 권한이 필요합니다"
-    end
-  end
+  # ApplicationController의 authenticate_admin! 사용하도록 제거
   
   def fetch_makeup_reservations
     # 보충수업은 makeup_reservations 테이블에서 조회

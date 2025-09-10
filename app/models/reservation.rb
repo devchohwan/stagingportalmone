@@ -2,7 +2,7 @@ class Reservation < ApplicationRecord
   belongs_to :user
   belongs_to :room
   
-  STATUSES = %w[active completed cancelled no_show].freeze
+  STATUSES = %w[active in_use completed cancelled no_show].freeze
   
   validates :start_time, presence: true
   validates :end_time, presence: true
@@ -13,7 +13,7 @@ class Reservation < ApplicationRecord
   validate :no_duplicate_active_reservation, on: :create
   validate :one_reservation_per_day, on: :create
   
-  scope :active, -> { where(status: 'active') }
+  scope :active, -> { where(status: ['active', 'in_use']) }
   scope :future, -> { where('start_time > ?', Time.current) }
   scope :past, -> { where('end_time < ?', Time.current) }
   scope :today, -> { where(start_time: Date.current.beginning_of_day..Date.current.end_of_day) }
@@ -25,22 +25,30 @@ class Reservation < ApplicationRecord
   # Rails가 자동으로 한국 시간대로 변환해줌
   
   def status_display
-    return status unless status == 'active'
+    case status
+    when 'active' then '이용 전'
+    when 'in_use' then '이용 중'
+    when 'completed' then '완료'
+    when 'cancelled' then '취소'
+    when 'no_show' then '노쇼'
+    else status
+    end
+  end
+  
+  # 현재 시간에 따라 상태 자동 업데이트
+  def update_status_by_time!
+    return unless status == 'active' || status == 'in_use'
     
     current_time = Time.current.in_time_zone('Asia/Seoul')
     reservation_start = start_time
     reservation_end = end_time
     
-    if current_time < reservation_start
-      '이용 전'
-    elsif current_time >= reservation_start && current_time < reservation_end
-      '이용 중'
-    elsif current_time >= reservation_end
-      # 자동으로 completed 상태로 변경
-      update_column(:status, 'completed') if status == 'active'
-      '완료'
-    else
-      status
+    if status == 'active' && current_time >= reservation_start && current_time < reservation_end
+      # 이용 전 -> 이용 중
+      update_column(:status, 'in_use')
+    elsif (status == 'active' || status == 'in_use') && current_time >= reservation_end
+      # 이용 중 -> 완료
+      update_column(:status, 'completed')
     end
   end
   
