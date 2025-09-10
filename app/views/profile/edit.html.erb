@@ -300,6 +300,173 @@
       width: 100%;
     }
   }
+
+  /* 320px 모바일 최적화 */
+  @media (max-width: 320px) {
+    .profile-container {
+      padding: 16px 12px;
+      min-height: 100vh;
+    }
+    
+    .profile-header {
+      margin-bottom: 24px;
+    }
+    
+    .profile-title-wrapper {
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .profile-icon {
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      border-radius: 8px;
+    }
+    
+    .profile-title {
+      font-size: 1.3rem;
+    }
+    
+    .profile-subtitle {
+      font-size: 0.85rem;
+      line-height: 1.4;
+      padding: 0 10px;
+    }
+    
+    .content-wrapper {
+      gap: 20px;
+    }
+    
+    .settings-card {
+      padding: 18px 14px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+    
+    .card-header {
+      margin-bottom: 18px;
+    }
+    
+    .card-title {
+      font-size: 1.05rem;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    
+    .card-title span {
+      font-size: 1rem;
+    }
+    
+    .card-description {
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-label {
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+    
+    .form-input {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+    }
+    
+    .current-phone-display {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      width: 100%;
+    }
+    
+    .btn-full-width {
+      margin-top: 4px;
+    }
+    
+    .input-group {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .input-group .btn-primary {
+      width: 100%;
+    }
+    
+    .form-help {
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+    
+    .verification-section {
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+    
+    .verification-timer {
+      font-size: 0.75rem;
+      margin-top: 6px;
+    }
+    
+    .verification-status {
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+    
+    .alert {
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+    
+    .back-link {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      margin-top: 24px;
+      display: inline-block;
+      width: auto;
+    }
+    
+    /* 폼 입력 필드 폰트 크기 조정 (자동 확대 방지) */
+    input[type="text"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="email"],
+    input[type="number"],
+    select,
+    textarea {
+      font-size: 16px; /* iOS 자동 확대 방지 */
+    }
+    
+    /* 설정 카드 호버 효과 제거 (모바일) */
+    .settings-card:hover {
+      transform: none;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+    
+    /* 버튼 호버 효과 조정 (모바일) */
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .back-link:hover {
+      transform: none;
+    }
+  }
 </style>
 
 <div class="profile-container">

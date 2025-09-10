@@ -435,7 +435,7 @@
                 <td>
                   <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
                           class="teacher-select">
-                    <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
+                    <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].each do |teacher| %>
                       <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                     <% end %>
                   </select>
@@ -496,7 +496,7 @@
                 <td>
                   <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
                           class="teacher-select">
-                    <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
+                    <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].each do |teacher| %>
                       <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                     <% end %>
                   </select>
@@ -559,7 +559,7 @@
                 <td>
                   <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
                           class="teacher-select">
-                    <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현'].each do |teacher| %>
+                    <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].each do |teacher| %>
                       <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                     <% end %>
                   </select>

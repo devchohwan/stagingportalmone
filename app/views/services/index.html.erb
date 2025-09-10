@@ -166,12 +166,22 @@
   </div>
 
   <div class="services-grid">
-    <%= link_to practice_path, class: "service-card" do %>
-      <div class="service-icon practice-icon">
-        📅
+    <% if @user.teacher == '온라인' %>
+      <div class="service-card" onclick="alert('연습실은 오프라인 수강생 전용입니다😌');" style="cursor: pointer;">
+        <div class="service-icon practice-icon">
+          📅
+        </div>
+        <h3 class="service-title">연습실 예약</h3>
+        <p class="service-description">연습실 예약 현황을 확인하고 새로운 예약을 진행합니다</p>
       </div>
-      <h3 class="service-title">연습실 예약</h3>
-      <p class="service-description">연습실 예약 현황을 확인하고 새로운 예약을 진행합니다</p>
+    <% else %>
+      <%= link_to practice_path, class: "service-card" do %>
+        <div class="service-icon practice-icon">
+          📅
+        </div>
+        <h3 class="service-title">연습실 예약</h3>
+        <p class="service-description">연습실 예약 현황을 확인하고 새로운 예약을 진행합니다</p>
+      <% end %>
     <% end %>
 
     <%= link_to makeup_path, class: "service-card" do %>

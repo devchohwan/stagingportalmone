@@ -1,6 +1,9 @@
 class User < ApplicationRecord
   # Devise의 encrypted_password를 사용하기 위해 has_secure_password 제거
   
+  # 담당 선생님 목록 상수
+  TEACHERS = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].freeze
+  
   # penalties 테이블과 연결 (practice 시스템의 페널티 데이터)
   has_many :penalties, dependent: :destroy
   has_many :reservations, dependent: :destroy

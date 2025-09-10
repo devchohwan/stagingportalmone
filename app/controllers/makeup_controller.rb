@@ -154,14 +154,14 @@ class MakeupController < ApplicationController
     restricted_times = [1430, 1530, 1630, 1930, 2030]
     restricted_days = [0, 2, 3, 6]  # 0=일, 2=화, 3=수, 6=토
     
-    # 화, 수, 토 21:30 추가 제한
-    restricted_times_2130 = [2, 3, 6]  # 2=화, 3=수, 6=토
-    
-    # 14:30부터 21:30까지 30분 단위 (브레이크타임 제외)
+    # 14:30부터 21:00까지 30분 단위 (브레이크타임 제외, 21:30 제외)
     (14..21).each do |hour|
       [0, 30].each do |minute|
         # 14:00과 14:30 중에서 14:30부터 시작
         next if hour == 14 && minute == 0
+        
+        # 21:30 제외 (모든 요일)
+        next if hour == 21 && minute == 30
         
         # 선택한 날짜의 특정 시간을 서울 타임존으로 생성
         time = Time.zone.parse("#{date.strftime('%Y-%m-%d')} #{hour.to_s.rjust(2, '0')}:#{minute.to_s.rjust(2, '0')}:00")
@@ -172,11 +172,6 @@ class MakeupController < ApplicationController
         
         # 화, 수, 토, 일 특정 시간 제한
         if restricted_days.include?(date.wday) && restricted_times.include?(hour_minute)
-          next
-        end
-        
-        # 화, 수, 토 21:30 추가 제한
-        if restricted_times_2130.include?(date.wday) && hour_minute == 2130
           next
         end
         
