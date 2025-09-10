@@ -13,6 +13,9 @@
 - **환경변수**:
   - RAILS_MASTER_KEY=d852cbb93057373a82518521ec2e24a0
   - RAILS_ENV=production
+  - SOLAPI_API_KEY=NCSEZDWSEGELZR7R
+  - SOLAPI_API_SECRET=NP4GYWVKEENOKBRPCI022UUNHQHPUOLM
+  - SOLAPI_SENDER_PHONE=07048337690
 
 ## 배포 절차
 
@@ -51,6 +54,9 @@ docker run -d --name portal-monemusic-manual \
   -v portal_monemusic_storage:/rails/storage \
   -e RAILS_MASTER_KEY=d852cbb93057373a82518521ec2e24a0 \
   -e RAILS_ENV=production \
+  -e SOLAPI_API_KEY=NCSEZDWSEGELZR7R \
+  -e SOLAPI_API_SECRET=NP4GYWVKEENOKBRPCI022UUNHQHPUOLM \
+  -e SOLAPI_SENDER_PHONE=07048337690 \
   --entrypoint '' \
   amuguona/portal-monemusic:manual-fix \
   ./bin/thrust ./bin/rails server
@@ -71,7 +77,7 @@ docker logs portal-monemusic-manual --tail 20
 # 로컬에서 실행 (이미지 빌드 후)
 docker build -t amuguona/portal-monemusic:manual-fix . && \
 docker push amuguona/portal-monemusic:manual-fix && \
-ssh -i ~/monemusic root@115.68.195.125 "docker stop portal-monemusic-manual; docker rm portal-monemusic-manual; docker pull amuguona/portal-monemusic:manual-fix; docker run -d --name portal-monemusic-manual --network kamal -v portal_monemusic_storage:/rails/storage -e RAILS_MASTER_KEY=d852cbb93057373a82518521ec2e24a0 -e RAILS_ENV=production --entrypoint '' amuguona/portal-monemusic:manual-fix ./bin/thrust ./bin/rails server"
+ssh -i ~/monemusic root@115.68.195.125 "docker stop portal-monemusic-manual; docker rm portal-monemusic-manual; docker pull amuguona/portal-monemusic:manual-fix; docker run -d --name portal-monemusic-manual --network kamal -v portal_monemusic_storage:/rails/storage -e RAILS_MASTER_KEY=d852cbb93057373a82518521ec2e24a0 -e RAILS_ENV=production -e SOLAPI_API_KEY=NCSEZDWSEGELZR7R -e SOLAPI_API_SECRET=NP4GYWVKEENOKBRPCI022UUNHQHPUOLM -e SOLAPI_SENDER_PHONE=07048337690 --entrypoint '' amuguona/portal-monemusic:manual-fix ./bin/thrust ./bin/rails server"
 ```
 
 ## 주의사항

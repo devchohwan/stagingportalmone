@@ -2,19 +2,35 @@
   <% rooms_data.each do |room_data| %>
     <% room = room_data[:room] %>
     <% available = room_data[:available] %>
+    <% pending = room_data[:pending] %>
     
-    <div class="room-btn <%= available ? '' : 'unavailable' %>"
-         <% if available %>
+    <% if pending %>
+      <!-- 승인 대기 중인 좌석 -->
+      <div class="room-btn pending" onclick="showPendingMessage()">
+        <div class="room-name"><%= room.number %>석</div>
+        <div class="room-info">
+          <span class="status-pending">⏳ 승인 대기중</span>
+        </div>
+      </div>
+    <% elsif !available %>
+      <!-- 기존 예약 완료 좌석 -->
+      <div class="room-btn unavailable">
+        <div class="room-name"><%= room.number %>석</div>
+        <div class="room-info">
+          <span class="status-unavailable">사용중</span>
+        </div>
+      </div>
+    <% else %>
+      <!-- 이용 가능한 좌석 -->
+      <div class="room-btn"
            data-room-id="<%= room.id %>"
            data-room-number="<%= room.number %>"
-           onclick="window.selectRoom(this)"
-         <% end %>>
-      <div class="room-name"><%= room.number %>석</div>
-      <div class="room-info">
-        <% unless available %>
-          <span class="status-unavailable">사용중</span>
-        <% end %>
+           onclick="window.selectRoom(this)">
+        <div class="room-name"><%= room.number %>석</div>
+        <div class="room-info">
+          <span class="status-available">✅ 이용가능</span>
+        </div>
       </div>
-    </div>
+    <% end %>
   <% end %>
 </div>

@@ -126,6 +126,52 @@ class Admin::ReservationsController < ApplicationController
     end
   end
   
+  def bulk_delete
+    reservation_ids = params[:reservation_ids]
+    service = params[:service]
+    
+    Rails.logger.info "=== BULK DELETE ==="
+    Rails.logger.info "IDs: #{reservation_ids.inspect}"
+    Rails.logger.info "Service: #{service}"
+    
+    if reservation_ids.blank?
+      render json: { success: false, error: '삭제할 예약을 선택해주세요.' }
+      return
+    end
+    
+    begin
+      deleted_count = 0
+      
+      if service == 'makeup'
+        # 보충수업 예약 삭제
+        reservations = MakeupReservation.where(id: reservation_ids)
+        deleted_count = reservations.count
+        reservations.destroy_all
+      else
+        # 연습실 예약 삭제
+        reservations = Reservation.where(id: reservation_ids)
+        deleted_count = reservations.count
+        reservations.destroy_all
+      end
+      
+      Rails.logger.info "Deleted #{deleted_count} reservations"
+      
+      render json: { 
+        success: true, 
+        deleted_count: deleted_count,
+        message: "#{deleted_count}개의 예약이 삭제되었습니다."
+      }
+    rescue => e
+      Rails.logger.error "Bulk delete error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      
+      render json: { 
+        success: false, 
+        error: "삭제 중 오류가 발생했습니다: #{e.message}"
+      }
+    end
+  end
+  
   def update_status
     Rails.logger.info "=== update_status called ==="
     Rails.logger.info "Params: #{params.inspect}"
@@ -145,6 +191,7 @@ class Admin::ReservationsController < ApplicationController
       # cancelled 상태로 변경 시 cancelled_by를 'admin'으로 설정
       update_attrs = { status: params[:status] }
       update_attrs[:cancelled_by] = 'admin' if params[:status] == 'cancelled'
+      # rejected 상태는 거절로 처리 (페널티 없음)
       
       if reservation.update(update_attrs)
         respond_to do |format|
@@ -152,9 +199,10 @@ class Admin::ReservationsController < ApplicationController
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
         end
       else
+        Rails.logger.error "Update failed: #{reservation.errors.full_messages.join(', ')}"
         respond_to do |format|
-          format.html { redirect_to admin_reservations_path(redirect_params), alert: '상태 변경에 실패했습니다.' }
-          format.json { render json: { success: false, error: '상태 변경에 실패했습니다.' }, status: :unprocessable_entity }
+          format.html { redirect_to admin_reservations_path(redirect_params), alert: "상태 변경 실패: #{reservation.errors.full_messages.join(', ')}" }
+          format.json { render json: { success: false, error: reservation.errors.full_messages.join(', ') }, status: :unprocessable_entity }
         end
       end
     else
@@ -163,6 +211,7 @@ class Admin::ReservationsController < ApplicationController
       # cancelled 상태로 변경 시 cancelled_by를 'admin'으로 설정
       update_attrs = { status: params[:status] }
       update_attrs[:cancelled_by] = 'admin' if params[:status] == 'cancelled'
+      # rejected 상태는 거절로 처리 (페널티 없음)
       
       if reservation.update(update_attrs)
         respond_to do |format|
@@ -170,9 +219,10 @@ class Admin::ReservationsController < ApplicationController
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
         end
       else
+        Rails.logger.error "Update failed: #{reservation.errors.full_messages.join(', ')}"
         respond_to do |format|
-          format.html { redirect_to admin_reservations_path(redirect_params), alert: '상태 변경에 실패했습니다.' }
-          format.json { render json: { success: false, error: '상태 변경에 실패했습니다.' }, status: :unprocessable_entity }
+          format.html { redirect_to admin_reservations_path(redirect_params), alert: "상태 변경 실패: #{reservation.errors.full_messages.join(', ')}" }
+          format.json { render json: { success: false, error: reservation.errors.full_messages.join(', ') }, status: :unprocessable_entity }
         end
       end
     end

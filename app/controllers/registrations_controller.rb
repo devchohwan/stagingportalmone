@@ -28,6 +28,26 @@ class RegistrationsController < ApplicationController
       is_admin: false
     )
     
+    # 온라인 수강생 인증 이미지 처리
+    if params[:teacher] == '온라인' && params[:online_verification_image].present?
+      uploaded_file = params[:online_verification_image]
+      
+      # 파일 저장 경로 설정
+      filename = "#{SecureRandom.hex(8)}_#{uploaded_file.original_filename}"
+      filepath = Rails.root.join('public', 'uploads', 'verifications', filename)
+      
+      # 디렉토리 생성
+      FileUtils.mkdir_p(File.dirname(filepath))
+      
+      # 파일 저장
+      File.open(filepath, 'wb') do |file|
+        file.write(uploaded_file.read)
+      end
+      
+      # DB에 파일 경로 저장
+      user.online_verification_image = "/uploads/verifications/#{filename}"
+    end
+    
     # 비밀번호 설정
     user.password = params[:password]
 

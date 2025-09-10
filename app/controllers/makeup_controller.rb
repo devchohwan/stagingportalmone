@@ -71,8 +71,29 @@ class MakeupController < ApplicationController
   
   def cancel
     if @reservation.cancellable?
+      # 승인 대기(pending) 상태면 페널티 없이 취소
+      # 수업 대기(active) 상태면 페널티 적용
+      if @reservation.status == 'active'
+        # 페널티 적용 - 취소 횟수 증가
+        penalty = current_user.current_month_penalty
+        penalty.increment!(:cancel_count)
+        
+        # 총 페널티 횟수 확인 (노쇼 + 취소)
+        total_penalties = penalty.no_show_count + penalty.cancel_count
+        
+        # 2회 이상이면 차단
+        if total_penalties >= 2
+          penalty.update(is_blocked: true)
+        end
+      end
+      
       @reservation.update(status: 'cancelled', cancelled_by: 'user')
-      redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다.'
+      
+      if @reservation.status_was == 'active'
+        redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다. (페널티가 적용되었습니다)'
+      else
+        redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다.'
+      end
     else
       redirect_to makeup_my_lessons_path, alert: '예약 시작 30분 전까지만 취소 가능합니다.'
     end
@@ -126,10 +147,37 @@ class MakeupController < ApplicationController
     start_time = Time.parse(params[:start_time])
     end_time = Time.parse(params[:end_time])
     
+    Rails.logger.info "=== AVAILABLE ROOMS DEBUG ==="
+    Rails.logger.info "Requested time: #{start_time} - #{end_time}"
+    
+    # 승인 대기 중인 예약을 조회 (시간 중복 검사)
+    pending_reservations = MakeupReservation
+      .where(status: 'pending')
+      .where(
+        '(start_time < ? AND end_time > ?) OR (start_time < ? AND end_time > ?) OR (start_time >= ? AND start_time < ?)',
+        end_time, start_time,
+        end_time, end_time,
+        start_time, end_time
+      )
+    
+    Rails.logger.info "Found pending reservations: #{pending_reservations.count}"
+    pending_reservations.each do |res|
+      Rails.logger.info "  - Room #{res.makeup_room_id}: #{res.start_time} - #{res.end_time}"
+    end
+    
+    pending_room_ids = pending_reservations.pluck(:makeup_room_id)
+    Rails.logger.info "Pending room IDs: #{pending_room_ids}"
+    
     @all_rooms = MakeupRoom.order(:number).map do |room|
+      is_pending = pending_room_ids.include?(room.id)
+      is_available = room.available_at?(start_time, end_time)
+      
+      Rails.logger.info "Room #{room.number}: available=#{is_available}, pending=#{is_pending}"
+      
       {
         room: room,
-        available: room.available_at?(start_time, end_time)
+        available: is_available,
+        pending: is_pending
       }
     end
     
@@ -154,14 +202,16 @@ class MakeupController < ApplicationController
     restricted_times = [1430, 1530, 1630, 1930, 2030]
     restricted_days = [0, 2, 3, 6]  # 0=일, 2=화, 3=수, 6=토
     
-    # 14:30부터 21:00까지 30분 단위 (브레이크타임 제외, 21:30 제외)
+    # 14:30부터 21:30까지 30분 단위 (브레이크타임 제외)
     (14..21).each do |hour|
       [0, 30].each do |minute|
         # 14:00과 14:30 중에서 14:30부터 시작
         next if hour == 14 && minute == 0
         
-        # 21:30 제외 (모든 요일)
-        next if hour == 21 && minute == 30
+        # 21:30은 목요일(4)과 금요일(5)만 허용
+        if hour == 21 && minute == 30
+          next unless [4, 5].include?(date.wday)
+        end
         
         # 선택한 날짜의 특정 시간을 서울 타임존으로 생성
         time = Time.zone.parse("#{date.strftime('%Y-%m-%d')} #{hour.to_s.rjust(2, '0')}:#{minute.to_s.rjust(2, '0')}:00")

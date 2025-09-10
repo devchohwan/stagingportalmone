@@ -72,8 +72,28 @@ class PracticeController < ApplicationController
   
   def cancel_reservation
     if @reservation.cancellable?
+      # active 상태의 예약 취소 시 페널티 적용
+      if @reservation.status == 'active'
+        # 페널티 적용 - 취소 횟수 증가
+        penalty = current_user.current_month_penalty
+        penalty.increment!(:cancel_count)
+        
+        # 총 페널티 횟수 확인 (노쇼 + 취소)
+        total_penalties = penalty.no_show_count + penalty.cancel_count
+        
+        # 2회 이상이면 차단
+        if total_penalties >= 2
+          penalty.update(is_blocked: true)
+        end
+      end
+      
       @reservation.update(status: 'cancelled', cancelled_by: 'user')
-      redirect_to practice_my_reservations_path, notice: '예약이 취소되었습니다.'
+      
+      if @reservation.status_was == 'active'
+        redirect_to practice_my_reservations_path, notice: '예약이 취소되었습니다. (페널티가 적용되었습니다)'
+      else
+        redirect_to practice_my_reservations_path, notice: '예약이 취소되었습니다.'
+      end
     else
       redirect_to practice_my_reservations_path, alert: '예약 시작 30분 전까지만 취소 가능합니다.'
     end

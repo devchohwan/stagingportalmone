@@ -37,6 +37,7 @@ class MakeupReservation < MakeupBase
     when 'pending' then '승인 대기'
     when 'active' then '수업 대기'
     when 'cancelled' then '취소됨'
+    when 'rejected' then '거절됨'
     when 'completed' then '완료'
     when 'no_show' then '노쇼'
     else status

@@ -90,7 +90,34 @@
               options_for_select(@teachers), 
               { prompt: "선생님을 선택하세요" }, 
               class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
-              required: true %>
+              required: true,
+              onchange: "toggleOnlineVerification(this.value)" %>
+        </div>
+      </div>
+
+      <!-- 온라인 수강생 인증 섹션 -->
+      <div id="online-verification-section" class="hidden space-y-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 class="text-sm font-semibold text-blue-900 mb-2">온라인 수강생 인증 방법</h3>
+          <p class="text-sm text-gray-800 mb-3">
+            <a href="https://www.didisam.com/personal/classes?page_size=10&page=1" target="_blank" class="underline font-semibold text-blue-600">이 링크</a>를 눌러서 아래 이미지처럼 이미지를 캡쳐해 첨부해주세요
+          </p>
+          
+          <!-- 예시 이미지 -->
+          <div class="mb-4">
+            <p class="text-xs text-gray-600 mb-2">예시 이미지:</p>
+            <img src="/images/didi_example.jpg" alt="디디샘 수강 내역 예시" class="w-full max-w-md border border-gray-300 rounded-lg shadow-sm">
+          </div>
+          
+          <!-- 파일 업로드 -->
+          <div>
+            <%= f.label :online_verification_image, "수강 인증 스크린샷", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <%= f.file_field :online_verification_image, 
+                accept: "image/*",
+                class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
+                id: "online-verification-image" %>
+            <p class="text-xs text-gray-500 mt-1">* JPG, PNG 형식의 이미지 파일만 업로드 가능합니다.</p>
+          </div>
         </div>
       </div>
       
@@ -237,8 +264,34 @@ function verifyCode() {
   });
 }
 
+// 온라인 선생님 선택 시 인증 섹션 표시/숨김
+function toggleOnlineVerification(value) {
+  const onlineSection = document.getElementById('online-verification-section');
+  const imageInput = document.getElementById('online-verification-image');
+  
+  if (value === '온라인') {
+    onlineSection.style.display = 'block';
+    imageInput.setAttribute('required', 'required');
+  } else {
+    onlineSection.style.display = 'none';
+    imageInput.removeAttribute('required');
+    imageInput.value = ''; // 파일 선택 초기화
+  }
+}
+
 // 폼 제출 시 인증 확인 (선택사항)
 document.addEventListener('DOMContentLoaded', function() {
+  // 페이지 로드 시 온라인 인증 섹션 초기 상태 설정
+  const onlineSection = document.getElementById('online-verification-section');
+  if (onlineSection) {
+    onlineSection.style.display = 'none';
+  }
+  
+  const teacherSelect = document.querySelector('[name="teacher"]');
+  if (teacherSelect) {
+    toggleOnlineVerification(teacherSelect.value);
+  }
+  
   const form = document.querySelector('form');
   if (form) {
     form.addEventListener('submit', function(e) {
@@ -247,6 +300,16 @@ document.addEventListener('DOMContentLoaded', function() {
       //   e.preventDefault();
       //   alert('전화번호 인증을 완료해주세요.');
       // }
+      
+      // 온라인 수강생인 경우 이미지 필수 확인
+      const teacherSelect = document.querySelector('[name="teacher"]');
+      const imageInput = document.getElementById('online-verification-image');
+      
+      if (teacherSelect && teacherSelect.value === '온라인' && !imageInput.files.length) {
+        e.preventDefault();
+        alert('온라인 수강생은 수강 인증 스크린샷을 반드시 첨부해야 합니다.');
+        imageInput.focus();
+      }
     });
   }
 });

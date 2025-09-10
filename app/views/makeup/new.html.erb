@@ -316,6 +316,31 @@
     align-items: center;
   }
   
+  .room-btn.pending {
+    cursor: not-allowed;
+    background-color: #fffbeb;
+    border-color: #fbbf24;
+    opacity: 0.8;
+  }
+  
+  .status-pending {
+    font-size: 0.75rem;
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  .status-available {
+    font-size: 0.75rem;
+    background-color: #dcfce7;
+    color: #166534;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
   .status-unavailable {
     font-size: 0.75rem;
     background-color: #fee2e2;
@@ -629,6 +654,13 @@ window.confirmMakeupReservation = function() {
     return true;
   }
   return false;
+};
+
+// 승인 대기 중 메시지 표시 함수
+window.showPendingMessage = function() {
+  alert('⏳ 예약 승인중인 자리입니다.\n\n' +
+        '관리자 승인 후 예약이 확정되므로\n' +
+        '다른 좌석을 선택해주세요.');
 };
 
 // 전역 함수로 등록

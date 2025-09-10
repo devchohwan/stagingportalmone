@@ -26,9 +26,9 @@ class Admin::DashboardController < ApplicationController
   def users
     @tab = params[:tab] || 'approved'
     
-    @pending_users = User.pending.to_a
-    @on_hold_users = User.on_hold.to_a
-    @approved_users = User.approved.to_a  # admin 포함 모든 승인된 사용자
+    @pending_users = User.pending.select(:id, :username, :name, :phone, :teacher, :created_at, :status, :online_verification_image).to_a
+    @on_hold_users = User.on_hold.select(:id, :username, :name, :phone, :teacher, :created_at, :status, :online_verification_image).to_a
+    @approved_users = User.approved.select(:id, :username, :name, :phone, :teacher, :created_at, :status, :is_admin, :online_verification_image).to_a  # admin 포함 모든 승인된 사용자
     
     # 페널티가 있는 사용자 - 연습실과 보충수업 모두 포함
     practice_penalties = User.approved.select { |u| 
@@ -136,8 +136,21 @@ class Admin::DashboardController < ApplicationController
   # 사용자 거부/삭제
   def reject_practice_user
     user = User.find(params[:id])
-    user.destroy
-    redirect_to admin_users_path(tab: params[:from_tab] || 'pending'), notice: "사용자가 삭제되었습니다."
+    
+    # 연관된 데이터 먼저 삭제
+    begin
+      user.penalties.destroy_all if user.penalties.exists?
+      user.reservations.destroy_all if user.reservations.exists?
+      user.makeup_lessons.destroy_all if user.makeup_lessons.exists?
+      user.makeup_reservations.destroy_all if user.makeup_reservations.exists?
+    rescue => e
+      Rails.logger.error "Error deleting associated records: #{e.message}"
+    end
+    
+    # 사용자 삭제
+    user.delete # destroy 대신 delete 사용으로 콜백 스킵
+    
+    head :ok
   end
   
   # 사용자 보류
@@ -265,6 +278,7 @@ class Admin::DashboardController < ApplicationController
       'teacher' => user.teacher,
       'status' => user.status,
       'created_at' => user.created_at.to_s,
+      'online_verification_image' => user.online_verification_image,
       'no_show_count' => penalty.no_show_count,
       'cancel_count' => penalty.cancel_count,
       'is_blocked' => penalty.is_blocked

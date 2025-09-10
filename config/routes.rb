@@ -65,6 +65,7 @@ Rails.application.routes.draw do
     resources :reservations, only: [:index, :destroy] do
       collection do
         get :content
+        post :bulk_delete
       end
       member do
         patch :update_status

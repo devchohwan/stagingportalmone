@@ -332,7 +332,11 @@
                 <% when '완료', 'completed' %>
                   <span class="status-badge status-completed">완료</span>
                 <% when 'cancelled' %>
-                  <span class="status-badge status-cancelled">취소</span>
+                  <% if reservation.cancelled_by == 'admin' %>
+                    <span class="status-badge status-cancelled">거절됨</span>
+                  <% else %>
+                    <span class="status-badge status-cancelled">취소</span>
+                  <% end %>
                 <% when 'no_show' %>
                   <span class="status-badge status-no-show">노쇼</span>
                 <% else %>

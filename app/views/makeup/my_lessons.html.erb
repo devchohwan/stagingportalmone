@@ -277,7 +277,8 @@
                 ['승인 대기', 'pending'],
                 ['수업 대기', 'active'],
                 ['완료', 'completed'],
-                ['취소/거절', 'cancelled'],
+                ['취소', 'cancelled'],
+                ['거절됨', 'rejected'],
                 ['노쇼', 'no_show']
               ], params[:status]),
               {},
@@ -321,8 +322,10 @@
                   <span class="status-badge status-in-progress">수업 중</span>
                 <% when '완료' %>
                   <span class="status-badge status-completed">완료</span>
-                <% when '취소' %>
-                  <span class="status-badge status-cancelled">취소</span>
+                <% when '취소됨' %>
+                  <span class="status-badge status-cancelled">취소됨</span>
+                <% when '거절됨' %>
+                  <span class="status-badge status-rejected">거절됨</span>
                 <% when '거절됨' %>
                   <span class="status-badge status-rejected">거절됨</span>
                 <% when '노쇼' %>
@@ -337,6 +340,7 @@
               <div class="cancel-section">
                 <%= link_to "예약 취소", cancel_makeup_lesson_path(reservation), 
                             data: { 
+                              turbo: false,
                               turbo_method: :patch,
                               reservation_date: reservation.start_time.strftime('%Y년 %m월 %d일'),
                               reservation_time: "#{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}",
@@ -382,8 +386,10 @@ if (!window.makeupCancelListenerAdded) {
       const confirmMessage = `예약 정보\n\n날짜: ${date}\n시간: ${time}\n좌석: ${room}\n\n예약을 취소하시겠습니까?`;
       
       // Show confirm dialog
-      if (confirm(confirmMessage)) {
-        // If user confirms, proceed with the cancellation
+      const userConfirmed = confirm(confirmMessage);
+      
+      if (userConfirmed === true) {
+        // If user confirms (확인 버튼), proceed with the cancellation
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = button.href;
@@ -405,6 +411,9 @@ if (!window.makeupCancelListenerAdded) {
         form.appendChild(methodInput);
         document.body.appendChild(form);
         form.submit();
+      } else {
+        // User clicked cancel (취소 버튼) - do nothing
+        console.log('예약 취소가 취소되었습니다.');
       }
     });
   });

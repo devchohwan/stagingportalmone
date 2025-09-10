@@ -338,6 +338,28 @@
     color: #5a67d8;
   }
   
+  .verification-img-btn {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .verification-img-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+  }
+  
+  .verification-none {
+    color: #9ca3af;
+    font-size: 0.8rem;
+  }
+  
   .penalty-count {
     font-size: 1.2rem;
     font-weight: bold;
@@ -369,6 +391,155 @@
   .empty-state-text {
     font-size: 1.1rem;
     font-weight: 500;
+  }
+  
+  /* 320px 모바일 최적화 */
+  @media (max-width: 320px) {
+    .users-container {
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .users-header {
+      padding: 16px;
+    }
+    
+    .users-title {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+    
+    .tab-nav {
+      gap: 4px;
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .tab-btn {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+    
+    .search-filters {
+      gap: 8px;
+    }
+    
+    .search-input {
+      min-width: 100%;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+    
+    .filter-select {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+    
+    .users-content {
+      padding: 16px;
+      overflow-x: auto;
+    }
+    
+    .users-table {
+      min-width: 600px;
+      font-size: 0.8rem;
+    }
+    
+    .table-header th {
+      padding: 10px 8px;
+      font-size: 0.7rem;
+    }
+    
+    .user-row td {
+      padding: 10px 8px;
+      font-size: 0.8rem;
+    }
+    
+    .user-name {
+      font-size: 0.85rem;
+    }
+    
+    .admin-badge {
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 8px;
+      margin-left: 4px;
+    }
+    
+    .phone-input {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      width: 90px;
+      margin-right: 4px;
+      border-radius: 4px;
+    }
+    
+    .phone-update-btn {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+    }
+    
+    .teacher-select {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+    }
+    
+    .status-badge {
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      border-radius: 8px;
+    }
+    
+    .system-badge {
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      border-radius: 6px;
+    }
+    
+    .action-btn {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      margin-right: 4px;
+    }
+    
+    .btn-text {
+      font-size: 0.75rem;
+      padding: 3px 6px;
+    }
+    
+    .penalty-count {
+      font-size: 1rem;
+    }
+    
+    .verification-img-btn {
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+    }
+    
+    .verification-none {
+      font-size: 0.7rem;
+    }
+    
+    .empty-state {
+      padding: 40px 16px;
+    }
+    
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+    
+    .empty-state-text {
+      font-size: 0.95rem;
+    }
   }
 </style>
 
@@ -414,6 +585,7 @@
               <th>전화번호</th>
               <th>담당</th>
               <th>가입일</th>
+              <th>인증</th>
               <th>상태</th>
               <th>작업</th>
             </tr>
@@ -441,6 +613,15 @@
                   </select>
                 </td>
                 <td style="font-size: 0.8rem; color: #6b7280;"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+                <td>
+                  <% if user['teacher'] == '온라인' && user['online_verification_image'].present? %>
+                    <button onclick="window.open('<%= user['online_verification_image'] %>', '_blank')" class="verification-img-btn">이미지 보기</button>
+                  <% elsif user['teacher'] == '온라인' %>
+                    <span class="verification-none">미제출</span>
+                  <% else %>
+                    <span class="verification-none">-</span>
+                  <% end %>
+                </td>
                 <td>
                   <span class="status-badge status-waiting">대기중</span>
                 </td>
@@ -475,6 +656,7 @@
               <th>전화번호</th>
               <th>담당</th>
               <th>가입일</th>
+              <th>인증</th>
               <th>상태</th>
               <th>작업</th>
             </tr>
@@ -502,6 +684,15 @@
                   </select>
                 </td>
                 <td style="font-size: 0.8rem; color: #6b7280;"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+                <td>
+                  <% if user['teacher'] == '온라인' && user['online_verification_image'].present? %>
+                    <button onclick="window.open('<%= user['online_verification_image'] %>', '_blank')" class="verification-img-btn">이미지 보기</button>
+                  <% elsif user['teacher'] == '온라인' %>
+                    <span class="verification-none">미제출</span>
+                  <% else %>
+                    <span class="verification-none">-</span>
+                  <% end %>
+                </td>
                 <td>
                   <span class="status-badge status-hold">보류중</span>
                 </td>

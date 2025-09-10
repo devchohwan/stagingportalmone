@@ -218,6 +218,125 @@
     display: none !important;
   }
   
+  /* 320px 모바일 최적화 */
+  @media (max-width: 320px) {
+    .admin-container {
+      padding: 16px 12px;
+      min-height: 100vh;
+    }
+    
+    .admin-header {
+      margin-bottom: 24px;
+    }
+    
+    .admin-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    
+    .admin-subtitle {
+      font-size: 0.85rem;
+      color: #718096;
+    }
+    
+    .admin-nav {
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+    }
+    
+    .nav-tabs {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .nav-tab {
+      font-size: 0.9rem;
+      padding: 10px 14px;
+      border-radius: 6px;
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .dashboard-section {
+      padding: 16px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+    }
+    
+    .section-title {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      gap: 6px;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      padding: 16px;
+      border-radius: 10px;
+    }
+    
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+    
+    .stat-label {
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+    }
+    
+    .stat-value {
+      font-size: 1.4rem;
+    }
+    
+    .summary-card {
+      padding: 16px;
+      margin-top: 16px;
+      border-radius: 10px;
+    }
+    
+    .summary-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .summary-item {
+      padding: 8px;
+    }
+    
+    .summary-label {
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+    }
+    
+    .summary-value {
+      font-size: 1.1rem;
+    }
+    
+    .tab-content {
+      padding: 16px;
+      min-height: 300px;
+      border-radius: 10px;
+    }
+    
+    .back-link {
+      font-size: 0.85rem;
+      padding: 10px 16px;
+      margin-top: 20px;
+      border-radius: 6px;
+    }
+  }
+  
   @media (max-width: 480px) {
     .admin-title {
       font-size: 1.4rem;
@@ -316,7 +435,7 @@
           👥 회원 현황
         </h2>
         <div class="stats-grid">
-          <div class="stat-card clickable" onclick="switchToTab('users', 'pending')">
+          <div class="stat-card clickable" onclick="switchToTab('users', 'waiting')">
             <div class="stat-icon stat-users">⏳</div>
             <div class="stat-label">승인 대기</div>
             <div class="stat-value"><%= @total_pending_users || 0 %></div>
@@ -352,12 +471,12 @@
           📚 보충수업 예약 현황
         </h2>
         <div class="stats-grid">
-          <div class="stat-card">
+          <div class="stat-card clickable" onclick="switchToTab('reservations', 'makeup')">
             <div class="stat-icon stat-makeup">📝</div>
             <div class="stat-label">오늘 보충수업 예약</div>
             <div class="stat-value"><%= @makeup_todays_reservations || 0 %></div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card clickable" onclick="switchToTab('reservations', 'makeup')">
             <div class="stat-icon stat-makeup">✏️</div>
             <div class="stat-label">진행중인 보충수업 예약</div>
             <div class="stat-value"><%= @makeup_active_reservations || 0 %></div>
@@ -419,6 +538,53 @@
   if (typeof window.adminFunctionsInitialized === 'undefined') {
     window.adminFunctionsInitialized = true;
     
+    // 필터 상태 저장 및 복원 기능
+    window.saveFilters = function(type) {
+      if (type === 'users') {
+        const searchInput = document.getElementById('user-search');
+        if (searchInput) {
+          sessionStorage.setItem('admin_users_search', searchInput.value);
+          sessionStorage.setItem('admin_users_tab', window.currentUsersTab || 'approved');
+        }
+      } else if (type === 'reservations') {
+        const searchInput = document.getElementById('reservation-search');
+        const statusFilter = document.getElementById('reservation-status');
+        const dateFilter = document.getElementById('reservation-date');
+        
+        if (searchInput) sessionStorage.setItem('admin_reservations_search', searchInput.value);
+        if (statusFilter) sessionStorage.setItem('admin_reservations_status', statusFilter.value);
+        if (dateFilter) sessionStorage.setItem('admin_reservations_date', dateFilter.value);
+        sessionStorage.setItem('admin_reservations_service', window.currentReservationService || 'practice');
+      }
+    };
+    
+    window.restoreFilters = function(type) {
+      if (type === 'users') {
+        const savedSearch = sessionStorage.getItem('admin_users_search');
+        const searchInput = document.getElementById('user-search');
+        if (searchInput && savedSearch) {
+          searchInput.value = savedSearch;
+          window.searchUsers();
+        }
+      } else if (type === 'reservations') {
+        const savedSearch = sessionStorage.getItem('admin_reservations_search');
+        const savedStatus = sessionStorage.getItem('admin_reservations_status');
+        const savedDate = sessionStorage.getItem('admin_reservations_date');
+        
+        const searchInput = document.getElementById('reservation-search');
+        const statusFilter = document.getElementById('reservation-status');
+        const dateFilter = document.getElementById('reservation-date');
+        
+        if (searchInput && savedSearch) searchInput.value = savedSearch;
+        if (statusFilter && savedStatus) statusFilter.value = savedStatus;
+        if (dateFilter && savedDate) dateFilter.value = savedDate;
+        
+        if (savedSearch || savedStatus || savedDate) {
+          window.filterReservations();
+        }
+      }
+    };
+    
     // 탭 전환 함수
     window.switchToTab = function(tab, subtab) {
       // 네비게이션 탭 업데이트
@@ -439,7 +605,7 @@
     
     // 회원 관리 탭 로드
     window.loadUsersTab = function(tab) {
-      if (!tab) tab = window.currentUsersTab || 'approved';
+      if (!tab) tab = sessionStorage.getItem('admin_users_tab') || window.currentUsersTab || 'approved';
       const contentArea = document.getElementById('users-content-area');
       if (!contentArea) return;
       
@@ -451,6 +617,8 @@
         .then(response => response.text())
         .then(html => {
           contentArea.innerHTML = html;
+          // 필터 복원
+          setTimeout(() => window.restoreFilters('users'), 100);
         })
         .catch(error => {
           console.error('Error loading users:', error);
@@ -460,7 +628,7 @@
     
     // 예약 관리 탭 로드
     window.loadReservationsTab = function(service) {
-      if (!service) service = window.currentReservationService || 'practice';
+      if (!service) service = sessionStorage.getItem('admin_reservations_service') || window.currentReservationService || 'practice';
       const contentArea = document.getElementById('reservations-content-area');
       if (!contentArea) return;
       
@@ -472,6 +640,8 @@
         .then(response => response.text())
         .then(html => {
           contentArea.innerHTML = html;
+          // 필터 복원
+          setTimeout(() => window.restoreFilters('reservations'), 100);
           
           // 예약 관리 관련 함수들을 전역에 등록
           window.searchReservations = function() {
@@ -616,6 +786,7 @@
     // 사용자 관리 함수들
     window.holdUser = function(userId, system) {
       if(confirm('이 사용자를 보류하시겠습니까?')) {
+        window.saveFilters('users'); // 필터 상태 저장
         const url = system === 'makeup' ? `/admin/makeup/users/${userId}/hold` : `/admin/practice/users/${userId}/hold`;
         fetch(url, {
           method: 'PATCH',
@@ -624,13 +795,14 @@
             'Content-Type': 'application/json'
           }
         }).then(() => {
-          window.changeTab(getCurrentTab());
+          window.loadUsersTab(); // 탭 재로드 (필터 자동 복원)
         });
       }
     };
 
     window.approveUser = function(userId, system) {
       if(confirm('이 사용자를 승인하시겠습니까?')) {
+        window.saveFilters('users');
         const url = system === 'makeup' ? `/admin/makeup/users/${userId}/approve` : `/admin/practice/users/${userId}/approve`;
         fetch(url, {
           method: 'PATCH',
@@ -639,13 +811,14 @@
             'Content-Type': 'application/json'
           }
         }).then(() => {
-          window.changeTab(getCurrentTab());
+          window.loadUsersTab();
         });
       }
     };
 
     window.rejectUser = function(userId, system) {
       if(confirm('이 사용자를 거부/삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        window.saveFilters('users');
         const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reject` : `/admin/practice/users/${userId}/reject`;
         fetch(url, {
           method: 'PATCH',
@@ -654,13 +827,14 @@
             'Content-Type': 'application/json'
           }
         }).then(() => {
-          window.changeTab(getCurrentTab());
+          window.loadUsersTab();
         });
       }
     };
 
     window.deleteUser = function(userId, system) {
       if(confirm('정말 삭제하시겠습니까?')) {
+        window.saveFilters('users');
         const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reject` : `/admin/practice/users/${userId}/reject`;
         fetch(url, {
           method: 'PATCH',
@@ -669,7 +843,7 @@
             'Content-Type': 'application/json'
           }
         }).then(() => {
-          window.changeTab(getCurrentTab());
+          window.loadUsersTab();
         });
       }
     };
@@ -689,6 +863,7 @@
     window.resetPassword = function(userId, username, system) {
       const newPassword = prompt(`${username}의 새 비밀번호를 입력하세요 (최소 6자):`);
       if (newPassword && newPassword.length >= 6) {
+        window.saveFilters('users');
         const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reset_password` : `/admin/practice/users/${userId}/reset_password`;
         fetch(url, {
           method: 'PATCH',
@@ -699,6 +874,7 @@
           body: JSON.stringify({ password: newPassword })
         }).then(() => {
           alert('비밀번호가 재설정되었습니다.');
+          // 비밀번호 재설정은 페이지 새로고침이 필요없음
         });
       } else if (newPassword) {
         alert('비밀번호는 최소 6자 이상이어야 합니다.');
@@ -749,6 +925,7 @@
 
     // 예약 관리 함수들
     window.updateReservationStatus = function(reservationId, status, service) {
+      window.saveFilters('reservations'); // 필터 상태 저장
       fetch(`/admin/reservations/${reservationId}/update_status`, {
         method: 'PATCH',
         headers: {
@@ -759,7 +936,7 @@
         body: JSON.stringify({ status: status, service: service })
       }).then(response => {
         if (response.ok) {
-          window.loadReservationsTab(service);
+          window.loadReservationsTab(service); // 필터 자동 복원
         } else {
           alert('상태 변경에 실패했습니다.');
         }
@@ -771,6 +948,7 @@
 
     window.deleteReservation = function(reservationId, service) {
       if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
+        window.saveFilters('reservations');
         fetch(`/admin/reservations/${reservationId}`, {
           method: 'DELETE',
           headers: {
@@ -808,6 +986,9 @@
         
         row.style.display = matchSearch ? '' : 'none';
       });
+      
+      // 검색 상태 저장
+      sessionStorage.setItem('admin_users_search', searchTerm);
     };
   }
   

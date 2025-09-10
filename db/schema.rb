@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_09_192855) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_10_052416) do
   create_table "makeup_availabilities", force: :cascade do |t|
     t.string "teacher_name", null: false
     t.integer "day_of_week"
@@ -157,6 +157,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_09_192855) do
     t.string "teacher"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "online_verification_image"
     t.index ["email"], name: "index_users_on_email"
     t.index ["status"], name: "index_users_on_status"
     t.index ["username"], name: "index_users_on_username", unique: true

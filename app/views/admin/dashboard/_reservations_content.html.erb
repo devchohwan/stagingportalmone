@@ -28,6 +28,70 @@
     border-radius: 10px;
   }
   
+  /* 체크박스 관련 스타일 */
+  .checkbox-column {
+    width: 40px;
+    text-align: center;
+  }
+  
+  .bulk-actions {
+    display: none;
+    background: #f8fafc;
+    padding: 15px 25px;
+    border-bottom: 1px solid #e2e8f0;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .bulk-actions.show {
+    display: flex;
+  }
+  
+  .selected-count {
+    color: #4a5568;
+    font-weight: 600;
+  }
+  
+  .bulk-delete-btn {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .bulk-delete-btn:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+  }
+  
+  .bulk-cancel-btn {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .bulk-cancel-btn:hover {
+    background: #4b5563;
+  }
+  
+  .reservation-checkbox, .select-all-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #f093fb;
+    cursor: pointer;
+  }
+  
   .service-btn {
     padding: 10px 16px;
     border-radius: 6px;
@@ -310,6 +374,132 @@
     font-weight: 500;
   }
   
+  /* 320px 모바일 최적화 */
+  @media (max-width: 320px) {
+    .reservations-container {
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .reservations-header {
+      padding: 16px;
+    }
+    
+    .reservations-title {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+    
+    .service-nav {
+      gap: 4px;
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .service-btn {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+    
+    .filters-container {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    
+    .search-input {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      width: 100%;
+    }
+    
+    .filter-select {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      min-width: 100%;
+    }
+    
+    .filter-btn {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+    
+    .btn-reset {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+    }
+    
+    .reservations-content {
+      padding: 16px;
+      overflow-x: auto;
+    }
+    
+    .reservations-table {
+      min-width: 700px;
+      font-size: 0.8rem;
+    }
+    
+    .table-header th {
+      padding: 10px 8px;
+      font-size: 0.7rem;
+    }
+    
+    .reservation-row td {
+      padding: 10px 8px;
+      font-size: 0.8rem;
+    }
+    
+    .user-name {
+      font-size: 0.85rem;
+    }
+    
+    .room-badge {
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      border-radius: 8px;
+    }
+    
+    .status-badge {
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      border-radius: 8px;
+    }
+    
+    .time-info {
+      font-size: 0.75rem;
+    }
+    
+    .action-btn {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      margin-right: 4px;
+    }
+    
+    .status-select {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+    }
+    
+    .empty-state {
+      padding: 40px 16px;
+    }
+    
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+    
+    .empty-state-text {
+      font-size: 0.95rem;
+    }
+  }
+  
   @media (max-width: 1024px) {
     .filters-container {
       grid-template-columns: 1fr;
@@ -371,7 +561,8 @@
           <option value="pending">승인 대기</option>
           <option value="active">수업 대기</option>
           <option value="completed">완료</option>
-          <option value="cancelled">거절됨</option>
+          <option value="rejected">거절됨</option>
+          <option value="cancelled">취소</option>
           <option value="no_show">노쇼</option>
         <% else %>
           <option value="pending">대기</option>
@@ -398,11 +589,21 @@
     </div>
   </div>
 
+  <!-- 일괄 작업 영역 -->
+  <div id="bulk-actions" class="bulk-actions">
+    <span id="selected-count" class="selected-count">0개 선택됨</span>
+    <button onclick="bulkDeleteReservations()" class="bulk-delete-btn">선택된 예약 삭제</button>
+    <button onclick="cancelBulkSelection()" class="bulk-cancel-btn">선택 취소</button>
+  </div>
+
   <div class="reservations-content">
     <% if reservations && reservations.any? %>
       <table class="reservations-table">
         <thead class="table-header">
           <tr>
+            <th class="checkbox-column">
+              <input type="checkbox" id="select-all" class="select-all-checkbox" onchange="toggleSelectAll()">
+            </th>
             <th>이름</th>
             <th>아이디</th>
             <th><%= service_type == 'makeup' ? '담당' : '연습실' %></th>
@@ -421,6 +622,12 @@
                 data-status="<%= reservation.status %>"
                 data-date="<%= reservation.start_time&.strftime('%Y-%m-%d') || '' %>">
               
+              <td class="checkbox-column">
+                <input type="checkbox" class="reservation-checkbox" 
+                       value="<%= reservation.id %>" 
+                       data-service="<%= service_type %>"
+                       onchange="updateBulkActions()">
+              </td>
               <td><span class="user-name"><%= reservation.user.name %></span></td>
               <td><%= reservation.user.username %></td>
               <td>
@@ -460,11 +667,9 @@
                   <% when 'completed' %>
                     <span class="status-badge status-completed">완료</span>
                   <% when 'cancelled' %>
-                    <% if reservation.cancelled_by == 'admin' %>
-                      <span class="status-badge status-rejected">거절됨</span>
-                    <% else %>
-                      <span class="status-badge status-cancelled">취소</span>
-                    <% end %>
+                    <span class="status-badge status-cancelled">취소</span>
+                  <% when 'rejected' %>
+                    <span class="status-badge status-rejected">거절됨</span>
                   <% when 'no_show' %>
                     <span class="status-badge status-no-show">노쇼</span>
                   <% else %>
@@ -502,7 +707,8 @@
                       <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>승인 대기</option>
                       <option value="active" <%= 'selected' if reservation.status == 'active' %>>수업 대기</option>
                       <option value="completed" <%= 'selected' if reservation.status == 'completed' %>>완료</option>
-                      <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>><%= reservation.cancelled_by == 'admin' ? '거절됨' : '취소' %></option>
+                      <option value="rejected" <%= 'selected' if reservation.status == 'rejected' %>>거절됨</option>
+                      <option value="cancelled" <%= 'selected' if reservation.status == 'cancelled' %>>취소</option>
                       <option value="no_show" <%= 'selected' if reservation.status == 'no_show' %>>노쇼</option>
                     <% else %>
                       <option value="pending" <%= 'selected' if reservation.status == 'pending' %>>대기</option>
@@ -532,6 +738,122 @@
 
 <script>
 (function() {
+  // 일괄 선택 관련 함수들
+  window.toggleSelectAll = function() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.reservation-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    updateBulkActions();
+  };
+  
+  window.updateBulkActions = function() {
+    const checkboxes = document.querySelectorAll('.reservation-checkbox');
+    const checkedBoxes = document.querySelectorAll('.reservation-checkbox:checked');
+    const bulkActions = document.getElementById('bulk-actions');
+    const selectedCount = document.getElementById('selected-count');
+    const selectAllCheckbox = document.getElementById('select-all');
+    
+    if (checkedBoxes.length > 0) {
+      bulkActions.classList.add('show');
+      selectedCount.textContent = `${checkedBoxes.length}개 선택됨`;
+    } else {
+      bulkActions.classList.remove('show');
+    }
+    
+    // 전체 선택 체크박스 상태 업데이트
+    if (checkedBoxes.length === checkboxes.length && checkboxes.length > 0) {
+      selectAllCheckbox.checked = true;
+      selectAllCheckbox.indeterminate = false;
+    } else if (checkedBoxes.length > 0) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = true;
+    } else {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    }
+  };
+  
+  window.cancelBulkSelection = function() {
+    const checkboxes = document.querySelectorAll('.reservation-checkbox');
+    const selectAllCheckbox = document.getElementById('select-all');
+    
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+    
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+    
+    updateBulkActions();
+  };
+  
+  window.bulkDeleteReservations = function() {
+    const checkedBoxes = document.querySelectorAll('.reservation-checkbox:checked');
+    
+    if (checkedBoxes.length === 0) {
+      alert('삭제할 예약을 선택해주세요.');
+      return;
+    }
+    
+    const confirmMessage = `선택된 ${checkedBoxes.length}개의 예약을 삭제하시거삀습니까?\n이 작업은 되돌릴 수 없습니다.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    // 선택된 예약 ID들과 서비스 타입 수집
+    const reservationIds = [];
+    const serviceTypes = [];
+    
+    checkedBoxes.forEach(checkbox => {
+      reservationIds.push(parseInt(checkbox.value));
+      serviceTypes.push(checkbox.getAttribute('data-service'));
+    });
+    
+    // 서비스 타입이 동일한지 확인
+    const uniqueServiceTypes = [...new Set(serviceTypes)];
+    if (uniqueServiceTypes.length > 1) {
+      alert('서로 다른 서비스의 예약을 동시에 삭제할 수 없습니다.');
+      return;
+    }
+    
+    const serviceType = uniqueServiceTypes[0];
+    
+    // 서버로 일괄 삭제 요청 전송
+    fetch('/admin/reservations/bulk_delete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        reservation_ids: reservationIds,
+        service: serviceType
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(`${data.deleted_count}개의 예약이 삭제되었습니다.`);
+        // 페이지 새로고침
+        if (window.loadReservationsTab) {
+          window.loadReservationsTab(serviceType);
+        } else {
+          location.reload();
+        }
+      } else {
+        alert('삭제 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
+      }
+    })
+    .catch(error => {
+      console.error('Bulk delete error:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    });
+  };
   // 검색 기능
   window.searchReservations = function() {
     const searchInput = document.getElementById('reservation-search');
