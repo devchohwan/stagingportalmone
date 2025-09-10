@@ -18,9 +18,9 @@ if [ -f "$BACKUP_DIR/production_$DATE.sqlite3" ]; then
     FILE_SIZE=$(ls -lh $BACKUP_DIR/production_$DATE.sqlite3 | awk '{print $5}')
     echo "Backup completed: production_$DATE.sqlite3 ($FILE_SIZE)"
     
-    # 30일 이상 된 백업 삭제
-    find $BACKUP_DIR -name "production_*.sqlite3" -mtime +30 -delete
-    echo "Old backups cleaned up (older than 30 days)"
+    # 2일 이상 된 백업 삭제
+    find $BACKUP_DIR -name "production_*.sqlite3" -mtime +2 -delete
+    echo "Old backups cleaned up (older than 2 days)"
 else
     echo "Backup failed!"
     exit 1
