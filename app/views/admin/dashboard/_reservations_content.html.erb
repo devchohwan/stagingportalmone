@@ -942,8 +942,11 @@
     });
   };
 
-  // 상태 업데이트
+  // 상태 업데이트 (Turbo 방식)
   window.updateReservationStatus = function(reservationId, status, service) {
+    const selectElement = event.target;
+    const originalValue = selectElement.value;
+    
     fetch(`/admin/reservations/${reservationId}/update_status`, {
       method: 'PATCH',
       headers: {
@@ -954,13 +957,40 @@
       body: JSON.stringify({ status: status, service: service })
     }).then(response => {
       if (response.ok) {
-        window.loadReservationsTab(service);
+        // 상태 뱃지 업데이트
+        const row = selectElement.closest('tr');
+        const statusBadge = row.querySelector('.status-badge');
+        if (statusBadge) {
+          // 상태에 따른 뱃지 클래스 및 텍스트 업데이트
+          const statusTexts = {
+            'pending': '승인 대기',
+            'active': service === 'makeup' ? '수업 대기' : '이용 전',
+            'completed': '완료',
+            'cancelled': '취소',
+            'rejected': '거절됨',
+            'no_show': '노쇼'
+          };
+          
+          // 기존 상태 클래스 제거
+          statusBadge.className = 'status-badge status-' + status;
+          statusBadge.textContent = statusTexts[status] || status;
+        }
+        
+        // 승인/거절 버튼 숨기기 (보충수업이고 pending에서 변경된 경우)
+        if (service === 'makeup' && originalValue === 'pending' && status !== 'pending') {
+          const approveBtn = row.querySelector('.btn-approve');
+          const rejectBtn = row.querySelector('.btn-reject');
+          if (approveBtn) approveBtn.style.display = 'none';
+          if (rejectBtn) rejectBtn.style.display = 'none';
+        }
       } else {
         alert('상태 변경에 실패했습니다.');
+        selectElement.value = originalValue; // 원래 값으로 복구
       }
     }).catch(error => {
       console.error('Error:', error);
       alert('상태 변경에 실패했습니다.');
+      selectElement.value = originalValue; // 원래 값으로 복구
     });
   };
 
