@@ -599,6 +599,13 @@ function showConfirmation() {
   if (endTimeField) endTimeField.value = endDateTime.toISOString();
   if (lessonContentField) lessonContentField.value = lessonContent;
   
+  console.log('Form values set:', {
+    roomId: roomIdField.value,
+    startTime: startTimeField.value,
+    endTime: endTimeField.value,
+    lessonContent: lessonContentField.value
+  });
+  
   // 요약 정보 업데이트
   var dateObj = new Date(selectedDate);
   var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
