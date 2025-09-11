@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Health check endpoint for Kamal
+  get "up", to: proc { [200, {}, ["OK"]] }
+  
   root "services#index"  # 메인 페이지를 services로 변경
   
   get "login", to: "sessions#new"
