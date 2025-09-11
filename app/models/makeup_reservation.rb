@@ -64,4 +64,17 @@ class MakeupReservation < MakeupBase
   def cancellable?
     (status == 'pending' || status == 'active') && start_time > 30.minutes.from_now
   end
+  
+  # 시간에 따른 상태 자동 업데이트 (연습실 로직과 동일)
+  def update_status_by_time!
+    return unless status == 'active'  # pending은 관리자 승인 필요하므로 제외
+    
+    current_time = Time.current.in_time_zone('Asia/Seoul')
+    reservation_end = end_time
+    
+    # active 상태이고 종료 시간이 지났으면 completed로 변경
+    if current_time >= reservation_end
+      update_column(:status, 'completed')
+    end
+  end
 end

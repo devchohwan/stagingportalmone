@@ -3,6 +3,9 @@ class MakeupController < ApplicationController
   before_action :set_reservation, only: [:show, :cancel]
   
   def index
+    # 시간 지난 active 예약들을 completed로 업데이트 (연습실과 동일한 로직)
+    current_user.makeup_reservations.where(status: 'active').each(&:update_status_by_time!)
+    
     @reservations = current_user.makeup_reservations.includes(:makeup_room)
     
     # 상태 필터링
@@ -44,6 +47,12 @@ class MakeupController < ApplicationController
   end
   
   def create
+    # 파라미터 검증
+    if reservation_params[:start_time].blank? || reservation_params[:end_time].blank? || reservation_params[:makeup_room_id].blank?
+      redirect_to makeup_new_path, alert: '예약 정보가 불완전합니다. 날짜, 시간, 좌석을 모두 선택해주세요.'
+      return
+    end
+    
     # 중복 예약 체크
     existing = current_user.makeup_reservations
                           .where(status: ['pending', 'active'])
@@ -122,6 +131,9 @@ class MakeupController < ApplicationController
   end
   
   def my_lessons
+    # 시간 지난 active 예약들을 completed로 업데이트 (연습실과 동일한 로직)
+    current_user.makeup_reservations.where(status: 'active').each(&:update_status_by_time!)
+    
     @reservations = current_user.makeup_reservations.includes(:makeup_room)
     
     # 상태 필터링
