@@ -426,3 +426,173 @@
     <%= render partial: 'users_results' %>
   </div>
 </div>
+
+<script>
+// 사용자 관리 함수들
+function updatePhone(userId, type, system) {
+  const phoneInput = document.getElementById(`phone-${type}-${userId}`);
+  const phone = phoneInput.value;
+  
+  const endpoint = system === 'makeup' ? 
+    `/admin/makeup/users/${userId}/update_info` : 
+    `/admin/practice/users/${userId}/update_info`;
+  
+  fetch(endpoint, {
+    method: 'PATCH',
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ phone: phone })
+  }).then(response => {
+    if(response.ok) {
+      alert('전화번호가 업데이트되었습니다.');
+    } else {
+      alert('전화번호 업데이트에 실패했습니다.');
+    }
+  });
+}
+
+function updateTeacher(userId, teacher, system) {
+  const endpoint = system === 'makeup' ? 
+    `/admin/makeup/users/${userId}/update_teacher` : 
+    `/admin/practice/users/${userId}/update_teacher`;
+    
+  fetch(endpoint, {
+    method: 'PATCH',
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ teacher: teacher })
+  });
+}
+
+function approveUser(userId, system) {
+  if(confirm('이 사용자를 승인하시겠습니까?')) {
+    const endpoint = system === 'makeup' ? 
+      `/admin/makeup/users/${userId}/approve` : 
+      `/admin/practice/users/${userId}/approve`;
+      
+    fetch(endpoint, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function holdUser(userId, system) {
+  if(confirm('이 사용자를 보류하시겠습니까?')) {
+    const endpoint = system === 'makeup' ? 
+      `/admin/makeup/users/${userId}/hold` : 
+      `/admin/practice/users/${userId}/hold`;
+      
+    fetch(endpoint, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function rejectUser(userId, system) {
+  if(confirm('이 사용자를 거부/삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    const endpoint = system === 'makeup' ? 
+      `/admin/makeup/users/${userId}/reject` : 
+      `/admin/practice/users/${userId}/reject`;
+      
+    fetch(endpoint, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function deleteUser(userId, system) {
+  if(confirm('정말 삭제하시겠습니까?')) {
+    const endpoint = system === 'makeup' ? 
+      `/admin/makeup/users/${userId}/reject` : 
+      `/admin/practice/users/${userId}/reject`;
+      
+    fetch(endpoint, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+}
+
+function resetPassword(userId, username, system) {
+  const newPassword = prompt(`${username}의 새 비밀번호를 입력하세요 (최소 6자):`);
+  if (newPassword && newPassword.length >= 6) {
+    const endpoint = system === 'makeup' ? 
+      `/admin/makeup/users/${userId}/reset_password` : 
+      `/admin/practice/users/${userId}/reset_password`;
+      
+    fetch(endpoint, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password: newPassword })
+    }).then(() => {
+      alert('비밀번호가 재설정되었습니다.');
+    });
+  } else if (newPassword) {
+    alert('비밀번호는 최소 6자 이상이어야 합니다.');
+  }
+}
+
+function changePage(page) {
+  const urlParams = new URLSearchParams(window.location.search);
+  urlParams.set('page', page);
+  window.location.search = urlParams.toString();
+}
+
+function resetPenalty(userId, month, year, system) {
+  if(confirm(`${month}월 페널티를 초기화하시겠습니까?`)) {
+    const endpoint = system === 'makeup' ? 
+      `/admin/makeup/penalties/reset` : 
+      `/admin/penalties/reset`;
+      
+    fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        user_id: userId,
+        month: month,
+        year: year,
+        system_type: system || 'practice'
+      })
+    }).then(response => {
+      if(response.ok) {
+        window.location.reload();
+      } else {
+        alert('페널티 초기화에 실패했습니다.');
+      }
+    });
+  }
+}
+</script>

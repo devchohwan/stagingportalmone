@@ -1047,6 +1047,13 @@
     window.deleteReservation = function(reservationId, service) {
       if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
         window.saveFilters('reservations');
+        
+        // 부드러운 삭제를 위해 새로운 함수 사용
+        if (typeof window.deleteReservationSmooth === 'function') {
+          window.deleteReservationSmooth(reservationId, service, { currentTarget: event.currentTarget });
+          return;
+        }
+        
         fetch(`/admin/reservations/${reservationId}`, {
           method: 'DELETE',
           headers: {
@@ -1066,6 +1073,232 @@
           alert('삭제에 실패했습니다.');
         });
       }
+    };
+
+    // 전화번호 업데이트 함수
+    window.updatePhone = function(userId, type, system) {
+      console.log('📞 updatePhone 호출:', userId, type, system);
+      
+      const phoneInput = document.getElementById(`phone-${type}-${userId}`);
+      if (!phoneInput) {
+        console.log('🚫 phone input을 찾을 수 없습니다:', `phone-${type}-${userId}`);
+        return;
+      }
+      
+      const phone = phoneInput.value;
+      console.log('📞 입력된 전화번호:', phone);
+      
+      const endpoint = system === 'makeup' ? 
+        `/admin/makeup/users/${userId}/update_info` : 
+        `/admin/practice/users/${userId}/update_info`;
+      
+      fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phone: phone })
+      }).then(response => {
+        console.log('📞 서버 응답:', response.status);
+        if(response.ok) {
+          alert('전화번호가 업데이트되었습니다.');
+        } else {
+          alert('전화번호 업데이트에 실패했습니다.');
+        }
+      }).catch(error => {
+        console.error('🚫 오류:', error);
+        alert('전화번호 업데이트에 실패했습니다.');
+      });
+    };
+
+    // 부드러운 승인/거절 버튼 함수
+    window.approveReservationSmooth = function(reservationId, service, event) {
+      const button = event ? event.currentTarget : null;
+      const row = button ? button.closest('tr') : null;
+      const selectElement = row ? row.querySelector('select') : null;
+      
+      if (button) {
+        button.disabled = true;
+        button.textContent = '처리중...';
+        button.style.opacity = '0.6';
+      }
+      
+      window.updateReservationStatusSmooth(reservationId, 'active', service, selectElement);
+    };
+    
+    window.rejectReservationSmooth = function(reservationId, service, event) {
+      const button = event ? event.currentTarget : null;
+      const row = button ? button.closest('tr') : null;
+      const selectElement = row ? row.querySelector('select') : null;
+      
+      if (button) {
+        button.disabled = true;
+        button.textContent = '처리중...';
+        button.style.opacity = '0.6';
+      }
+      
+      window.updateReservationStatusSmooth(reservationId, 'rejected', service, selectElement);
+    };
+
+    // 부드러운 삭제 함수 정의
+    window.deleteReservationSmooth = function(reservationId, service, event) {
+      console.log('🔥 deleteReservationSmooth 실행:', reservationId, service);
+      
+      if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
+        const button = event ? event.currentTarget : null;
+        const row = button ? button.closest('tr') : document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
+        
+        if (button) {
+          button.disabled = true;
+          button.textContent = '처리중...';
+          button.style.background = '#9ca3af';
+          button.style.cursor = 'not-allowed';
+        }
+        
+        fetch(`/admin/reservations/${reservationId}`, {
+          method: 'DELETE',
+          headers: {
+            'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ service: service })
+        }).then(response => {
+          if (response.ok) {
+            if (row) {
+              console.log('✨ 행 삭제 애니메이션 시작...');
+              // 부드러운 페이드 아웃 애니메이션
+              row.style.transition = 'all 0.5s ease-out';
+              row.style.opacity = '0';
+              row.style.transform = 'translateX(-20px)';
+              row.style.backgroundColor = '#fee2e2';
+              
+              // 애니메이션 완료 후 행 제거
+              setTimeout(() => {
+                row.remove();
+                console.log('🎉 행이 성공적으로 제거되었습니다!');
+                
+                // 테이블이 비어있으면 empty state 표시
+                const tbody = document.querySelector('.reservations-table tbody');
+                if (tbody && tbody.children.length === 0) {
+                  const tableContainer = document.querySelector('.reservations-content');
+                  if (tableContainer) {
+                    tableContainer.innerHTML = `
+                      <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <div class="empty-state-text">예약이 없습니다</div>
+                      </div>
+                    `;
+                  }
+                }
+              }, 500);
+            } else {
+              // fallback: 페이지 새로고침
+              if (typeof window.loadReservationsTab === 'function') {
+                window.loadReservationsTab(service);
+              }
+            }
+          } else {
+            alert('삭제에 실패했습니다.');
+            if (button) {
+              button.disabled = false;
+              button.textContent = '삭제';
+              button.style.background = '';
+              button.style.cursor = 'pointer';
+            }
+          }
+        }).catch(error => {
+          console.error('Error:', error);
+          alert('삭제에 실패했습니다.');
+          if (button) {
+            button.disabled = false;
+            button.textContent = '삭제';
+            button.style.background = '';
+            button.style.cursor = 'pointer';
+          }
+        });
+      }
+    };
+
+    // 부드러운 상태 업데이트 함수 정의
+    window.updateReservationStatusSmooth = function(reservationId, status, service, selectElement) {
+      console.log('🔄 상태 업데이트:', reservationId, status, service);
+      
+      const originalValue = selectElement.value;
+      const row = selectElement.closest('tr');
+      
+      // 로딩 상태 표시
+      selectElement.disabled = true;
+      selectElement.style.opacity = '0.6';
+      
+      fetch(`/admin/reservations/${reservationId}/update_status`, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ status: status, service: service })
+      }).then(response => {
+        if (response.ok) {
+          // 상태 배지 업데이트
+          const statusBadge = row.querySelector('.status-badge');
+          if (statusBadge) {
+            const statusTexts = {
+              'pending': service === 'makeup' ? '승인 대기' : '대기',
+              'active': service === 'makeup' ? '수업 대기' : '이용 전',
+              'completed': '완료',
+              'cancelled': '취소',
+              'rejected': '거절됨',
+              'no_show': '노쇼'
+            };
+            
+            console.log('✨ 상태 배지 애니메이션 시작...');
+            // 부드러운 전환 애니메이션
+            statusBadge.style.transition = 'all 0.3s ease';
+            statusBadge.style.transform = 'scale(1.1)';
+            
+            setTimeout(() => {
+              statusBadge.className = 'status-badge status-' + status;
+              statusBadge.textContent = statusTexts[status] || status;
+              statusBadge.style.transform = 'scale(1)';
+              console.log('🎯 상태 변경 완료:', statusTexts[status]);
+            }, 150);
+          }
+          
+          // data-status 업데이트
+          row.setAttribute('data-status', status);
+          
+          // 승인/거절 버튼 숨기기 (보충수업이고 pending에서 변경된 경우)
+          if (service === 'makeup' && status !== 'pending') {
+            const approveBtn = row.querySelector('.btn-approve');
+            const rejectBtn = row.querySelector('.btn-reject');
+            if (approveBtn || rejectBtn) {
+              // 부드러운 페이드 아웃
+              [approveBtn, rejectBtn].forEach(btn => {
+                if (btn) {
+                  btn.style.transition = 'all 0.3s ease';
+                  btn.style.opacity = '0';
+                  btn.style.transform = 'scale(0.8)';
+                  setTimeout(() => btn.style.display = 'none', 300);
+                }
+              });
+            }
+          }
+          
+        } else {
+          alert('상태 변경에 실패했습니다.');
+          selectElement.value = originalValue;
+        }
+      }).catch(error => {
+        console.error('Error:', error);
+        alert('상태 변경에 실패했습니다.');
+        selectElement.value = originalValue;
+      }).finally(() => {
+        selectElement.disabled = false;
+        selectElement.style.opacity = '1';
+      });
     };
 
     // 페이지 변경 함수

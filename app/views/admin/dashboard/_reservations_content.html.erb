@@ -28,70 +28,6 @@
     border-radius: 10px;
   }
   
-  /* 체크박스 관련 스타일 */
-  .checkbox-column {
-    width: 40px;
-    text-align: center;
-  }
-  
-  .bulk-actions {
-    display: none;
-    background: #f8fafc;
-    padding: 15px 25px;
-    border-bottom: 1px solid #e2e8f0;
-    align-items: center;
-    gap: 15px;
-  }
-  
-  .bulk-actions.show {
-    display: flex;
-  }
-  
-  .selected-count {
-    color: #4a5568;
-    font-weight: 600;
-  }
-  
-  .bulk-delete-btn {
-    background: #dc2626;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .bulk-delete-btn:hover {
-    background: #b91c1c;
-    transform: translateY(-1px);
-  }
-  
-  .bulk-cancel-btn {
-    background: #6b7280;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .bulk-cancel-btn:hover {
-    background: #4b5563;
-  }
-  
-  .reservation-checkbox, .select-all-checkbox {
-    width: 16px;
-    height: 16px;
-    accent-color: #f093fb;
-    cursor: pointer;
-  }
-  
   .service-btn {
     padding: 10px 16px;
     border-radius: 6px;
@@ -130,12 +66,6 @@
     transition: all 0.3s ease;
   }
   
-  .search-input:focus {
-    outline: none;
-    border-color: #f093fb;
-    box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
-  }
-  
   .filter-select {
     padding: 12px 16px;
     border: 1px solid #e2e8f0;
@@ -146,12 +76,6 @@
     cursor: pointer;
     transition: all 0.3s ease;
     min-width: 120px;
-  }
-  
-  .filter-select:focus {
-    outline: none;
-    border-color: #f093fb;
-    box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
   }
   
   .filter-btn {
@@ -169,20 +93,10 @@
     color: white;
   }
   
-  .filter-btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
-  }
-  
   .filter-btn-secondary {
     background: #f7fafc;
     color: #4a5568;
     border: 1px solid #e2e8f0;
-  }
-  
-  .filter-btn-secondary:hover {
-    background: #edf2f7;
-    color: #2d3748;
   }
   
   .reservations-content {
@@ -210,16 +124,8 @@
     border-bottom: 1px solid #e2e8f0;
   }
   
-  .table-header th:first-child {
-    border-radius: 8px 0 0 0;
-  }
-  
-  .table-header th:last-child {
-    border-radius: 0 8px 0 0;
-  }
-  
   .reservation-row {
-    transition: background-color 0.2s ease;
+    transition: all 0.3s ease;
   }
   
   .reservation-row:hover {
@@ -232,10 +138,6 @@
     font-size: 0.9rem;
   }
   
-  .reservation-row.pending-row {
-    background: #fffbeb;
-  }
-  
   .user-name {
     font-weight: 600;
     color: #2d3748;
@@ -245,10 +147,6 @@
     display: flex;
     align-items: center;
     gap: 6px;
-  }
-  
-  .outlet-icon {
-    font-size: 0.8rem;
   }
   
   .status-badge {
@@ -268,11 +166,6 @@
   .status-active {
     background: #dcfce7;
     color: #166534;
-  }
-  
-  .status-waiting {
-    background: #dbeafe;
-    color: #1e40af;
   }
   
   .status-completed {
@@ -312,7 +205,13 @@
     transition: all 0.3s ease;
   }
   
-  .action-btn:hover {
+  .btn-delete {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .btn-delete:hover {
+    background: #d97706;
     transform: translateY(-1px);
   }
   
@@ -323,6 +222,7 @@
   
   .btn-approve:hover {
     background: #059669;
+    transform: translateY(-1px);
   }
   
   .btn-reject {
@@ -332,15 +232,7 @@
   
   .btn-reject:hover {
     background: #dc2626;
-  }
-  
-  .btn-delete {
-    background: #f59e0b;
-    color: white;
-  }
-  
-  .btn-delete:hover {
-    background: #d97706;
+    transform: translateY(-1px);
   }
   
   .status-select {
@@ -351,11 +243,6 @@
     background: white;
     cursor: pointer;
     transition: all 0.3s ease;
-  }
-  
-  .status-select:focus {
-    outline: none;
-    border-color: #f093fb;
   }
   
   .empty-state {
@@ -373,171 +260,12 @@
     font-size: 1.1rem;
     font-weight: 500;
   }
-  
-  /* 320px 모바일 최적화 */
-  @media (max-width: 320px) {
-    .reservations-container {
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-    
-    .reservations-header {
-      padding: 16px;
-    }
-    
-    .reservations-title {
-      font-size: 1.2rem;
-      margin-bottom: 16px;
-    }
-    
-    .service-nav {
-      gap: 4px;
-      padding: 4px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-    
-    .service-btn {
-      padding: 8px 12px;
-      font-size: 0.8rem;
-      border-radius: 6px;
-    }
-    
-    .filters-container {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    
-    .search-input {
-      padding: 10px 12px;
-      font-size: 0.85rem;
-      border-radius: 6px;
-      width: 100%;
-    }
-    
-    .filter-select {
-      padding: 10px 12px;
-      font-size: 0.85rem;
-      border-radius: 6px;
-      min-width: 100%;
-    }
-    
-    .filter-btn {
-      padding: 10px 16px;
-      font-size: 0.85rem;
-      border-radius: 6px;
-    }
-    
-    .btn-reset {
-      padding: 10px 16px;
-      font-size: 0.85rem;
-    }
-    
-    .reservations-content {
-      padding: 16px;
-      overflow-x: auto;
-    }
-    
-    .reservations-table {
-      min-width: 700px;
-      font-size: 0.8rem;
-    }
-    
-    .table-header th {
-      padding: 10px 8px;
-      font-size: 0.7rem;
-    }
-    
-    .reservation-row td {
-      padding: 10px 8px;
-      font-size: 0.8rem;
-    }
-    
-    .user-name {
-      font-size: 0.85rem;
-    }
-    
-    .room-badge {
-      padding: 3px 8px;
-      font-size: 0.7rem;
-      border-radius: 8px;
-    }
-    
-    .status-badge {
-      padding: 3px 8px;
-      font-size: 0.7rem;
-      border-radius: 8px;
-    }
-    
-    .time-info {
-      font-size: 0.75rem;
-    }
-    
-    .action-btn {
-      padding: 4px 8px;
-      font-size: 0.7rem;
-      border-radius: 4px;
-      margin-right: 4px;
-    }
-    
-    .status-select {
-      padding: 4px 8px;
-      font-size: 0.75rem;
-      border-radius: 4px;
-    }
-    
-    .empty-state {
-      padding: 40px 16px;
-    }
-    
-    .empty-state-icon {
-      font-size: 2.5rem;
-      margin-bottom: 12px;
-    }
-    
-    .empty-state-text {
-      font-size: 0.95rem;
-    }
-  }
-  
-  @media (max-width: 1024px) {
-    .filters-container {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    
-    .filter-btn {
-      padding: 10px 16px;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .reservations-table {
-      font-size: 0.8rem;
-    }
-    
-    .table-header th,
-    .reservation-row td {
-      padding: 10px 8px;
-    }
-    
-    .action-controls {
-      flex-direction: column;
-      gap: 4px;
-    }
-    
-    .action-btn {
-      padding: 4px 8px;
-      font-size: 0.7rem;
-    }
-  }
 </style>
 
 <div class="reservations-container">
   <div class="reservations-header">
     <h2 class="reservations-title">📅 예약 관리</h2>
     
-    <!-- 서비스 선택 네비게이션 -->
     <div class="service-nav">
       <button onclick="loadReservationsTab('practice')" class="service-btn <%= service_type != 'makeup' ? 'active' : '' %>">
         🎹 연습실 예약
@@ -547,7 +275,6 @@
       </button>
     </div>
     
-    <!-- 검색 및 필터 -->
     <div class="filters-container">
       <input type="text" 
              id="reservation-search"
@@ -589,21 +316,11 @@
     </div>
   </div>
 
-  <!-- 일괄 작업 영역 -->
-  <div id="bulk-actions" class="bulk-actions">
-    <span id="selected-count" class="selected-count">0개 선택됨</span>
-    <button onclick="bulkDeleteReservations()" class="bulk-delete-btn">선택된 예약 삭제</button>
-    <button onclick="cancelBulkSelection()" class="bulk-cancel-btn">선택 취소</button>
-  </div>
-
   <div class="reservations-content">
     <% if reservations && reservations.any? %>
       <table class="reservations-table">
         <thead class="table-header">
           <tr>
-            <th class="checkbox-column">
-              <input type="checkbox" id="select-all" class="select-all-checkbox" onchange="toggleSelectAll()">
-            </th>
             <th>이름</th>
             <th>아이디</th>
             <th><%= service_type == 'makeup' ? '담당' : '연습실' %></th>
@@ -616,34 +333,20 @@
         <tbody>
           <% reservations.each do |reservation| %>
             <% next unless reservation.user %>
-            <tr class="reservation-row <%= 'pending-row' if reservation.status == 'pending' %>" 
+            <tr class="reservation-row" 
                 data-name="<%= reservation.user.name %>"
                 data-username="<%= reservation.user.username %>"
                 data-status="<%= reservation.status %>"
-                data-date="<%= reservation.start_time&.strftime('%Y-%m-%d') || '' %>">
+                data-date="<%= reservation.start_time&.strftime('%Y-%m-%d') || '' %>"
+                data-reservation-id="<%= reservation.id %>">
               
-              <td class="checkbox-column">
-                <input type="checkbox" class="reservation-checkbox" 
-                       value="<%= reservation.id %>" 
-                       data-service="<%= service_type %>"
-                       onchange="updateBulkActions()">
-              </td>
               <td>
-                <% if service_type == 'makeup' && reservation.respond_to?(:lesson_content) && reservation.lesson_content.present? %>
-                  <span class="user-name clickable" 
-                        style="cursor: pointer; text-decoration: underline; color: #7c3aed;" 
-                        onclick="window.showLessonContent('<%= reservation.id %>')">
-                    <%= reservation.user.name %>
-                  </span>
-                <% else %>
-                  <span class="user-name"><%= reservation.user.name %></span>
-                <% end %>
+                <span class="user-name"><%= reservation.user.name %></span>
               </td>
               <td><%= reservation.user.username %></td>
               <td>
                 <% if service_type == 'makeup' %>
                   <div class="room-info">
-                    <% # 회원의 담당 선생님 표시 %>
                     <% if reservation.user && reservation.user.teacher.present? %>
                       <%= reservation.user.teacher %>
                     <% else %>
@@ -670,7 +373,7 @@
                   <% when 'pending' %>
                     <span class="status-badge status-pending"><%= status_text %></span>
                   <% when 'active' %>
-                    <span class="status-badge status-waiting"><%= status_text %></span>
+                    <span class="status-badge status-active"><%= status_text %></span>
                   <% when 'completed' %>
                     <span class="status-badge status-completed"><%= status_text %></span>
                   <% when 'cancelled' %>
@@ -683,17 +386,10 @@
                     <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% end %>
                 <% else %>
-                  <% # 연습실 예약 - status_display 사용 %>
                   <% status_text = reservation.status_display %>
                   <% case reservation.status %>
                   <% when 'active', 'in_use' %>
-                    <% if status_text == '이용 전' %>
-                      <span class="status-badge status-active"><%= status_text %></span>
-                    <% elsif status_text == '이용 중' %>
-                      <span class="status-badge status-in-use"><%= status_text %></span>
-                    <% else %>
-                      <span class="status-badge status-completed"><%= status_text %></span>
-                    <% end %>
+                    <span class="status-badge status-active"><%= status_text %></span>
                   <% when 'completed' %>
                     <span class="status-badge status-completed"><%= status_text %></span>
                   <% when 'cancelled' %>
@@ -707,34 +403,26 @@
               </td>
               <td>
                 <div class="action-controls">
-                  <%= turbo_frame_tag "reservation_status_#{reservation.id}" do %>
-                    <%= form_with url: update_status_admin_reservation_path(reservation),
-                                  method: :patch,
-                                  local: false,
-                                  data: { turbo_frame: "_self" } do |f| %>
-                      <%= hidden_field_tag :service, service_type %>
-                      <%= select_tag :status,
-                          options_for_select(
-                            service_type == 'makeup' ? 
-                              [['승인 대기', 'pending'], ['수업 대기', 'active'], ['완료', 'completed'], 
-                               ['거절됨', 'rejected'], ['취소', 'cancelled'], ['노쇼', 'no_show']] :
-                              [['대기', 'pending'], ['이용 전', 'active'], ['완료', 'completed'],
-                               ['취소', 'cancelled'], ['노쇼', 'no_show']],
-                            reservation.status
-                          ),
-                          onchange: "this.form.requestSubmit()",
-                          class: "status-select" %>
-                    <% end %>
-                  <% end %>
+                  <%= select_tag :status,
+                      options_for_select(
+                        service_type == 'makeup' ? 
+                          [['승인 대기', 'pending'], ['수업 대기', 'active'], ['완료', 'completed'], 
+                           ['거절됨', 'rejected'], ['취소', 'cancelled'], ['노쇼', 'no_show']] :
+                          [['대기', 'pending'], ['이용 전', 'active'], ['완료', 'completed'],
+                           ['취소', 'cancelled'], ['노쇼', 'no_show']],
+                        reservation.status
+                      ),
+                      onchange: "updateReservationStatusSmooth(#{reservation.id}, this.value, '#{service_type}', this)",
+                      class: "status-select" %>
                   
                   <% if service_type == 'makeup' && reservation.status == 'pending' %>
-                    <button onclick="updateReservationStatus(<%= reservation.id %>, 'active', 'makeup')" 
+                    <button onclick="approveReservationSmooth(<%= reservation.id %>, 'makeup', event)" 
                             class="action-btn btn-approve">승인</button>
-                    <button onclick="updateReservationStatus(<%= reservation.id %>, 'rejected', 'makeup')" 
+                    <button onclick="rejectReservationSmooth(<%= reservation.id %>, 'makeup', event)" 
                             class="action-btn btn-reject">거절</button>
                   <% end %>
                   
-                  <button onclick="deleteReservation(<%= reservation.id %>, '<%= service_type %>')" 
+                  <button onclick="deleteReservationSmooth(<%= reservation.id %>, '<%= service_type %>', event)" 
                           class="action-btn btn-delete">삭제</button>
                 </div>
               </td>
@@ -753,122 +441,6 @@
 
 <script>
 (function() {
-  // 일괄 선택 관련 함수들
-  window.toggleSelectAll = function() {
-    const selectAllCheckbox = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('.reservation-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-      checkbox.checked = selectAllCheckbox.checked;
-    });
-    
-    updateBulkActions();
-  };
-  
-  window.updateBulkActions = function() {
-    const checkboxes = document.querySelectorAll('.reservation-checkbox');
-    const checkedBoxes = document.querySelectorAll('.reservation-checkbox:checked');
-    const bulkActions = document.getElementById('bulk-actions');
-    const selectedCount = document.getElementById('selected-count');
-    const selectAllCheckbox = document.getElementById('select-all');
-    
-    if (checkedBoxes.length > 0) {
-      bulkActions.classList.add('show');
-      selectedCount.textContent = `${checkedBoxes.length}개 선택됨`;
-    } else {
-      bulkActions.classList.remove('show');
-    }
-    
-    // 전체 선택 체크박스 상태 업데이트
-    if (checkedBoxes.length === checkboxes.length && checkboxes.length > 0) {
-      selectAllCheckbox.checked = true;
-      selectAllCheckbox.indeterminate = false;
-    } else if (checkedBoxes.length > 0) {
-      selectAllCheckbox.checked = false;
-      selectAllCheckbox.indeterminate = true;
-    } else {
-      selectAllCheckbox.checked = false;
-      selectAllCheckbox.indeterminate = false;
-    }
-  };
-  
-  window.cancelBulkSelection = function() {
-    const checkboxes = document.querySelectorAll('.reservation-checkbox');
-    const selectAllCheckbox = document.getElementById('select-all');
-    
-    checkboxes.forEach(checkbox => {
-      checkbox.checked = false;
-    });
-    
-    selectAllCheckbox.checked = false;
-    selectAllCheckbox.indeterminate = false;
-    
-    updateBulkActions();
-  };
-  
-  window.bulkDeleteReservations = function() {
-    const checkedBoxes = document.querySelectorAll('.reservation-checkbox:checked');
-    
-    if (checkedBoxes.length === 0) {
-      alert('삭제할 예약을 선택해주세요.');
-      return;
-    }
-    
-    const confirmMessage = `선택된 ${checkedBoxes.length}개의 예약을 삭제하시거삀습니까?\n이 작업은 되돌릴 수 없습니다.`;
-    
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-    
-    // 선택된 예약 ID들과 서비스 타입 수집
-    const reservationIds = [];
-    const serviceTypes = [];
-    
-    checkedBoxes.forEach(checkbox => {
-      reservationIds.push(parseInt(checkbox.value));
-      serviceTypes.push(checkbox.getAttribute('data-service'));
-    });
-    
-    // 서비스 타입이 동일한지 확인
-    const uniqueServiceTypes = [...new Set(serviceTypes)];
-    if (uniqueServiceTypes.length > 1) {
-      alert('서로 다른 서비스의 예약을 동시에 삭제할 수 없습니다.');
-      return;
-    }
-    
-    const serviceType = uniqueServiceTypes[0];
-    
-    // 서버로 일괄 삭제 요청 전송
-    fetch('/admin/reservations/bulk_delete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
-      },
-      body: JSON.stringify({
-        reservation_ids: reservationIds,
-        service: serviceType
-      })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert(`${data.deleted_count}개의 예약이 삭제되었습니다.`);
-        // 페이지 새로고침
-        if (window.loadReservationsTab) {
-          window.loadReservationsTab(serviceType);
-        } else {
-          location.reload();
-        }
-      } else {
-        alert('삭제 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
-      }
-    })
-    .catch(error => {
-      console.error('Bulk delete error:', error);
-      alert('삭제 중 오류가 발생했습니다.');
-    });
-  };
   // 검색 기능
   window.searchReservations = function() {
     const searchInput = document.getElementById('reservation-search');
@@ -899,7 +471,6 @@
     rows.forEach(row => {
       let visible = true;
       
-      // 검색어 필터
       if (searchTerm) {
         const name = (row.getAttribute('data-name') || '').toLowerCase();
         const username = (row.getAttribute('data-username') || '').toLowerCase();
@@ -908,7 +479,6 @@
         }
       }
       
-      // 상태 필터
       if (statusFilter && visible) {
         const status = row.getAttribute('data-status');
         if (status !== statusFilter) {
@@ -916,7 +486,6 @@
         }
       }
       
-      // 날짜 필터
       if (dateFilter && visible) {
         const date = row.getAttribute('data-date');
         if (date !== dateFilter) {
@@ -944,10 +513,14 @@
     });
   };
 
-  // 상태 업데이트 (Turbo 방식)
-  window.updateReservationStatus = function(reservationId, status, service) {
-    const selectElement = event.target;
+  // 상태 업데이트 - 부드러운 업데이트
+  window.updateReservationStatusSmooth = function(reservationId, status, service, selectElement) {
     const originalValue = selectElement.value;
+    const row = selectElement.closest('tr');
+    
+    // 로딩 상태 표시
+    selectElement.disabled = true;
+    selectElement.style.opacity = '0.6';
     
     fetch(`/admin/reservations/${reservationId}/update_status`, {
       method: 'PATCH',
@@ -959,11 +532,9 @@
       body: JSON.stringify({ status: status, service: service })
     }).then(response => {
       if (response.ok) {
-        // 상태 뱃지 업데이트
-        const row = selectElement.closest('tr');
+        // 상태 배지 업데이트
         const statusBadge = row.querySelector('.status-badge');
         if (statusBadge) {
-          // 상태에 따른 뱃지 클래스 및 텍스트 업데이트
           const statusTexts = {
             'pending': '승인 대기',
             'active': service === 'makeup' ? '수업 대기' : '이용 전',
@@ -973,32 +544,47 @@
             'no_show': '노쇼'
           };
           
-          // 기존 상태 클래스 제거
-          statusBadge.className = 'status-badge status-' + status;
-          statusBadge.textContent = statusTexts[status] || status;
+          // 부드러운 전환 애니메이션
+          statusBadge.style.transition = 'all 0.3s ease';
+          statusBadge.style.transform = 'scale(1.1)';
+          
+          setTimeout(() => {
+            statusBadge.className = 'status-badge status-' + status;
+            statusBadge.textContent = statusTexts[status] || status;
+            statusBadge.style.transform = 'scale(1)';
+          }, 150);
         }
         
-        // 승인/거절 버튼 숨기기 (보충수업이고 pending에서 변경된 경우)
-        if (service === 'makeup' && originalValue === 'pending' && status !== 'pending') {
-          const approveBtn = row.querySelector('.btn-approve');
-          const rejectBtn = row.querySelector('.btn-reject');
-          if (approveBtn) approveBtn.style.display = 'none';
-          if (rejectBtn) rejectBtn.style.display = 'none';
-        }
+        // data-status 업데이트
+        row.setAttribute('data-status', status);
+        
       } else {
         alert('상태 변경에 실패했습니다.');
-        selectElement.value = originalValue; // 원래 값으로 복구
+        selectElement.value = originalValue;
       }
     }).catch(error => {
       console.error('Error:', error);
       alert('상태 변경에 실패했습니다.');
-      selectElement.value = originalValue; // 원래 값으로 복구
+      selectElement.value = originalValue;
+    }).finally(() => {
+      selectElement.disabled = false;
+      selectElement.style.opacity = '1';
     });
   };
 
-  // 예약 삭제
-  window.deleteReservation = function(reservationId, service) {
+  // 예약 삭제 - 부드러운 애니메이션과 함께
+  window.deleteReservationSmooth = function(reservationId, service, event) {
     if (confirm('정말로 이 예약을 삭제하시겠습니까?')) {
+      const button = event ? event.currentTarget : null;
+      const row = button ? button.closest('tr') : document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
+      
+      if (button) {
+        button.disabled = true;
+        button.textContent = '처리중...';
+        button.style.background = '#9ca3af';
+        button.style.cursor = 'not-allowed';
+      }
+      
       fetch(`/admin/reservations/${reservationId}`, {
         method: 'DELETE',
         headers: {
@@ -1009,13 +595,55 @@
         body: JSON.stringify({ service: service })
       }).then(response => {
         if (response.ok) {
-          window.loadReservationsTab(service);
+          if (row) {
+            // 부드러운 페이드 아웃 애니메이션
+            row.style.transition = 'all 0.5s ease-out';
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(-20px)';
+            row.style.backgroundColor = '#fee2e2';
+            
+            // 애니메이션 완료 후 행 제거
+            setTimeout(() => {
+              row.remove();
+              
+              // 테이블이 비어있으면 empty state 표시
+              const tbody = document.querySelector('.reservations-table tbody');
+              if (tbody && tbody.children.length === 0) {
+                const tableContainer = document.querySelector('.reservations-content');
+                if (tableContainer) {
+                  tableContainer.innerHTML = `
+                    <div class="empty-state">
+                      <div class="empty-state-icon">📅</div>
+                      <div class="empty-state-text">예약이 없습니다</div>
+                    </div>
+                  `;
+                }
+              }
+            }, 500);
+          } else {
+            // fallback: 페이지 새로고침
+            if (typeof window.loadReservationsTab === 'function') {
+              window.loadReservationsTab(service);
+            }
+          }
         } else {
           alert('삭제에 실패했습니다.');
+          if (button) {
+            button.disabled = false;
+            button.textContent = '삭제';
+            button.style.background = '';
+            button.style.cursor = 'pointer';
+          }
         }
       }).catch(error => {
         console.error('Error:', error);
         alert('삭제에 실패했습니다.');
+        if (button) {
+          button.disabled = false;
+          button.textContent = '삭제';
+          button.style.background = '';
+          button.style.cursor = 'pointer';
+        }
       });
     }
   };
@@ -1023,289 +651,4 @@
   console.log('예약 관리 함수들이 로드되었습니다.');
   
 })();
-
-// 보충수업 내용 모달 표시 - window 객체에 명시적으로 할당
-window.showLessonContent = function(reservationId) {
-  // AJAX로 예약 정보 가져오기
-  fetch('/admin/reservations/' + reservationId + '/lesson_content')
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        // 모달 내용 업데이트
-        document.getElementById('modal-user-name').textContent = data.user_name;
-        document.getElementById('modal-date').textContent = data.date;
-        document.getElementById('modal-time').textContent = data.time;
-        document.getElementById('modal-lesson-content').textContent = data.lesson_content || '내용이 없습니다.';
-        
-        // 모달 표시
-        document.getElementById('lesson-content-modal').classList.add('show');
-      } else {
-        alert('예약 정보를 불러올 수 없습니다.');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('오류가 발생했습니다.');
-    });
-}
-
-// 모달 닫기 - window 객체에 명시적으로 할당
-window.closeLessonModal = function() {
-  var modal = document.getElementById('lesson-content-modal');
-  if (modal) {
-    modal.classList.remove('show');
-  }
-}
 </script>
-
-<!-- 보충수업 내용 모달 -->
-<div id="lesson-content-modal" class="modal-overlay" onclick="window.closeLessonModal()">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <h3 class="modal-title">보충수업 내용</h3>
-      <button class="modal-close" onclick="window.closeLessonModal()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-info">
-        <div class="modal-info-row">
-          <span class="modal-info-label" data-icon="user">회원명</span>
-          <span class="modal-info-value" id="modal-user-name"></span>
-        </div>
-        <div class="modal-info-row">
-          <span class="modal-info-label" data-icon="date">날짜</span>
-          <span class="modal-info-value" id="modal-date"></span>
-        </div>
-        <div class="modal-info-row">
-          <span class="modal-info-label" data-icon="time">시간</span>
-          <span class="modal-info-value" id="modal-time"></span>
-        </div>
-      </div>
-      <div class="lesson-content-section">
-        <div class="lesson-content-title">수업 요청 내용</div>
-        <div class="lesson-content-text" id="modal-lesson-content"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<style>
-  /* 모달 스타일 - 개선된 버전 */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: all 0.3s ease;
-  }
-  
-  .modal-overlay.show {
-    display: flex;
-    opacity: 1;
-  }
-  
-  .modal-content {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border-radius: 20px;
-    padding: 0;
-    max-width: 550px;
-    width: 95%;
-    max-height: 80vh;
-    overflow: hidden;
-    box-shadow: 
-      0 25px 50px -12px rgba(0, 0, 0, 0.25),
-      0 0 0 1px rgba(255, 255, 255, 0.1);
-    transform: scale(0.95);
-    transition: transform 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  .modal-overlay.show .modal-content {
-    transform: scale(1);
-  }
-  
-  .modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 25px 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0;
-    border-radius: 20px 20px 0 0;
-  }
-  
-  .modal-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .modal-title::before {
-    content: "📚";
-    font-size: 1.2rem;
-  }
-  
-  .modal-close {
-    cursor: pointer;
-    font-size: 1.8rem;
-    color: rgba(255, 255, 255, 0.8);
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    padding: 0;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-  }
-  
-  .modal-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    transform: scale(1.1);
-  }
-  
-  .modal-body {
-    padding: 30px;
-    color: #475569;
-    line-height: 1.7;
-  }
-  
-  .modal-info {
-    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    border-radius: 16px;
-    padding: 25px;
-    margin-bottom: 25px;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-  
-  .modal-info-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  }
-  
-  .modal-info-row:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-  }
-  
-  .modal-info-label {
-    font-weight: 700;
-    color: #334155;
-    min-width: 100px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.95rem;
-  }
-  
-  .modal-info-label::before {
-    font-size: 1rem;
-  }
-  
-  .modal-info-label[data-icon="user"]::before { content: "👤"; }
-  .modal-info-label[data-icon="date"]::before { content: "📅"; }
-  .modal-info-label[data-icon="time"]::before { content: "⏰"; }
-  
-  .modal-info-value {
-    color: #64748b;
-    font-weight: 500;
-    font-size: 1rem;
-  }
-  
-  .lesson-content-section {
-    margin-top: 15px;
-  }
-  
-  .lesson-content-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #334155;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .lesson-content-title::before {
-    content: "✏️";
-    font-size: 1rem;
-  }
-  
-  .lesson-content-text {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 20px;
-    min-height: 120px;
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #475569;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-    position: relative;
-  }
-  
-  .lesson-content-text:empty::before {
-    content: "수업 내용이 없습니다";
-    color: #94a3b8;
-    font-style: italic;
-  }
-  
-  /* 모바일 최적화 */
-  @media (max-width: 640px) {
-    .modal-content {
-      width: 95%;
-      max-width: none;
-      margin: 20px;
-      border-radius: 16px;
-    }
-    
-    .modal-header {
-      padding: 20px 25px;
-      border-radius: 16px 16px 0 0;
-    }
-    
-    .modal-title {
-      font-size: 1.2rem;
-    }
-    
-    .modal-body {
-      padding: 25px 20px;
-    }
-    
-    .modal-info {
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    
-    .modal-info-row {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 5px;
-    }
-    
-    .modal-info-label {
-      min-width: auto;
-    }
-  }
-</style>

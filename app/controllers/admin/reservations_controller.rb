@@ -272,6 +272,9 @@ class Admin::ReservationsController < ApplicationController
   # ApplicationController의 authenticate_admin! 사용하도록 제거
   
   def fetch_makeup_reservations
+    # 시간이 지난 보충수업 상태를 자동으로 업데이트
+    MakeupReservation.update_status_by_time!
+    
     # 보충수업은 makeup_reservations 테이블에서 조회
     @reservations = MakeupReservation.includes(:user, :makeup_room)
                                      .order(start_time: :desc)
