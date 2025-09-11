@@ -255,8 +255,8 @@
       
       <% if current_user.approved? %>
         <div class="action-buttons">
-          <% if current_user.blocked? %>
-            <button onclick="alert('월 2회 이상 노쇼/취소하여 이용이 제한되었습니다')" class="btn-disabled">예약하기 (제한됨)</button>
+          <% if current_user.makeup_penalty.is_blocked? %>
+            <button onclick="alert('월 2회 이상 노쇼/취소하여 보충수업 이용이 제한되었습니다')" class="btn-disabled">예약하기 (제한됨)</button>
           <% else %>
             <%= link_to "예약하기", makeup_new_path, class: "btn-primary" %>
           <% end %>

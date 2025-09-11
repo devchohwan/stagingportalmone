@@ -1,5 +1,8 @@
 class Api::PhoneVerificationsController < ApplicationController
   skip_before_action :verify_authenticity_token
+  skip_before_action :require_login, if: -> { defined?(require_login) }
+  skip_before_action :authenticate_user!, if: -> { defined?(authenticate_user!) }
+  skip_before_action :update_reservation_statuses
   
   # POST /api/send-verification
   def send_code

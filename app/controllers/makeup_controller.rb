@@ -33,8 +33,8 @@ class MakeupController < ApplicationController
   end
   
   def new
-    if current_user.blocked?
-      flash[:alert] = '월 2회 이상 노쇼/취소하여 이용이 제한되었습니다'
+    if current_user.makeup_penalty.is_blocked?
+      flash[:alert] = '월 2회 이상 노쇼/취소하여 보충수업 이용이 제한되었습니다'
       redirect_to makeup_path
       return
     end
@@ -90,26 +90,29 @@ class MakeupController < ApplicationController
   
   def cancel
     if @reservation.cancellable?
-      # 승인 대기(pending) 상태면 페널티 없이 취소
+      # 취소 전 상태 저장
+      was_active = @reservation.status == 'active'
+      
       # 수업 대기(active) 상태면 페널티 적용
-      if @reservation.status == 'active'
-        # 페널티 적용 - 취소 횟수 증가
-        penalty = current_user.current_month_penalty
+      if was_active
+        # 페널티 적용 - 취소 횟수 증가 (보충수업 전용)
+        penalty = current_user.makeup_penalty
         penalty.increment!(:cancel_count)
         
-        # 총 페널티 횟수 확인 (노쇼 + 취소)
+        # 총 페널티 횟수 확인 (노쇼 + 취소) - 보충수업만
         total_penalties = penalty.no_show_count + penalty.cancel_count
         
-        # 2회 이상이면 차단
+        # 2회 이상이면 차단 (보충수업 시스템만)
         if total_penalties >= 2
           penalty.update(is_blocked: true)
         end
       end
       
-      @reservation.update(status: 'cancelled', cancelled_by: 'user')
+      # 예약 상태를 cancelled로 변경 (검증 건너뛰기)
+      @reservation.update_columns(status: 'cancelled', cancelled_by: 'user')
       
-      if @reservation.status_was == 'active'
-        redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다. (페널티가 적용되었습니다)'
+      if was_active
+        redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다. (보충수업 페널티가 적용되었습니다)'
       else
         redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다.'
       end

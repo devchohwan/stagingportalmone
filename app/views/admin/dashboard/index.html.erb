@@ -1,4 +1,44 @@
 <style>
+  /* 회원 관리 탭 스타일 */
+  #users-tab .tab-btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    background: transparent;
+    color: #4a5568;
+  }
+  
+  #users-tab .tab-btn:hover {
+    background: #edf2f7;
+    color: #2d3748;
+  }
+  
+  #users-tab .tab-btn.active {
+    background: #ffffff !important;
+    color: #667eea !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  #users-tab .search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  #users-tab .search-button:hover {
+    background: #5a67d8;
+    border-color: #5a67d8;
+  }
+  
+  #users-tab .clear-button:hover {
+    background: #edf2f7;
+    color: #2d3748;
+  }
+  
   .admin-container {
     min-height: 100vh;
     background: #ffffff;
@@ -509,6 +549,38 @@
 
     <!-- 회원 관리 탭 -->
     <div id="users-tab" class="tab-content hidden">
+      <div class="users-header" style="background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; padding: 25px; margin-bottom: 20px;">
+        <h2 class="users-title" style="font-size: 1.5rem; font-weight: bold; color: #2d3748; margin-bottom: 20px;">👥 회원 관리</h2>
+        
+        <!-- 탭 네비게이션 -->
+        <div class="tab-nav" style="display: flex; gap: 5px; margin-bottom: 20px; background: #f7fafc; padding: 5px; border-radius: 10px;">
+          <button onclick="changeTab('approved')" data-tab="approved" class="tab-btn active">
+            승인된 회원
+          </button>
+          <button onclick="changeTab('waiting')" data-tab="waiting" class="tab-btn">
+            승인 대기
+          </button>
+          <button onclick="changeTab('hold')" data-tab="hold" class="tab-btn">
+            보류
+          </button>
+          <button onclick="changeTab('penalty')" data-tab="penalty" class="tab-btn">
+            페널티
+          </button>
+        </div>
+        
+        <!-- 검색 및 필터 -->
+        <div class="search-filters" style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <input type="text" 
+                 id="user-search" 
+                 placeholder="이름이나 아이디로 검색..." 
+                 class="search-input"
+                 style="flex: 1; min-width: 250px; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease;"
+                 onkeypress="if(event.key==='Enter') searchUsers()">
+          <button onclick="searchUsers()" class="search-button" style="padding: 12px 20px; border: 1px solid #667eea; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: #667eea; color: white;">검색</button>
+          <button onclick="clearSearch()" class="clear-button" style="padding: 12px 20px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: #f7fafc; color: #4a5568;">전체보기</button>
+        </div>
+      </div>
+      
       <div id="users-content-area">
         <div class="text-center py-8">
           <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
@@ -604,27 +676,40 @@
     };
     
     // 회원 관리 탭 로드
-    window.loadUsersTab = function(tab) {
+    window.loadUsersTab = function(tab, page = 1) {
       if (!tab) tab = sessionStorage.getItem('admin_users_tab') || window.currentUsersTab || 'approved';
       const contentArea = document.getElementById('users-content-area');
       if (!contentArea) return;
       
       window.currentUsersTab = tab;
       
+      // 검색어 가져오기
+      const searchInput = document.getElementById('user-search');
+      const searchQuery = searchInput ? searchInput.value : '';
+      
+      // 탭 버튼 업데이트 (users-tab 내부의 버튼들)
+      document.querySelectorAll('#users-tab .tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      const activeBtn = document.querySelector(`#users-tab .tab-btn[data-tab="${tab}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+      }
+      
       contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div><p class="text-gray-500 mt-2">회원 목록을 불러오는 중...</p></div>';
       
-      fetch(`/admin/users/content?tab=${tab}`)
+      fetch(`/admin/users/content?tab=${tab}&page=${page}&search=${encodeURIComponent(searchQuery)}`)
         .then(response => response.text())
         .then(html => {
           contentArea.innerHTML = html;
-          // 필터 복원
-          setTimeout(() => window.restoreFilters('users'), 100);
         })
         .catch(error => {
           console.error('Error loading users:', error);
           contentArea.innerHTML = '<div class="text-center py-8 text-red-600">회원 목록을 불러오는데 실패했습니다.</div>';
         });
     };
+    
     
     // 예약 관리 탭 로드
     window.loadReservationsTab = function(service) {
@@ -774,13 +859,26 @@
     };
     
     window.getCurrentTab = function() {
-      const activeTabBtn = document.querySelector('.tab-btn.active');
+      const activeTabBtn = document.querySelector('#users-tab .tab-btn.active');
       if (activeTabBtn) {
-        const onclickAttr = activeTabBtn.getAttribute('onclick');
-        const match = onclickAttr && onclickAttr.match(/changeTab\\('([^']+)'\\)/);
-        if (match) return match[1];
+        return activeTabBtn.dataset.tab;
       }
       return window.currentUsersTab || 'approved';
+    };
+    
+    // 검색 함수
+    window.searchUsers = function() {
+      const currentTab = window.getCurrentTab();
+      window.loadUsersTab(currentTab, 1); // 검색 시 페이지는 1로 리셋
+    };
+    
+    window.clearSearch = function() {
+      const searchInput = document.getElementById('user-search');
+      if (searchInput) {
+        searchInput.value = '';
+      }
+      const currentTab = window.getCurrentTab();
+      window.loadUsersTab(currentTab, 1);
     };
 
     // 사용자 관리 함수들
@@ -970,25 +1068,10 @@
       }
     };
 
-    // 검색 기능
-    window.searchUsers = function() {
-      const searchInput = document.getElementById('user-search');
-      if (!searchInput) return;
-      
-      const searchTerm = searchInput.value.toLowerCase();
-      const rows = document.querySelectorAll('.user-row');
-      
-      rows.forEach(row => {
-        const name = (row.getAttribute('data-name') || '').toLowerCase();
-        const username = (row.getAttribute('data-username') || '').toLowerCase();
-        
-        let matchSearch = searchTerm === '' || name.includes(searchTerm) || username.includes(searchTerm);
-        
-        row.style.display = matchSearch ? '' : 'none';
-      });
-      
-      // 검색 상태 저장
-      sessionStorage.setItem('admin_users_search', searchTerm);
+    // 페이지 변경 함수
+    window.changePage = function(page) {
+      const currentTab = window.getCurrentTab();
+      window.loadUsersTab(currentTab, page);
     };
   }
   

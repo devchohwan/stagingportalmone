@@ -53,44 +53,116 @@ class Admin::DashboardController < ApplicationController
   # AJAX를 위한 사용자 컨텐츠만 반환
   def users_content
     @tab = params[:tab] || 'approved'
+    @page = (params[:page] || 1).to_i
+    @per_page = 50
     
-    # 데이터베이스에서 직접 가져오기
-    @pending_users = User.pending.map { |u| user_to_hash(u).merge('system' => 'practice') }
-    @on_hold_users = User.on_hold.map { |u| user_to_hash(u).merge('system' => 'practice') }
-    @approved_users = User.approved.map { |u| user_to_hash(u).merge('system' => 'practice', 'is_admin' => u.is_admin) }  # admin 포함
+    # 데이터베이스에서 효율적으로 가져오기 (includes로 N+1 쿼리 방지)
+    pending_users_query = User.pending.includes(:penalties)
+    on_hold_users_query = User.on_hold.includes(:penalties)
+    approved_users_query = User.approved.includes(:penalties)
     
-    # 페널티가 있는 사용자 필터링 - 연습실과 보충수업 모두 포함
-    practice_penalties = @approved_users.select do |u| 
-      penalty = User.find(u['id']).current_month_penalty
-      penalty.no_show_count > 0 || penalty.cancel_count > 0 || penalty.is_blocked
-    end.map do |u|
-      penalty = User.find(u['id']).current_month_penalty
-      u.merge('no_show_count' => penalty.no_show_count, 
-              'cancel_count' => penalty.cancel_count,
-              'is_blocked' => penalty.is_blocked,
-              'system' => 'practice')
-    end
+    @pending_users = pending_users_query.map { |u| user_to_hash(u).merge('system' => 'practice') }
+    @on_hold_users = on_hold_users_query.map { |u| user_to_hash(u).merge('system' => 'practice') }
+    @approved_users = approved_users_query.map { |u| user_to_hash(u).merge('system' => 'practice', 'is_admin' => u.is_admin) }
     
-    # 보충수업 시스템에서 페널티 있는 사용자 추가
-    makeup_penalties = []
+    # 페널티가 있는 사용자 필터링 - 효율적으로 처리
     begin
-      makeup_users = MakeupUser.approved
-      makeup_penalties = makeup_users.map do |user|
-        penalty = user.current_month_penalty
-        next unless penalty.no_show_count > 0 || penalty.cancel_count > 0 || penalty.is_blocked
-        
+      # 현재 월/연도
+      current_month = Date.current.month
+      current_year = Date.current.year
+      
+      # 연습실 페널티가 있는 사용자들
+      practice_penalty_users = approved_users_query.joins(:penalties)
+        .where(penalties: { 
+          month: current_month, 
+          year: current_year, 
+          system_type: 'practice' 
+        })
+        .where('penalties.no_show_count > 0 OR penalties.cancel_count > 0 OR penalties.is_blocked = true')
+        .includes(:penalties)
+      
+      practice_penalties = practice_penalty_users.map do |user|
+        penalty = user.penalties.find { |p| p.month == current_month && p.year == current_year && p.system_type == 'practice' }
+        user_to_hash(user).merge(
+          'no_show_count' => penalty.no_show_count,
+          'cancel_count' => penalty.cancel_count,
+          'is_blocked' => penalty.is_blocked,
+          'system' => 'practice'
+        )
+      end
+      
+      # 보충수업 페널티가 있는 사용자들
+      makeup_penalty_users = approved_users_query.joins(:penalties)
+        .where(penalties: { 
+          month: current_month, 
+          year: current_year, 
+          system_type: 'makeup' 
+        })
+        .where('penalties.no_show_count > 0 OR penalties.cancel_count > 0 OR penalties.is_blocked = true')
+        .includes(:penalties)
+      
+      makeup_penalties = makeup_penalty_users.map do |user|
+        penalty = user.penalties.find { |p| p.month == current_month && p.year == current_year && p.system_type == 'makeup' }
         user_to_hash(user).merge(
           'no_show_count' => penalty.no_show_count,
           'cancel_count' => penalty.cancel_count,
           'is_blocked' => penalty.is_blocked,
           'system' => 'makeup'
         )
-      end.compact
+      end
+      
+      @users_with_penalties = practice_penalties + makeup_penalties
     rescue => e
-      Rails.logger.error "Error fetching makeup penalties: #{e.message}"
+      Rails.logger.error "Error fetching penalties: #{e.message}"
+      @users_with_penalties = []
     end
     
-    @users_with_penalties = practice_penalties + makeup_penalties
+    # 검색어가 있으면 전체 검색, 없으면 페이지네이션 적용
+    search_query = params[:search]&.strip&.downcase
+    
+    if search_query.present?
+      # 검색 시에는 페이지네이션 없이 전체 검색
+      @pending_users = @pending_users.select { |u| 
+        u['name']&.downcase&.include?(search_query) || 
+        u['username']&.downcase&.include?(search_query) ||
+        u['teacher']&.downcase&.include?(search_query)
+      }
+      @on_hold_users = @on_hold_users.select { |u| 
+        u['name']&.downcase&.include?(search_query) || 
+        u['username']&.downcase&.include?(search_query) ||
+        u['teacher']&.downcase&.include?(search_query)
+      }
+      @approved_users = @approved_users.select { |u| 
+        u['name']&.downcase&.include?(search_query) || 
+        u['username']&.downcase&.include?(search_query) ||
+        u['teacher']&.downcase&.include?(search_query)
+      }
+      @users_with_penalties = @users_with_penalties.select { |u| 
+        u['name']&.downcase&.include?(search_query) || 
+        u['username']&.downcase&.include?(search_query) ||
+        u['teacher']&.downcase&.include?(search_query)
+      }
+    else
+      # 검색어가 없으면 페이지네이션 적용
+      case @tab
+      when 'waiting'
+        @total_count = @pending_users.size
+        @total_pages = (@total_count.to_f / @per_page).ceil
+        @pending_users = @pending_users[(@page - 1) * @per_page, @per_page] || []
+      when 'hold'
+        @total_count = @on_hold_users.size
+        @total_pages = (@total_count.to_f / @per_page).ceil
+        @on_hold_users = @on_hold_users[(@page - 1) * @per_page, @per_page] || []
+      when 'penalty'
+        @total_count = @users_with_penalties.size
+        @total_pages = (@total_count.to_f / @per_page).ceil
+        @users_with_penalties = @users_with_penalties[(@page - 1) * @per_page, @per_page] || []
+      else # approved
+        @total_count = @approved_users.size
+        @total_pages = (@total_count.to_f / @per_page).ceil
+        @approved_users = @approved_users[(@page - 1) * @per_page, @per_page] || []
+      end
+    end
     
     render partial: 'users_content'
   end
@@ -264,7 +336,7 @@ class Admin::DashboardController < ApplicationController
   # ApplicationController의 authenticate_admin! 사용하도록 제거
   
   def user_to_hash(user)
-    penalty = user.current_month_penalty
+    # 기본 사용자 정보만 반환 (penalty 정보는 별도로 처리)
     {
       'id' => user.id,
       'username' => user.username,
@@ -275,9 +347,9 @@ class Admin::DashboardController < ApplicationController
       'status' => user.status,
       'created_at' => user.created_at.to_s,
       'online_verification_image' => user.online_verification_image,
-      'no_show_count' => penalty.no_show_count,
-      'cancel_count' => penalty.cancel_count,
-      'is_blocked' => penalty.is_blocked
+      'no_show_count' => 0,  # 기본값
+      'cancel_count' => 0,   # 기본값
+      'is_blocked' => false  # 기본값
     }
   end
 end

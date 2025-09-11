@@ -114,8 +114,8 @@ class Reservation < ApplicationRecord
   def user_not_blocked
     return unless user
     
-    if user.blocked?
-      errors.add(:base, '월 2회 이상 노쿈/취소로 이용이 제한되었습니다')
+    if user.practice_penalty.is_blocked?
+      errors.add(:base, '월 2회 이상 노쇼/취소로 연습실 이용이 제한되었습니다')
     end
   end
   
@@ -151,7 +151,7 @@ class Reservation < ApplicationRecord
   def handle_status_change
     return unless saved_change_to_status?
     
-    penalty = user.current_month_penalty
+    penalty = user.practice_penalty  # 연습실 전용 페널티 사용
     old_status = saved_change_to_status[0]
     new_status = saved_change_to_status[1]
     
@@ -160,18 +160,20 @@ class Reservation < ApplicationRecord
       # cancelled_by가 admin이면 페널티 부과 안함
       unless cancelled_by == 'admin'
         penalty.increment!(:cancel_count)
-        Rails.logger.info "User #{user.id} penalty: cancel_count increased to #{penalty.cancel_count}"
+        penalty.reload  # 데이터베이스에서 최신 값 다시 로드
+        Rails.logger.info "User #{user.id} practice penalty: cancel_count increased to #{penalty.cancel_count}"
       end
     when 'no_show'
       penalty.increment!(:no_show_count)
-      Rails.logger.info "User #{user.id} penalty: no_show_count increased to #{penalty.no_show_count}"
+      penalty.reload  # 데이터베이스에서 최신 값 다시 로드
+      Rails.logger.info "User #{user.id} practice penalty: no_show_count increased to #{penalty.no_show_count}"
     end
     
-    # 총 2회 이상이면 차단
+    # 총 2회 이상이면 차단 (연습실 시스템만)
     total_violations = penalty.cancel_count + penalty.no_show_count
     if total_violations >= 2 && !penalty.is_blocked
       penalty.update!(is_blocked: true)
-      Rails.logger.info "User #{user.id} blocked due to #{total_violations} violations"
+      Rails.logger.info "User #{user.id} blocked from practice system due to #{total_violations} violations"
     end
   end
 end

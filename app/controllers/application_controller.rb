@@ -36,7 +36,9 @@ class ApplicationController < ActionController::Base
   
   def authenticate_admin!
     require_login
-    unless current_user&.is_admin
+    return unless current_user
+    
+    unless current_user.is_admin
       redirect_to services_path, alert: "권한이 없습니다"
     end
   end

@@ -1,0 +1,315 @@
+<!-- 승인 대기 탭 -->
+<% if @tab == 'waiting' %>
+  <% if @pending_users&.any? %>
+    <table class="users-table">
+      <thead class="table-header">
+        <tr>
+          <th>이름</th>
+          <th>아이디</th>
+          <th>전화번호</th>
+          <th>담당</th>
+          <th>가입일</th>
+          <th>인증</th>
+          <th>상태</th>
+          <th>작업</th>
+        </tr>
+      </thead>
+      <tbody class="user-table-body">
+        <% @pending_users.each do |user| %>
+          <tr class="user-row waiting-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+            <td><span class="user-name"><%= user['name'] %></span></td>
+            <td><%= user['username'] %></td>
+            <td>
+              <input type="tel" 
+                     id="phone-pending-<%= user['id'] %>"
+                     value="<%= user['phone'] || '' %>" 
+                     placeholder="미등록"
+                     class="phone-input">
+              <button onclick="updatePhone(<%= user['id'] %>, 'pending', '<%= user['system'] %>')" 
+                      class="phone-update-btn">확인</button>
+            </td>
+            <td>
+              <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
+                      class="teacher-select">
+                <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].each do |teacher| %>
+                  <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                <% end %>
+              </select>
+            </td>
+            <td style="font-size: 0.8rem; color: #6b7280;"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+            <td>
+              <% if user['teacher'] == '온라인' && user['online_verification_image'].present? %>
+                <button onclick="window.open('<%= user['online_verification_image'] %>', '_blank')" class="verification-img-btn">이미지 보기</button>
+              <% elsif user['teacher'] == '온라인' %>
+                <span class="verification-none">미제출</span>
+              <% else %>
+                <span class="verification-none">-</span>
+              <% end %>
+            </td>
+            <td>
+              <span class="status-badge status-waiting">대기중</span>
+            </td>
+            <td>
+              <button onclick="approveUser(<%= user['id'] %>, '<%= user['system'] %>')" 
+                      class="action-btn btn-approve">승인</button>
+              <button onclick="holdUser(<%= user['id'] %>, '<%= user['system'] %>')"
+                      class="action-btn btn-hold">보류</button>
+              <button onclick="rejectUser(<%= user['id'] %>, '<%= user['system'] %>')"
+                      class="action-btn btn-reject">거부</button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">⏳</div>
+      <div class="empty-state-text">승인 대기 중인 회원이 없습니다</div>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- 보류 탭 -->
+<% if @tab == 'hold' %>
+  <% if @on_hold_users&.any? %>
+    <table class="users-table">
+      <thead class="table-header">
+        <tr>
+          <th>이름</th>
+          <th>아이디</th>
+          <th>전화번호</th>
+          <th>담당</th>
+          <th>가입일</th>
+          <th>인증</th>
+          <th>상태</th>
+          <th>작업</th>
+        </tr>
+      </thead>
+      <tbody class="user-table-body">
+        <% @on_hold_users.each do |user| %>
+          <tr class="user-row hold-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+            <td><span class="user-name"><%= user['name'] %></span></td>
+            <td><%= user['username'] %></td>
+            <td>
+              <input type="tel" 
+                     id="phone-hold-<%= user['id'] %>"
+                     value="<%= user['phone'] || '' %>" 
+                     placeholder="미등록"
+                     class="phone-input">
+              <button onclick="updatePhone(<%= user['id'] %>, 'hold', '<%= user['system'] %>')" 
+                      class="phone-update-btn">확인</button>
+            </td>
+            <td>
+              <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
+                      class="teacher-select">
+                <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].each do |teacher| %>
+                  <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                <% end %>
+              </select>
+            </td>
+            <td style="font-size: 0.8rem; color: #6b7280;"><%= DateTime.parse(user['created_at']).strftime('%Y-%m-%d') %></td>
+            <td>
+              <% if user['teacher'] == '온라인' && user['online_verification_image'].present? %>
+                <button onclick="window.open('<%= user['online_verification_image'] %>', '_blank')" class="verification-img-btn">이미지 보기</button>
+              <% elsif user['teacher'] == '온라인' %>
+                <span class="verification-none">미제출</span>
+              <% else %>
+                <span class="verification-none">-</span>
+              <% end %>
+            </td>
+            <td>
+              <span class="status-badge status-hold">보류중</span>
+            </td>
+            <td>
+              <button onclick="approveUser(<%= user['id'] %>, '<%= user['system'] %>')" 
+                      class="action-btn btn-approve">승인</button>
+              <button onclick="rejectUser(<%= user['id'] %>, '<%= user['system'] %>')" 
+                      class="action-btn btn-reject">삭제</button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">🔄</div>
+      <div class="empty-state-text">보류 중인 회원이 없습니다</div>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- 승인된 회원 탭 -->
+<% if @tab == 'approved' %>
+  <% if @approved_users&.any? %>
+    <table class="users-table">
+      <thead class="table-header">
+        <tr>
+          <th>이름</th>
+          <th>아이디</th>
+          <th>전화번호</th>
+          <th>담당</th>
+          <th>비밀번호</th>
+          <th>관리</th>
+        </tr>
+      </thead>
+      <tbody class="user-table-body">
+        <% @approved_users.each do |user| %>
+          <tr class="user-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+            <td>
+              <span class="user-name"><%= user['name'] %></span>
+              <% if user['is_admin'] %>
+                <span class="admin-badge">관리자</span>
+              <% end %>
+            </td>
+            <td><%= user['username'] %></td>
+            <td>
+              <input type="tel" 
+                     id="phone-approved-<%= user['id'] %>"
+                     value="<%= user['phone'] || '' %>" 
+                     placeholder="미등록"
+                     class="phone-input">
+              <button onclick="updatePhone(<%= user['id'] %>, 'approved', '<%= user['system'] %>')" 
+                      class="phone-update-btn">확인</button>
+            </td>
+            <td>
+              <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
+                      class="teacher-select">
+                <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].each do |teacher| %>
+                  <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                <% end %>
+              </select>
+            </td>
+            <td>
+              <button onclick="resetPassword('<%= user['id'] %>', '<%= user['username'] %>', '<%= user['system'] %>')" 
+                      class="btn-text">재설정</button>
+            </td>
+            <td>
+              <% unless user['is_admin'] %>
+                <button onclick="holdUser(<%= user['id'] %>, '<%= user['system'] %>')" 
+                        class="action-btn btn-hold">보류</button>
+                <button onclick="deleteUser(<%= user['id'] %>, '<%= user['system'] %>')" 
+                        class="action-btn btn-reject">삭제</button>
+              <% else %>
+                <span style="color: #9ca3af;">-</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">👥</div>
+      <div class="empty-state-text">승인된 회원이 없습니다</div>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- 페널티 탭 -->
+<% if @tab == 'penalty' %>
+  <% if @users_with_penalties&.any? %>
+    <table class="users-table">
+      <thead class="table-header">
+        <tr>
+          <th>이름</th>
+          <th>아이디</th>
+          <th>시스템</th>
+          <th>담당</th>
+          <th style="text-align: center;">노쇼</th>
+          <th style="text-align: center;">취소</th>
+          <th style="text-align: center;">총횟수</th>
+          <th>상태</th>
+          <th>관리</th>
+        </tr>
+      </thead>
+      <tbody class="user-table-body">
+        <% @users_with_penalties.each do |user| %>
+          <% total_count = user['no_show_count'] + user['cancel_count'] %>
+          <% is_blocked = user['is_blocked'] %>
+          <tr class="user-row penalty-row" data-name="<%= user['name'] %>" data-username="<%= user['username'] %>" data-system="<%= user['system'] || 'practice' %>">
+            <td><span class="user-name"><%= user['name'] %></span></td>
+            <td><%= user['username'] %></td>
+            <td>
+              <% if user['system'] == 'makeup' %>
+                <span class="system-badge system-makeup">보충수업</span>
+              <% else %>
+                <span class="system-badge system-practice">연습실</span>
+              <% end %>
+            </td>
+            <td><%= user['teacher'] %></td>
+            <td style="text-align: center;">
+              <span class="penalty-count <%= user['no_show_count'] > 0 ? 'penalty-high' : 'penalty-low' %>">
+                <%= user['no_show_count'] %>
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <span class="penalty-count <%= user['cancel_count'] > 0 ? 'penalty-medium' : 'penalty-low' %>">
+                <%= user['cancel_count'] %>
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <span class="penalty-count <%= total_count >= 5 ? 'penalty-high' : (total_count >= 3 ? 'penalty-medium' : 'penalty-low') %>">
+                <%= total_count %>
+              </span>
+            </td>
+            <td>
+              <% if is_blocked %>
+                <span class="status-badge status-blocked">차단됨</span>
+              <% elsif total_count >= 2 %>
+                <span class="status-badge status-warning">주의</span>
+              <% else %>
+                <span class="status-badge status-normal">정상</span>
+              <% end %>
+            </td>
+            <td>
+              <button onclick="resetPenalty(<%= user['id'] %>, '<%= user['system'] %>', event)" 
+                      class="action-btn btn-reset">초기화</button>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">✅</div>
+      <div class="empty-state-text">페널티가 있는 회원이 없습니다</div>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- 페이지네이션 -->
+<% if @total_pages && @total_pages > 1 %>
+  <div class="pagination-container" style="margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+    <% if @page > 1 %>
+      <button onclick="changePage(<%= @page - 1 %>)" class="pagination-btn" style="padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        ← 이전
+      </button>
+    <% end %>
+    
+    <div class="pagination-info" style="display: flex; gap: 5px; align-items: center;">
+      <% (1..@total_pages).each do |page_num| %>
+        <% if page_num == @page %>
+          <span class="current-page" style="padding: 8px 12px; background: #667eea; color: white; border-radius: 6px; font-weight: bold;">
+            <%= page_num %>
+          </span>
+        <% elsif (page_num - @page).abs <= 2 || page_num == 1 || page_num == @total_pages %>
+          <button onclick="changePage(<%= page_num %>)" class="page-num-btn" style="padding: 8px 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer;">
+            <%= page_num %>
+          </button>
+        <% elsif (page_num - @page).abs == 3 %>
+          <span style="padding: 0 5px;">...</span>
+        <% end %>
+      <% end %>
+    </div>
+    
+    <% if @page < @total_pages %>
+      <button onclick="changePage(<%= @page + 1 %>)" class="pagination-btn" style="padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        다음 →
+      </button>
+    <% end %>
+    
+    <div style="margin-left: 20px; color: #718096; font-size: 0.9rem;">
+      전체 <%= @total_count %>명 (페이지 <%= @page %>/<%= @total_pages %>)
+    </div>
+  </div>
+<% end %>

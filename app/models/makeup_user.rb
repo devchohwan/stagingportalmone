@@ -12,7 +12,7 @@ class MakeupUser < MakeupBase
     current_month = Date.current.month
     current_year = Date.current.year
     
-    penalties.find_or_create_by(month: current_month, year: current_year) do |penalty|
+    penalties.find_or_create_by(month: current_month, year: current_year, system_type: 'makeup') do |penalty|
       penalty.no_show_count = 0
       penalty.cancel_count = 0
       penalty.is_blocked = false

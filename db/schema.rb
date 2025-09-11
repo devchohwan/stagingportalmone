@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_10_085318) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_11_041130) do
   create_table "makeup_availabilities", force: :cascade do |t|
     t.string "teacher_name", null: false
     t.integer "day_of_week"
@@ -96,7 +96,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_085318) do
     t.boolean "is_blocked"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id", "year", "month"], name: "index_penalties_on_user_id_and_year_and_month", unique: true
+    t.string "system_type", default: "practice", null: false
+    t.index ["user_id", "year", "month", "system_type"], name: "index_penalties_on_user_year_month_system", unique: true
     t.index ["user_id"], name: "index_penalties_on_user_id"
   end
 

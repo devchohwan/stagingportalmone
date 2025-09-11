@@ -42,12 +42,22 @@ class User < ApplicationRecord
   end
   
   # 현재 달의 페널티 정보 가져오기 (practice 시스템과 동일)
-  def current_month_penalty
-    penalties.find_or_create_by(month: Date.current.month, year: Date.current.year) do |p|
+  def current_month_penalty(system_type = 'practice')
+    penalties.find_or_create_by(month: Date.current.month, year: Date.current.year, system_type: system_type) do |p|
       p.no_show_count = 0
       p.cancel_count = 0
       p.is_blocked = false
     end
+  end
+  
+  # 연습실 전용 페널티
+  def practice_penalty
+    current_month_penalty('practice')
+  end
+  
+  # 보충수업 전용 페널티
+  def makeup_penalty
+    current_month_penalty('makeup')
   end
   
   # 비밀번호 업데이트 메서드

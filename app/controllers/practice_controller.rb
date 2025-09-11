@@ -17,8 +17,8 @@ class PracticeController < ApplicationController
   end
   
   def reserve
-    if current_user.blocked?
-      flash[:alert] = '월 2회 이상 노쇼/취소하여 이용이 제한되었습니다'
+    if current_user.practice_penalty.is_blocked?
+      flash[:alert] = '월 2회 이상 노쇼/취소하여 연습실 이용이 제한되었습니다'
       redirect_to practice_path
       return
     end
@@ -91,21 +91,7 @@ class PracticeController < ApplicationController
   
   def cancel_reservation
     if @reservation.cancellable?
-      # active 상태의 예약 취소 시 페널티 적용
-      if @reservation.status == 'active'
-        # 페널티 적용 - 취소 횟수 증가
-        penalty = current_user.current_month_penalty
-        penalty.increment!(:cancel_count)
-        
-        # 총 페널티 횟수 확인 (노쇼 + 취소)
-        total_penalties = penalty.no_show_count + penalty.cancel_count
-        
-        # 2회 이상이면 차단
-        if total_penalties >= 2
-          penalty.update(is_blocked: true)
-        end
-      end
-      
+      # Reservation 모델의 after_update 콜백에서 페널티 처리하므로 여기서는 상태만 변경
       @reservation.update(status: 'cancelled', cancelled_by: 'user')
       
       if @reservation.status_was == 'active'

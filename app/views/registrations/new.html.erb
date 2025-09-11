@@ -162,7 +162,18 @@ function sendPhoneVerification() {
     },
     body: JSON.stringify({ phone: phone })
   })
-  .then(response => response.json())
+  .then(response => {
+    // 응답 상태 먼저 확인
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    // Content-Type 확인
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error("서버 응답이 JSON 형식이 아닙니다. 페이지를 새로고침 후 다시 시도해주세요.");
+    }
+    return response.json();
+  })
   .then(data => {
     if (!data.success) {
       alert(data.message || '인증번호 발송에 실패했습니다.');
@@ -172,7 +183,7 @@ function sendPhoneVerification() {
   })
   .catch(error => {
     console.error('Error:', error);
-    alert('인증번호 발송 중 오류가 발생했습니다.');
+    alert(error.message || '인증번호 발송 중 오류가 발생했습니다.');
   });
   
   // UI 업데이트
@@ -235,7 +246,18 @@ function verifyCode() {
     },
     body: JSON.stringify({ code: code })
   })
-  .then(response => response.json())
+  .then(response => {
+    // 응답 상태 먼저 확인
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    // Content-Type 확인
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error("서버 응답이 JSON 형식이 아닙니다. 페이지를 새로고침 후 다시 시도해주세요.");
+    }
+    return response.json();
+  })
   .then(data => {
     if (!data.success) {
       alert(data.message || '인증번호가 일치하지 않습니다.');
