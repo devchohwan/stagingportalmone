@@ -26,10 +26,8 @@ class MakeupReservation < MakeupBase
   # 스코프
   scope :active, -> { where(status: 'active') }
   scope :today, -> { 
-    # UTC로 저장되어 있으므로 KST 기준으로 조회
-    kst_start = (Date.current.beginning_of_day - 9.hours)
-    kst_end = (Date.current.end_of_day - 9.hours)
-    where(start_time: kst_start..kst_end) 
+    # Rails는 자동으로 시간대를 처리하므로 그냥 Date.current 사용
+    where(start_time: Date.current.beginning_of_day..Date.current.end_of_day)
   }
   
   # 시간 속성을 KST로 변환
