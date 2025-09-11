@@ -92,6 +92,7 @@ Rails.application.configure do
       "pt.monemusic.com",
       "makeup.monemusic.com",
       "monemusic.com",
+      "stagingportal.monemusic.com",
       "localhost"
     ]
   end

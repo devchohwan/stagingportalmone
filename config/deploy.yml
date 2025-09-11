@@ -84,11 +84,7 @@ volumes:
 asset_path: /rails/public/assets
 
 # Configure readiness delay to give app more time to start
-# readiness_delay: 60
-
-# Disable health check
-# healthcheck:
-#   max_attempts: 1
+readiness_delay: 60
 
 # Configure the image builder.
 builder:

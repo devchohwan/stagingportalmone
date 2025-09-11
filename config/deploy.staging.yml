@@ -1,16 +1,17 @@
 # Staging deployment configuration
-service: portal-monemusic-staging
+service: portal-staging
 
-image: amuguona/portal-monemusic
+image: amuguona/portal-staging
 
 servers:
   web:
     - 115.68.195.125
 
+# Staging용 proxy 설정
 proxy:
   ssl: true
   host: stagingportal.monemusic.com
-  app_port: 3003
+  app_port: 3000
 
 registry:
   username: amuguona
@@ -28,7 +29,9 @@ env:
     SERVICE_TYPE: portal
     RAILS_LOG_TO_STDOUT: true
     RAILS_SERVE_STATIC_FILES: true
-    RAILS_ENV: production  # staging 환경 설정이 없으므로 production 사용
+    RAILS_ENV: production  # staging 환경 파일이 없으므로 production 사용
+    # 스테이징 식별을 위한 환경변수
+    DEPLOYMENT_ENV: staging
 
 aliases:
   console: app exec --interactive --reuse "bin/rails console"
@@ -37,12 +40,11 @@ aliases:
   dbc: app exec --interactive --reuse "bin/rails dbconsole"
 
 volumes:
-  - "portal_monemusic_staging_storage:/rails/storage"
+  - "portal_staging_storage:/rails/storage"
 
 asset_path: /rails/public/assets
 
-# Give more time for the app to start
-readiness_delay: 120  # 2분 대기
+readiness_delay: 60
 
 builder:
   arch: amd64
@@ -50,16 +52,17 @@ builder:
 ssh:
   user: root
 
-accessories:
-  postgres:
-    image: postgres:16
-    host: 115.68.195.125
-    port: 5432
-    env:
-      clear:
-        POSTGRES_USER: monemusic
-        POSTGRES_DB: monemusic_staging
-      secret:
-        - POSTGRES_PASSWORD
-    volumes:
-      - "postgres_staging_data:/var/lib/postgresql/data"
+# 스테이징용 별도 PostgreSQL (선택사항)
+# accessories:
+#   postgres:
+#     image: postgres:16
+#     host: 115.68.195.125
+#     port: 5433  # 다른 포트 사용
+#     env:
+#       clear:
+#         POSTGRES_USER: monemusic
+#         POSTGRES_DB: monemusic_staging
+#       secret:
+#         - POSTGRES_PASSWORD
+#     volumes:
+#       - "postgres_staging_data:/var/lib/postgresql/data"
