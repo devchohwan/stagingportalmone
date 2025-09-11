@@ -1,0 +1,19 @@
+<%= turbo_frame_tag "reservation_status_#{reservation.id}" do %>
+  <%= form_with url: update_status_admin_reservation_path(reservation),
+                method: :patch,
+                local: false,
+                data: { turbo_frame: "_self" } do |f| %>
+    <%= hidden_field_tag :service, service_type %>
+    <%= select_tag :status,
+        options_for_select(
+          service_type == 'makeup' ? 
+            [['승인 대기', 'pending'], ['수업 대기', 'active'], ['완료', 'completed'], 
+             ['거절됨', 'rejected'], ['취소', 'cancelled'], ['노쇼', 'no_show']] :
+            [['대기', 'pending'], ['이용 전', 'active'], ['완료', 'completed'],
+             ['취소', 'cancelled'], ['노쇼', 'no_show']],
+          reservation.status
+        ),
+        onchange: "this.form.requestSubmit()",
+        class: "status-select" %>
+  <% end %>
+<% end %>

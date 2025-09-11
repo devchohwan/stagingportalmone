@@ -210,6 +210,13 @@ class Admin::ReservationsController < ApplicationController
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
+          format.turbo_stream {
+            render turbo_stream: turbo_stream.replace(
+              "reservation_status_#{reservation.id}",
+              partial: "admin/dashboard/reservation_status_form",
+              locals: { reservation: reservation, service_type: params[:service] }
+            )
+          }
         end
       else
         Rails.logger.error "Update failed: #{reservation.errors.full_messages.join(', ')}"
@@ -231,6 +238,13 @@ class Admin::ReservationsController < ApplicationController
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
+          format.turbo_stream {
+            render turbo_stream: turbo_stream.replace(
+              "reservation_status_#{reservation.id}",
+              partial: "admin/dashboard/reservation_status_form",
+              locals: { reservation: reservation, service_type: params[:service] }
+            )
+          }
         end
       else
         Rails.logger.error "Update failed: #{reservation.errors.full_messages.join(', ')}"
