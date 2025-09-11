@@ -20,6 +20,7 @@
         <div>
           <%= f.label :username, "아이디", class: "block text-sm font-medium text-gray-700" %>
           <%= f.text_field :username, 
+              value: @user_params&.[](:username),
               required: true,
               class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
         </div>
@@ -42,6 +43,7 @@
         <div>
           <%= f.label :name, "이름", class: "block text-sm font-medium text-gray-700" %>
           <%= f.text_field :name,
+              value: @user_params&.[](:name),
               required: true,
               class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
         </div>
@@ -50,6 +52,7 @@
           <%= f.label :phone, "핸드폰 번호", class: "block text-sm font-medium text-gray-700" %>
           <div class="mt-1 flex gap-2">
             <%= f.text_field :phone,
+                value: @user_params&.[](:phone),
                 id: "phone-input",
                 placeholder: "010-0000-0000",
                 class: "flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
@@ -87,7 +90,7 @@
           <%= f.label :teacher, "담당 선생님", class: "block text-sm font-medium text-gray-700" %>
           <p class="text-xs text-red-600 mt-1">*반드시 지금 배우고 있는 선생님을 선택해주세요.</p>
           <%= f.select :teacher, 
-              options_for_select(@teachers), 
+              options_for_select(@teachers.map {|t| [t, t]}, @user_params&.[](:teacher)), 
               { prompt: "선생님을 선택하세요" }, 
               class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
               required: true,
@@ -304,14 +307,15 @@ function toggleOnlineVerification(value) {
 // 폼 제출 시 인증 확인 (선택사항)
 document.addEventListener('DOMContentLoaded', function() {
   // 페이지 로드 시 온라인 인증 섹션 초기 상태 설정
-  const onlineSection = document.getElementById('online-verification-section');
-  if (onlineSection) {
-    onlineSection.style.display = 'none';
-  }
-  
   const teacherSelect = document.querySelector('[name="teacher"]');
   if (teacherSelect) {
+    // 이전 선택값이 있으면 그에 따라 온라인 인증 섹션 표시
     toggleOnlineVerification(teacherSelect.value);
+  } else {
+    const onlineSection = document.getElementById('online-verification-section');
+    if (onlineSection) {
+      onlineSection.style.display = 'none';
+    }
   }
   
   const form = document.querySelector('form');

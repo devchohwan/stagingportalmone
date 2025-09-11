@@ -1,5 +1,6 @@
 class RegistrationsController < ApplicationController
   def new
+    @user_params = params.permit(:username, :name, :phone, :teacher)
     @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
   end
 
@@ -7,6 +8,7 @@ class RegistrationsController < ApplicationController
     # 비밀번호 확인 검증
     if params[:password] != params[:password_confirmation]
       flash.now[:alert] = "비밀번호와 비밀번호 확인이 일치하지 않습니다."
+      @user_params = params.permit(:username, :name, :phone, :teacher)
       @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
       render :new, status: :unprocessable_entity and return
     end
@@ -14,6 +16,7 @@ class RegistrationsController < ApplicationController
     # 전화번호 인증 확인
     unless session[:phone_verified] && session[:verified_phone] == params[:phone]
       flash.now[:alert] = "전화번호 인증을 완료해주세요."
+      @user_params = params.permit(:username, :name, :phone, :teacher)
       @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
       render :new, status: :unprocessable_entity and return
     end
@@ -60,7 +63,21 @@ class RegistrationsController < ApplicationController
       flash[:notice] = "signup_success"
       redirect_to login_path
     else
-      flash.now[:alert] = user.errors.full_messages.join(", ")
+      # 에러 메시지 한글화
+      error_messages = user.errors.full_messages.map do |msg|
+        if msg.include?("Username has already been taken")
+          "이미 가입된 아이디입니다"
+        elsif msg.include?("Username can't be blank")
+          "아이디를 입력해주세요"
+        elsif msg.include?("Name can't be blank")
+          "이름을 입력해주세요"
+        else
+          msg
+        end
+      end
+      
+      flash.now[:alert] = error_messages.join(", ")
+      @user_params = params.permit(:username, :name, :phone, :teacher)
       @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
       render :new, status: :unprocessable_entity
     end
