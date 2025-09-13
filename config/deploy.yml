@@ -38,6 +38,9 @@ env:
     - RAILS_MASTER_KEY
     - DB_USERNAME
     - DB_PASSWORD
+    - SOLAPI_API_KEY
+    - SOLAPI_API_SECRET
+    - SOLAPI_SENDER_PHONE
   clear:
     # Database configuration
     DB_HOST: 115.68.195.125
@@ -137,6 +140,9 @@ accessories:
         - RAILS_MASTER_KEY
         - DB_USERNAME
         - DB_PASSWORD
+        - SOLAPI_API_KEY
+        - SOLAPI_API_SECRET
+        - SOLAPI_SENDER_PHONE
     cmd: "./bin/rails server -p 3001 -b 0.0.0.0"
     volumes:
       - "practice_storage:/rails/storage"
@@ -157,6 +163,9 @@ accessories:
         - RAILS_MASTER_KEY
         - DB_USERNAME
         - DB_PASSWORD
+        - SOLAPI_API_KEY
+        - SOLAPI_API_SECRET
+        - SOLAPI_SENDER_PHONE
     cmd: "./bin/rails server -p 3002 -b 0.0.0.0"
     volumes:
       - "makeup_storage:/rails/storage"

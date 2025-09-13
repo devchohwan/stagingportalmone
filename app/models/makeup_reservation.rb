@@ -75,4 +75,9 @@ class MakeupReservation < MakeupBase
       update_column(:status, 'completed')
     end
   end
+  
+  # 클래스 메서드로 모든 레코드 업데이트
+  def self.update_status_by_time!
+    where(status: 'active').find_each(&:update_status_by_time!)
+  end
 end

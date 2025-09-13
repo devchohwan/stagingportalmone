@@ -174,12 +174,15 @@ class Admin::DashboardController < ApplicationController
     
     user = User.find(params[:id])
     
-    if user.update(phone: params[:phone])
-      Rails.logger.info "Phone updated successfully"
-      head :ok
+    # JSON 요청일 때는 params에서 직접 가져오고, 아니면 일반 params 사용
+    phone_value = request.content_type =~ /json/ ? params[:phone] : params[:phone]
+    
+    if user.update(phone: phone_value)
+      Rails.logger.info "Phone updated successfully for user #{user.id}: #{phone_value}"
+      render json: { success: true }, status: :ok
     else
-      Rails.logger.error "Failed to update phone"
-      head :unprocessable_entity
+      Rails.logger.error "Failed to update phone: #{user.errors.full_messages}"
+      render json: { success: false, errors: user.errors.full_messages }, status: :unprocessable_entity
     end
   end
   
@@ -300,7 +303,21 @@ class Admin::DashboardController < ApplicationController
   end
   
   def update_makeup_user_info
-    update_practice_user_info
+    Rails.logger.info "=== ADMIN UPDATE MAKEUP USER INFO ==="
+    Rails.logger.info "Params: #{params.inspect}"
+    
+    user = MakeupUser.find(params[:id])
+    
+    # JSON 요청일 때는 params에서 직접 가져오고, 아니면 일반 params 사용
+    phone_value = request.content_type =~ /json/ ? params[:phone] : params[:phone]
+    
+    if user.update(phone: phone_value)
+      Rails.logger.info "Phone updated successfully for makeup user #{user.id}: #{phone_value}"
+      render json: { success: true }, status: :ok
+    else
+      Rails.logger.error "Failed to update phone: #{user.errors.full_messages}"
+      render json: { success: false, errors: user.errors.full_messages }, status: :unprocessable_entity
+    end
   end
   
   # 기타 페이지들 (임시)
