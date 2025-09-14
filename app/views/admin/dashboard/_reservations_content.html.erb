@@ -327,6 +327,7 @@
             <th>날짜</th>
             <th>시간</th>
             <th>상태</th>
+            <th>신청시간</th>
             <th>관리</th>
           </tr>
         </thead>
@@ -408,6 +409,10 @@
                     <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% end %>
                 <% end %>
+              </td>
+              <td style="font-size: 0.75rem; color: #6b7280;">
+                <div><%= reservation.created_at.strftime('%m월 %d일') %></div>
+                <div style="color: #9ca3af;"><%= reservation.created_at.strftime('%H시 %M분') %></div>
               </td>
               <td>
                 <div class="action-controls">

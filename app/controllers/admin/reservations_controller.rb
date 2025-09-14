@@ -207,6 +207,17 @@ class Admin::ReservationsController < ApplicationController
       
       # 관리자는 validation 무시하고 강제 업데이트
       if reservation.update_columns(update_attrs)
+        # 거절 시 SMS 발송
+        if params[:status] == 'rejected' && reservation.user && reservation.user.phone.present?
+          sms_service = SmsService.new
+          result = sms_service.send_rejection_notification(reservation.user.phone, reservation.user.name)
+          
+          if result[:success]
+            Rails.logger.info "거절 알림 SMS 전송 성공: #{reservation.user.phone}"
+          else
+            Rails.logger.error "거절 알림 SMS 전송 실패: #{reservation.user.phone}"
+          end
+        end
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }
@@ -235,6 +246,18 @@ class Admin::ReservationsController < ApplicationController
       
       # 관리자는 validation 무시하고 강제 업데이트
       if reservation.update_columns(update_attrs)
+        # 거절 시 SMS 발송
+        if params[:status] == 'rejected' && reservation.user && reservation.user.phone.present?
+          sms_service = SmsService.new
+          result = sms_service.send_rejection_notification(reservation.user.phone, reservation.user.name)
+          
+          if result[:success]
+            Rails.logger.info "거절 알림 SMS 전송 성공: #{reservation.user.phone}"
+          else
+            Rails.logger.error "거절 알림 SMS 전송 실패: #{reservation.user.phone}"
+          end
+        end
+        
         respond_to do |format|
           format.html { redirect_to admin_reservations_path(redirect_params), notice: '예약 상태가 변경되었습니다.' }
           format.json { render json: { success: true, message: '예약 상태가 변경되었습니다.' } }

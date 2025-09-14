@@ -9,7 +9,7 @@ class SmsService
   def initialize
     @api_key = ENV['SOLAPI_API_KEY']
     @api_secret = ENV['SOLAPI_API_SECRET']
-    @sender = ENV['SOLAPI_SENDER_PHONE']
+    @sender = ENV['SOLAPI_SENDER'] || ENV['SOLAPI_SENDER_PHONE']
     @base_url = 'https://api.solapi.com'
   end
   
@@ -75,6 +75,43 @@ class SmsService
       end
     rescue => e
       Rails.logger.error "승인 알림 SMS 오류: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      { success: false }
+    end
+  end
+  
+  # 예약 거절 알림
+  def send_rejection_notification(phone, name)
+    if @api_key.nil? || @api_secret.nil? || @sender.nil?
+      Rails.logger.error "솔라피 환경변수가 설정되지 않았습니다."
+      return { success: false, message: "SMS 발송 설정이 올바르지 않습니다." }
+    end
+    
+    begin
+      message = {
+        to: phone.gsub('-', ''),
+        from: @sender.gsub('-', ''),
+        text: "[모네뮤직] 안녕하세요 #{name}님, 신청하신 예약이 거절되었습니다. 자세한 사항은 문의해 주세요."
+      }
+      
+      Rails.logger.info "===== 거절 알림 SMS 전송 시도 ====="
+      Rails.logger.info "수신번호: #{phone}"
+      Rails.logger.info "발신번호: #{@sender}"
+      Rails.logger.info "메시지: [모네뮤직] 안녕하세요 #{name}님, 신청하신 예약이 거절되었습니다."
+      
+      result = send_sms(message)
+      
+      Rails.logger.info "SMS 전송 결과: #{result.inspect}"
+      
+      if result['statusCode'] == '2000'
+        Rails.logger.info "거절 알림 SMS 전송 성공!"
+        { success: true }
+      else
+        Rails.logger.error "거절 알림 SMS 전송 실패: #{result['statusMessage'] || result['errorMessage'] || 'Unknown error'}"
+        { success: false }
+      end
+    rescue => e
+      Rails.logger.error "거절 알림 SMS 오류: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
       { success: false }
     end
