@@ -354,16 +354,17 @@ class Admin::DashboardController < ApplicationController
   
   def user_to_hash(user)
     # 기본 사용자 정보만 반환 (penalty 정보는 별도로 처리)
+    # phone과 online_verification_image는 프로덕션 DB에 없을 수 있으므로 안전하게 처리
     {
       'id' => user.id,
       'username' => user.username,
       'name' => user.name,
       'email' => user.email,
-      'phone' => user.phone,
+      'phone' => user.respond_to?(:phone) ? user.phone : nil,
       'teacher' => user.teacher,
       'status' => user.status,
       'created_at' => user.created_at.to_s,
-      'online_verification_image' => user.online_verification_image,
+      'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
       'no_show_count' => 0,  # 기본값
       'cancel_count' => 0,   # 기본값
       'is_blocked' => false  # 기본값
