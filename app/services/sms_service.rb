@@ -80,24 +80,77 @@ class SmsService
     end
   end
   
-  # 예약 거절 알림
-  def send_rejection_notification(phone, name)
+  # 보충수업 승인 알림
+  def send_makeup_approval_notification(phone, name, reservation = nil)
     if @api_key.nil? || @api_secret.nil? || @sender.nil?
       Rails.logger.error "솔라피 환경변수가 설정되지 않았습니다."
       return { success: false, message: "SMS 발송 설정이 올바르지 않습니다." }
     end
     
     begin
+      # 예약 시간 정보가 있으면 포함, 없으면 기본 메시지
+      if reservation && reservation.start_time
+        date_time = reservation.start_time.strftime('%m월 %d일 %H시 %M분')
+        message_text = "안녕하세요 #{name}님.\n신청하신 #{date_time} 보충수업 예약이\n승인되셨습니다. 그때 뵐게요!"
+      else
+        message_text = "안녕하세요 #{name}님.\n신청하신 보충수업 예약이\n승인되셨습니다. 그때 뵐게요!"
+      end
+      
       message = {
         to: phone.gsub('-', ''),
         from: @sender.gsub('-', ''),
-        text: "[모네뮤직] 안녕하세요 #{name}님, 신청하신 예약이 거절되었습니다. 자세한 사항은 문의해 주세요."
+        text: message_text
+      }
+      
+      Rails.logger.info "===== 보충수업 승인 알림 SMS 전송 시도 ====="
+      Rails.logger.info "수신번호: #{phone}"
+      Rails.logger.info "발신번호: #{@sender}"
+      Rails.logger.info "메시지: #{message_text}"
+      
+      result = send_sms(message)
+      
+      Rails.logger.info "SMS 전송 결과: #{result.inspect}"
+      
+      if result['statusCode'] == '2000'
+        Rails.logger.info "보충수업 승인 알림 SMS 전송 성공!"
+        { success: true }
+      else
+        Rails.logger.error "보충수업 승인 알림 SMS 전송 실패: #{result['statusMessage'] || result['errorMessage'] || 'Unknown error'}"
+        { success: false }
+      end
+    rescue => e
+      Rails.logger.error "보충수업 승인 알림 SMS 오류: #{e.message}"
+      Rails.logger.error e.backtrace.join("\\n")
+      { success: false }
+    end
+  end
+  
+  # 예약 거절 알림
+  def send_rejection_notification(phone, name, reservation = nil)
+    if @api_key.nil? || @api_secret.nil? || @sender.nil?
+      Rails.logger.error "솔라피 환경변수가 설정되지 않았습니다."
+      return { success: false, message: "SMS 발송 설정이 올바르지 않습니다." }
+    end
+    
+    begin
+      # 예약 시간 정보가 있으면 포함, 없으면 기본 메시지
+      if reservation && reservation.start_time
+        date_time = reservation.start_time.strftime('%m월 %d일 %H시 %M분')
+        message_text = "[모네뮤직 연습실] 안녕하세요 #{name}님.\n신청하신 #{date_time} 보충수업 예약이\n미리 신청하신 분이 있는 관계로 거절되었습니다.\n다른 시간에 다시 신청 부탁드려요!"
+      else
+        message_text = "[모네뮤직 연습실] 안녕하세요 #{name}님.\n신청하신 보충수업 예약이\n미리 신청하신 분이 있는 관계로 거절되었습니다.\n다른 시간에 다시 신청 부탁드려요!"
+      end
+      
+      message = {
+        to: phone.gsub('-', ''),
+        from: @sender.gsub('-', ''),
+        text: message_text
       }
       
       Rails.logger.info "===== 거절 알림 SMS 전송 시도 ====="
       Rails.logger.info "수신번호: #{phone}"
       Rails.logger.info "발신번호: #{@sender}"
-      Rails.logger.info "메시지: [모네뮤직] 안녕하세요 #{name}님, 신청하신 예약이 거절되었습니다."
+      Rails.logger.info "메시지: #{message_text}"
       
       result = send_sms(message)
       

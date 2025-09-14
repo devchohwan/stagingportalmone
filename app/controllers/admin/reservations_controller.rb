@@ -87,6 +87,17 @@ class Admin::ReservationsController < ApplicationController
       reservation = MakeupReservation.find(params[:id])
       # validation 없이 직접 업데이트 (관리자 권한)
       if reservation.update_attribute(:status, 'active')
+        # 승인 시 SMS 발송
+        if reservation.user && reservation.user.phone.present?
+          sms_service = SmsService.new
+          result = sms_service.send_makeup_approval_notification(reservation.user.phone, reservation.user.name, reservation)
+          
+          if result[:success]
+            Rails.logger.info "보충수업 승인 알림 SMS 전송 성공: #{reservation.user.phone}"
+          else
+            Rails.logger.error "보충수업 승인 알림 SMS 전송 실패: #{reservation.user.phone}"
+          end
+        end
         redirect_back(fallback_location: admin_reservations_path(service: 'makeup'), notice: '예약이 승인되었습니다.')
       else
         redirect_back(fallback_location: admin_reservations_path(service: 'makeup'), alert: '예약 승인에 실패했습니다.')
@@ -207,10 +218,22 @@ class Admin::ReservationsController < ApplicationController
       
       # 관리자는 validation 무시하고 강제 업데이트
       if reservation.update_columns(update_attrs)
+        # 승인 시 SMS 발송
+        if params[:status] == 'active' && reservation.user && reservation.user.phone.present?
+          sms_service = SmsService.new
+          result = sms_service.send_makeup_approval_notification(reservation.user.phone, reservation.user.name, reservation)
+          
+          if result[:success]
+            Rails.logger.info "보충수업 승인 알림 SMS 전송 성공: #{reservation.user.phone}"
+          else
+            Rails.logger.error "보충수업 승인 알림 SMS 전송 실패: #{reservation.user.phone}"
+          end
+        end
+        
         # 거절 시 SMS 발송
         if params[:status] == 'rejected' && reservation.user && reservation.user.phone.present?
           sms_service = SmsService.new
-          result = sms_service.send_rejection_notification(reservation.user.phone, reservation.user.name)
+          result = sms_service.send_rejection_notification(reservation.user.phone, reservation.user.name, reservation)
           
           if result[:success]
             Rails.logger.info "거절 알림 SMS 전송 성공: #{reservation.user.phone}"
@@ -249,7 +272,7 @@ class Admin::ReservationsController < ApplicationController
         # 거절 시 SMS 발송
         if params[:status] == 'rejected' && reservation.user && reservation.user.phone.present?
           sms_service = SmsService.new
-          result = sms_service.send_rejection_notification(reservation.user.phone, reservation.user.name)
+          result = sms_service.send_rejection_notification(reservation.user.phone, reservation.user.name, reservation)
           
           if result[:success]
             Rails.logger.info "거절 알림 SMS 전송 성공: #{reservation.user.phone}"
