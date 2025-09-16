@@ -83,11 +83,24 @@ class Admin::DashboardController < ApplicationController
       
       practice_penalties = practice_penalty_users.map do |user|
         penalty = user.penalties.find { |p| p.month == current_month && p.year == current_year && p.system_type == 'practice' }
+        
+        # 가장 최근의 취소/노쇼 예약 신청 시간 찾기
+        latest_cancelled_reservation = user.reservations
+          .where(status: ['cancelled', 'no_show'])
+          .where('DATE(start_time) >= ?', Date.new(current_year, current_month, 1))
+          .where('DATE(start_time) <= ?', Date.new(current_year, current_month, -1))
+          .order(updated_at: :desc)
+          .first
+        
+        reservation_time = latest_cancelled_reservation&.created_at
+        
         user_to_hash(user).merge(
           'no_show_count' => penalty.no_show_count,
           'cancel_count' => penalty.cancel_count,
           'is_blocked' => penalty.is_blocked,
-          'system' => 'practice'
+          'system' => 'practice',
+          'penalty_created_at' => penalty.created_at,
+          'reservation_time' => reservation_time
         )
       end
       
@@ -103,11 +116,24 @@ class Admin::DashboardController < ApplicationController
       
       makeup_penalties = makeup_penalty_users.map do |user|
         penalty = user.penalties.find { |p| p.month == current_month && p.year == current_year && p.system_type == 'makeup' }
+        
+        # 가장 최근의 취소/노쇼 보충수업 예약 신청 시간 찾기
+        latest_cancelled_makeup = user.makeup_reservations
+          .where(status: ['cancelled', 'no_show'])
+          .where('DATE(start_time) >= ?', Date.new(current_year, current_month, 1))
+          .where('DATE(start_time) <= ?', Date.new(current_year, current_month, -1))
+          .order(updated_at: :desc)
+          .first
+        
+        reservation_time = latest_cancelled_makeup&.created_at
+        
         user_to_hash(user).merge(
           'no_show_count' => penalty.no_show_count,
           'cancel_count' => penalty.cancel_count,
           'is_blocked' => penalty.is_blocked,
-          'system' => 'makeup'
+          'system' => 'makeup',
+          'penalty_created_at' => penalty.created_at,
+          'reservation_time' => reservation_time
         )
       end
       

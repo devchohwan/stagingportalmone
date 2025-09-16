@@ -217,7 +217,17 @@ class Admin::ReservationsController < ApplicationController
       # rejected 상태는 거절로 처리 (페널티 없음, cancelled_by 설정하지 않음)
       
       # 관리자는 validation 무시하고 강제 업데이트
-      if reservation.update_columns(update_attrs)
+      # no_show나 cancelled 상태로 변경할 때는 콜백을 실행해야 페널티가 적용됨
+      if params[:status] == 'no_show' || (params[:status] == 'cancelled' && reservation.cancelled_by != 'admin')
+        # save(validate: false)를 사용하여 validation은 무시하되 콜백은 실행
+        reservation.assign_attributes(update_attrs)
+        success = reservation.save(validate: false)
+      else
+        # 다른 상태 변경은 콜백 없이 직접 업데이트
+        success = reservation.update_columns(update_attrs)
+      end
+      
+      if success
         # 승인 시 SMS 발송
         if params[:status] == 'active' && reservation.user && reservation.user.phone.present?
           sms_service = SmsService.new
@@ -268,7 +278,17 @@ class Admin::ReservationsController < ApplicationController
       # rejected 상태는 거절로 처리 (페널티 없음)
       
       # 관리자는 validation 무시하고 강제 업데이트
-      if reservation.update_columns(update_attrs)
+      # no_show나 cancelled 상태로 변경할 때는 콜백을 실행해야 페널티가 적용됨
+      if params[:status] == 'no_show' || (params[:status] == 'cancelled' && reservation.cancelled_by != 'admin')
+        # save(validate: false)를 사용하여 validation은 무시하되 콜백은 실행
+        reservation.assign_attributes(update_attrs)
+        success = reservation.save(validate: false)
+      else
+        # 다른 상태 변경은 콜백 없이 직접 업데이트
+        success = reservation.update_columns(update_attrs)
+      end
+      
+      if success
         # 거절 시 SMS 발송
         if params[:status] == 'rejected' && reservation.user && reservation.user.phone.present?
           sms_service = SmsService.new

@@ -562,7 +562,9 @@
           statusBadge.style.transform = 'scale(1.1)';
           
           setTimeout(() => {
-            statusBadge.className = 'status-badge status-' + status;
+            // status의 밑줄을 하이픈으로 변환
+            const cssClass = status.replace('_', '-');
+            statusBadge.className = 'status-badge status-' + cssClass;
             statusBadge.textContent = statusTexts[status] || status;
             statusBadge.style.transform = 'scale(1)';
           }, 150);
