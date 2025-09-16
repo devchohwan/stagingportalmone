@@ -219,7 +219,6 @@
           <th style="text-align: center;">취소</th>
           <th style="text-align: center;">총횟수</th>
           <th>상태</th>
-          <th>예약신청</th>
           <th>관리</th>
         </tr>
       </thead>
@@ -260,19 +259,6 @@
                 <span class="status-badge status-warning">주의</span>
               <% else %>
                 <span class="status-badge status-normal">정상</span>
-              <% end %>
-            </td>
-            <td style="font-size: 0.75rem; color: #6b7280;">
-              <% if user['reservation_time'] %>
-                <% reservation_time_kst = user['reservation_time'].in_time_zone('Asia/Seoul') %>
-                <div><%= reservation_time_kst.strftime('%m월 %d일') %></div>
-                <div style="color: #9ca3af;"><%= reservation_time_kst.strftime('%H시 %M분') %></div>
-              <% elsif user['penalty_created_at'] %>
-                <div style="color: #f59e0b;"><%= user['penalty_created_at'].strftime('%m월 %d일') %></div>
-                <div style="color: #f59e0b; font-size: 0.7rem;">(페널티 생성)</div>
-              <% else %>
-                <div>-</div>
-                <div style="color: #9ca3af;">-</div>
               <% end %>
             </td>
             <td>
