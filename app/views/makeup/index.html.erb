@@ -252,30 +252,8 @@
         <p class="text-sm"><strong><%= current_user.name %></strong> (<%= current_user.username %>)</p>
         <p class="text-xs text-gray-600">담당: <%= current_user.teacher %> | 전화: <%= current_user.phone || '미등록' %></p>
       </div>
-      
-      <% if current_user.approved? %>
-        <div class="action-buttons">
-          <% if current_user.makeup_penalty.is_blocked? %>
-            <button onclick="alert('월 2회 이상 노쇼/취소하여 보충수업 이용이 제한되었습니다')" class="btn-disabled">예약하기 (제한됨)</button>
-          <% else %>
-            <%= link_to "예약하기", makeup_new_path, class: "btn-primary" %>
-          <% end %>
-          <%= link_to "내 예약 확인", makeup_my_lessons_path, class: "btn-secondary" %>
-        </div>
-      <% else %>
-        <div class="warning-card">
-          <p class="warning-text">회원가입 승인 대기중입니다.</p>
-          <p class="warning-subtext">승인까지 최대 하루가 소요됩니다.</p>
-        </div>
-      <% end %>
-    <% else %>
-      <div class="action-buttons">
-        <%= link_to "로그인", login_path, class: "btn-primary" %>
-        <%= link_to "회원가입", register_path, class: "btn-secondary" %>
-      </div>
-    <% end %>
 
-    <div class="info-section">
+      <div class="info-section">
       <details class="group">
         <summary class="info-header list-none">
           <h2 class="info-title">이용안내 펼쳐보기 (필독!)</h2>
@@ -342,6 +320,28 @@
         </div>
       </details>
     </div>
+      
+      <% if current_user.approved? %>
+        <div class="action-buttons">
+          <% if current_user.blocked? %>
+            <button onclick="alert('월 2회 이상 노쇼/취소하여 이용이 제한되었습니다')" class="btn-disabled">예약하기 (제한됨)</button>
+          <% else %>
+            <%= link_to "예약하기", makeup_new_path, class: "btn-primary" %>
+          <% end %>
+          <%= link_to "내 예약 확인", makeup_my_lessons_path, class: "btn-secondary" %>
+        </div>
+      <% else %>
+        <div class="warning-card">
+          <p class="warning-text">회원가입 승인 대기중입니다.</p>
+          <p class="warning-subtext">승인까지 최대 하루가 소요됩니다.</p>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="action-buttons">
+        <%= link_to "로그인", Rails.configuration.portal_url, class: "btn-primary" %>
+        <%= link_to "회원가입", "#{Rails.configuration.portal_url}/register", class: "btn-secondary" %>
+      </div>
+    <% end %>
 
     <% if logged_in? %>
       <div class="mt-6">
