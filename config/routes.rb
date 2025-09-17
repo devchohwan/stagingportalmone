@@ -25,8 +25,6 @@ Rails.application.routes.draw do
   get "practice/calendar", to: "practice#calendar"
   get "practice/time_slots", to: "practice#time_slots"
   get "practice/available_rooms", to: "practice#available_rooms"
-  get "practice/time_slots", to: "practice#time_slots"
-  get "practice/available_rooms", to: "practice#available_rooms"
   
   # 보충수업 페이지
   get "makeup", to: "makeup#index"
@@ -74,6 +72,7 @@ Rails.application.routes.draw do
         patch :update_status
         patch :approve_reservation
         get :lesson_content
+        get :makeup_cancellation_reason
       end
     end
     

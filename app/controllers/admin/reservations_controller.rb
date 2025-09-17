@@ -149,6 +149,21 @@ class Admin::ReservationsController < ApplicationController
     render json: { success: false, error: '예약을 찾을 수 없습니다.' }, status: :not_found
   end
   
+  def makeup_cancellation_reason
+    reservation = MakeupReservation.find(params[:id])
+    
+    render json: {
+      success: true,
+      user_name: reservation.user.name,
+      date: reservation.start_time.strftime('%Y년 %m월 %d일'),
+      time: "#{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}",
+      room: "#{reservation.makeup_room.number}석",
+      cancellation_reason: reservation.cancellation_reason
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { success: false, error: '예약을 찾을 수 없습니다.' }, status: :not_found
+  end
+  
   def bulk_delete
     reservation_ids = params[:reservation_ids]
     service = params[:service]

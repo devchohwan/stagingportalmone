@@ -92,7 +92,10 @@ class PracticeController < ApplicationController
   def cancel_reservation
     if @reservation.cancellable?
       # Reservation 모델의 after_update 콜백에서 페널티 처리하므로 여기서는 상태만 변경
-      @reservation.update(status: 'cancelled', cancelled_by: 'user')
+      @reservation.update(
+        status: 'cancelled', 
+        cancelled_by: 'user'
+      )
       
       if @reservation.status_was == 'active'
         redirect_to practice_my_reservations_path, notice: '예약이 취소되었습니다. (페널티가 적용되었습니다)'

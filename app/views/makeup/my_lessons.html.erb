@@ -213,6 +213,120 @@
     text-decoration: none;
   }
   
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  .modal-overlay.show {
+    display: flex;
+  }
+  
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 16px;
+  }
+  
+  .modal-info {
+    background-color: #f7fafc;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .modal-info-item {
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 4px;
+  }
+  
+  .modal-input-group {
+    margin-bottom: 20px;
+  }
+  
+  .modal-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 8px;
+  }
+  
+  .modal-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    resize: vertical;
+    font-family: inherit;
+  }
+  
+  .modal-textarea:focus {
+    outline: none;
+    border-color: #f093fb;
+    box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
+  }
+  
+  .modal-buttons {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .modal-btn-cancel {
+    flex: 1;
+    padding: 10px;
+    background-color: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .modal-btn-cancel:hover {
+    background-color: #edf2f7;
+  }
+  
+  .modal-btn-confirm {
+    flex: 1;
+    padding: 10px;
+    background-color: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .modal-btn-confirm:hover {
+    background-color: #b91c1c;
+  }
+  
   .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -272,6 +386,18 @@
   </div>
 
   <div class="content-wrapper">
+    <% if flash[:notice] %>
+      <div class="alert" style="background: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <%= flash[:notice] %>
+      </div>
+    <% end %>
+    
+    <% if flash[:alert] %>
+      <div class="alert" style="background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+    
     <!-- 필터 -->
     <div class="filter-section">
       <%= form_with url: makeup_my_lessons_path, method: :get, class: "filter-form" do |f| %>
@@ -305,7 +431,7 @@
     </div>
     
     <div class="reservations-list">
-      <% if @reservations.any? %>
+      <% if @reservations && @reservations.any? %>
         <% @reservations.each do |reservation| %>
           <div class="reservation-card">
             <div class="reservation-header">
@@ -331,8 +457,6 @@
                   <span class="status-badge status-cancelled">취소됨</span>
                 <% when '거절됨' %>
                   <span class="status-badge status-rejected">거절됨</span>
-                <% when '거절됨' %>
-                  <span class="status-badge status-rejected">거절됨</span>
                 <% when '노쇼' %>
                   <span class="status-badge status-no-show">노쇼</span>
                 <% else %>
@@ -343,16 +467,11 @@
             
             <% if reservation.cancellable? %>
               <div class="cancel-section">
-                <%= button_to "예약 취소", cancel_makeup_lesson_path(reservation), 
-                            method: :patch,
-                            data: { 
-                              turbo: false,
-                              reservation_date: reservation.start_time.strftime('%Y년 %m월 %d일'),
-                              reservation_time: "#{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}",
-                              reservation_room: "#{reservation.makeup_room.number}석"
-                            },
-                            class: "cancel-btn reservation-cancel-btn",
-                            form: { style: "display: inline;" } %>
+                <button type="button" 
+                        onclick="showCancelModal(<%= reservation.id %>, '<%= reservation.start_time.strftime('%Y년 %m월 %d일') %>', '<%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>', '<%= reservation.makeup_room&.number %>석')"
+                        class="cancel-btn">
+                  예약 취소
+                </button>
               </div>
             <% end %>
           </div>
@@ -369,35 +488,79 @@
   </div>
 </div>
 
+<!-- 취소 사유 입력 모달 -->
+<div id="cancelModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="modal-title">예약 취소</h2>
+    
+    <div class="modal-info">
+      <div class="modal-info-item" id="modalDate"></div>
+      <div class="modal-info-item" id="modalTime"></div>
+      <div class="modal-info-item" id="modalRoom"></div>
+    </div>
+    
+    <%= form_with url: "", method: :patch, id: "cancelForm" do |f| %>
+      <div class="modal-input-group">
+        <%= f.text_area :cancellation_reason, 
+                        class: "modal-textarea",
+                        placeholder: "취소 사유를 꼭 입력해주세요",
+                        required: true %>
+      </div>
+      
+      <div class="modal-buttons">
+        <button type="button" class="modal-btn-cancel" onclick="window.closeCancelModal()">돌아가기</button>
+        <button type="submit" class="modal-btn-confirm">예약 취소</button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
 <script>
-// button_to로 변경했으므로 커스텀 confirm 대화상자 처리
-document.addEventListener('DOMContentLoaded', function() {
-  document.addEventListener('submit', function(event) {
-    const form = event.target;
-    const button = form.querySelector('.reservation-cancel-btn');
+  window.currentReservationId = window.currentReservationId || null;
+  
+  window.confirmAndShowModal = function(reservationId, date, time, room) {
+    // 먼저 confirm 창 띄우기
+    const confirmMessage = '예약 정보\n\n날짜: ' + date + '\n시간: ' + time + '\n좌석: ' + room + '\n\n정말로 예약을 취소하시겠습니까?';
     
-    if (!button) return;
+    if (confirm(confirmMessage)) {
+      // 확인을 누르면 취소사유 모달 띄우기
+      window.showCancelModal(reservationId, date, time, room);
+    }
+  }
+  
+  window.showCancelModal = function(reservationId, date, time, room) {
+    window.currentReservationId = reservationId;
+    document.getElementById('modalDate').textContent = '날짜: ' + date;
+    document.getElementById('modalTime').textContent = '시간: ' + time;
+    document.getElementById('modalRoom').textContent = '좌석: ' + room;
     
-    event.preventDefault();
+    // 폼의 action URL 설정
+    const form = document.getElementById('cancelForm');
+    form.action = '/makeup/' + reservationId + '/cancel';
     
-    // Get reservation info from data attributes
-    const date = button.dataset.reservationDate;
-    const time = button.dataset.reservationTime;
-    const room = button.dataset.reservationRoom;
+    // textarea 초기화
+    form.querySelector('textarea').value = '';
     
-    // Create confirm message
-    const confirmMessage = `예약 정보\n\n날짜: ${date}\n시간: ${time}\n좌석: ${room}\n\n예약을 취소하시겠습니까?`;
-    
-    // Show confirm dialog
-    const userConfirmed = confirm(confirmMessage);
-    
-    if (userConfirmed === true) {
-      // If user confirms, submit the form
-      form.submit();
-    } else {
-      // User clicked cancel - do nothing
-      console.log('예약 취소가 취소되었습니다.');
+    // 모달 표시
+    document.getElementById('cancelModal').classList.add('show');
+  }
+  
+  window.closeCancelModal = function() {
+    document.getElementById('cancelModal').classList.remove('show');
+    window.currentReservationId = null;
+  }
+  
+  // ESC 키로 모달 닫기
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      window.closeCancelModal();
     }
   });
-});
+  
+  // 모달 외부 클릭으로 닫기
+  document.getElementById('cancelModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      window.closeCancelModal();
+    }
+  });
 </script>

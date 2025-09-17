@@ -118,7 +118,11 @@ class MakeupController < ApplicationController
       end
       
       # 예약 상태를 cancelled로 변경 (검증 건너뛰기)
-      @reservation.update_columns(status: 'cancelled', cancelled_by: 'user')
+      @reservation.update_columns(
+        status: 'cancelled', 
+        cancelled_by: 'user',
+        cancellation_reason: params[:cancellation_reason]
+      )
       
       if was_active
         redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다. (보충수업 페널티가 적용되었습니다)'
@@ -183,6 +187,7 @@ class MakeupController < ApplicationController
     
     Rails.logger.info "=== AVAILABLE ROOMS DEBUG ==="
     Rails.logger.info "Requested time: #{start_time} - #{end_time}"
+    Rails.logger.info "Day of week: #{start_time.wday}"
     
     # 승인 대기 중인 예약을 조회 (시간 중복 검사)
     pending_reservations = MakeupReservation
@@ -202,7 +207,16 @@ class MakeupController < ApplicationController
     pending_room_ids = pending_reservations.pluck(:makeup_room_id)
     Rails.logger.info "Pending room IDs: #{pending_room_ids}"
     
-    @all_rooms = MakeupRoom.order(:number).map do |room|
+    # 요일별 방 필터링
+    available_rooms = if [4, 5].include?(start_time.wday)  # 목요일, 금요일
+      # 목/금: 1, 2, 3번 방 모두 사용 가능
+      MakeupRoom.where(number: [1, 2, 3]).order(:number)
+    else
+      # 다른 요일: 1, 2번 방만 사용 가능
+      MakeupRoom.where(number: [1, 2]).order(:number)
+    end
+    
+    @all_rooms = available_rooms.map do |room|
       is_pending = pending_room_ids.include?(room.id)
       is_available = room.available_at?(start_time, end_time)
       
@@ -232,32 +246,12 @@ class MakeupController < ApplicationController
     slots = []
     current_time = Time.current
     
-    # 화, 수, 토, 일 제한 시간 (14:30, 15:30, 16:30, 19:30, 20:30)
-    restricted_times = [1430, 1530, 1630, 1930, 2030]
-    restricted_days = [0, 2, 3, 6]  # 0=일, 2=화, 3=수, 6=토
-    
-    # 14:30부터 21:30까지 30분 단위 (브레이크타임 제외)
-    (14..21).each do |hour|
-      [0, 30].each do |minute|
-        # 14:00과 14:30 중에서 14:30부터 시작
-        next if hour == 14 && minute == 0
-        
-        # 21:30은 목요일(4)과 금요일(5)만 허용
-        if hour == 21 && minute == 30
-          next unless [4, 5].include?(date.wday)
-        end
-        
-        # 선택한 날짜의 특정 시간을 서울 타임존으로 생성
-        time = Time.zone.parse("#{date.strftime('%Y-%m-%d')} #{hour.to_s.rjust(2, '0')}:#{minute.to_s.rjust(2, '0')}:00")
-        
-        # 브레이크타임 (17:30, 18:00, 18:30) 제외
-        hour_minute = hour * 100 + minute
-        next if hour_minute == 1730 || hour_minute == 1800 || hour_minute == 1830
-        
-        # 화, 수, 토, 일 특정 시간 제한
-        if restricted_days.include?(date.wday) && restricted_times.include?(hour_minute)
-          next
-        end
+    # 요일별 허용 시간 설정
+    if [4, 5].include?(date.wday)  # 목요일(4), 금요일(5)
+      # 목/금: 15시, 16시, 17시, 19시, 20시, 21시 (정시만)
+      allowed_hours = [15, 16, 17, 19, 20, 21]
+      allowed_hours.each do |hour|
+        time = Time.zone.parse("#{date.strftime('%Y-%m-%d')} #{hour.to_s.rjust(2, '0')}:00:00")
         
         # 과거 시간인지 체크
         is_past = time <= current_time
@@ -266,11 +260,54 @@ class MakeupController < ApplicationController
           time: time,
           display: time.strftime('%H:%M'),
           period: case hour
-                  when 14..17 then '오후'
+                  when 15..17 then '오후'
                   else '저녁'
                   end,
-          disabled: is_past  # 비활성화 플래그 추가
+          disabled: is_past
         }
+      end
+    else
+      # 다른 요일: 기존 로직 유지
+      # 화, 수, 토, 일 제한 시간 (14:30, 15:30, 16:30, 19:30, 20:30)
+      restricted_times = [1430, 1530, 1630, 1930, 2030]
+      restricted_days = [0, 2, 3, 6]  # 0=일, 2=화, 3=수, 6=토
+      
+      # 14:30부터 21:30까지 30분 단위 (브레이크타임 제외)
+      (14..21).each do |hour|
+        [0, 30].each do |minute|
+          # 14:00과 14:30 중에서 14:30부터 시작
+          next if hour == 14 && minute == 0
+          
+          # 21:30은 목요일(4)과 금요일(5)만 허용 (이제 해당 없음)
+          if hour == 21 && minute == 30
+            next
+          end
+          
+          # 선택한 날짜의 특정 시간을 서울 타임존으로 생성
+          time = Time.zone.parse("#{date.strftime('%Y-%m-%d')} #{hour.to_s.rjust(2, '0')}:#{minute.to_s.rjust(2, '0')}:00")
+          
+          # 브레이크타임 (17:30, 18:00, 18:30) 제외
+          hour_minute = hour * 100 + minute
+          next if hour_minute == 1730 || hour_minute == 1800 || hour_minute == 1830
+          
+          # 화, 수, 토, 일 특정 시간 제한
+          if restricted_days.include?(date.wday) && restricted_times.include?(hour_minute)
+            next
+          end
+          
+          # 과거 시간인지 체크
+          is_past = time <= current_time
+          
+          slots << {
+            time: time,
+            display: time.strftime('%H:%M'),
+            period: case hour
+                    when 14..17 then '오후'
+                    else '저녁'
+                    end,
+            disabled: is_past
+          }
+        end
       end
     end
     
