@@ -99,36 +99,14 @@ class MakeupController < ApplicationController
   
   def cancel
     if @reservation.cancellable?
-      # 취소 전 상태 저장
-      was_active = @reservation.status == 'active'
-      
-      # 수업 대기(active) 상태면 페널티 적용
-      if was_active
-        # 페널티 적용 - 취소 횟수 증가 (보충수업 전용)
-        penalty = current_user.makeup_penalty
-        penalty.increment!(:cancel_count)
-        
-        # 총 페널티 횟수 확인 (노쇼 + 취소) - 보충수업만
-        total_penalties = penalty.no_show_count + penalty.cancel_count
-        
-        # 2회 이상이면 차단 (보충수업 시스템만)
-        if total_penalties >= 2
-          penalty.update(is_blocked: true)
-        end
-      end
-      
-      # 예약 상태를 cancelled로 변경 (검증 건너뛰기)
-      @reservation.update_columns(
+      # 예약 상태를 cancelled로 변경 (모델의 after_update에서 페널티 처리)
+      @reservation.update(
         status: 'cancelled', 
         cancelled_by: 'user',
         cancellation_reason: params[:cancellation_reason]
       )
       
-      if was_active
-        redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다. (보충수업 페널티가 적용되었습니다)'
-      else
-        redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다.'
-      end
+      redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다.'
     else
       redirect_to makeup_my_lessons_path, alert: '예약 시작 30분 전까지만 취소 가능합니다.'
     end
@@ -207,12 +185,14 @@ class MakeupController < ApplicationController
     pending_room_ids = pending_reservations.pluck(:makeup_room_id)
     Rails.logger.info "Pending room IDs: #{pending_room_ids}"
     
-    # 요일별 방 필터링
-    available_rooms = if [4, 5].include?(start_time.wday)  # 목요일, 금요일
-      # 목/금: 1, 2, 3번 방 모두 사용 가능
+    # 요일별 방 필터링 (9월 23일 이후부터 새로운 스케줄 적용)
+    new_schedule_start_date = Date.new(2025, 9, 23)
+    
+    available_rooms = if [4, 5].include?(start_time.wday) && start_time.to_date >= new_schedule_start_date  # 목요일, 금요일 + 9월 23일 이후
+      # 목/금: 1, 2, 3번 방 모두 사용 가능 (9월 23일 이후)
       MakeupRoom.where(number: [1, 2, 3]).order(:number)
     else
-      # 다른 요일: 1, 2번 방만 사용 가능
+      # 다른 요일 또는 9월 23일 이전: 1, 2번 방만 사용 가능
       MakeupRoom.where(number: [1, 2]).order(:number)
     end
     
@@ -247,8 +227,11 @@ class MakeupController < ApplicationController
     current_time = Time.current
     
     # 요일별 허용 시간 설정
-    if [4, 5].include?(date.wday)  # 목요일(4), 금요일(5)
-      # 목/금: 15시, 16시, 17시, 19시, 20시, 21시 (정시만)
+    # 9월 23일(다음주 월요일) 이후부터 새로운 스케줄 적용
+    new_schedule_start_date = Date.new(2025, 9, 23)
+    
+    if [4, 5].include?(date.wday) && date >= new_schedule_start_date  # 목요일(4), 금요일(5) + 9월 23일 이후
+      # 목/금: 15시, 16시, 17시, 19시, 20시, 21시 (정시만) - 9월 23일 이후
       allowed_hours = [15, 16, 17, 19, 20, 21]
       allowed_hours.each do |hour|
         time = Time.zone.parse("#{date.strftime('%Y-%m-%d')} #{hour.to_s.rjust(2, '0')}:00:00")

@@ -1,6 +1,6 @@
 class PasswordResetsController < ApplicationController
   def new
-    @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현']
+    @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환']
   end
 
   def create
@@ -14,7 +14,7 @@ class PasswordResetsController < ApplicationController
 
     if user.nil?
       flash.now[:alert] = "입력하신 정보와 일치하는 계정을 찾을 수 없습니다."
-      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현']
+      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환']
       render :new, status: :unprocessable_entity
       return
     end

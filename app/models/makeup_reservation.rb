@@ -11,6 +11,9 @@ class MakeupReservation < MakeupBase
   # 검증
   validate :no_same_day_reservation
   
+  # 상태 변경 시 페널티 처리 (연습실과 동일한 로직)
+  after_update :handle_status_change
+  
   private
   
   def no_same_day_reservation
@@ -79,5 +82,35 @@ class MakeupReservation < MakeupBase
   # 클래스 메서드로 모든 레코드 업데이트
   def self.update_status_by_time!
     where(status: 'active').find_each(&:update_status_by_time!)
+  end
+  
+  # 연습실과 동일한 페널티 처리 로직
+  def handle_status_change
+    return unless saved_change_to_status?
+    
+    penalty = user.makeup_penalty  # 보충수업 전용 페널티 사용
+    old_status = saved_change_to_status[0]
+    new_status = saved_change_to_status[1]
+    
+    case new_status
+    when 'cancelled'
+      # cancelled_by가 admin이면 페널티 부과 안함
+      unless cancelled_by == 'admin'
+        penalty.increment!(:cancel_count)
+        penalty.reload  # 데이터베이스에서 최신 값 다시 로드
+        Rails.logger.info "User #{user.id} makeup penalty: cancel_count increased to #{penalty.cancel_count}"
+      end
+    when 'no_show'
+      penalty.increment!(:no_show_count)
+      penalty.reload  # 데이터베이스에서 최신 값 다시 로드
+      Rails.logger.info "User #{user.id} makeup penalty: no_show_count increased to #{penalty.no_show_count}"
+    end
+    
+    # 총 2회 이상이면 차단 (보충수업 시스템만)
+    total_violations = penalty.cancel_count + penalty.no_show_count
+    if total_violations >= 2 && !penalty.is_blocked
+      penalty.update!(is_blocked: true)
+      Rails.logger.info "User #{user.id} blocked from makeup system due to #{total_violations} violations"
+    end
   end
 end

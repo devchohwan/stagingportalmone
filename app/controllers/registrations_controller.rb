@@ -1,7 +1,7 @@
 class RegistrationsController < ApplicationController
   def new
     @user_params = params.permit(:username, :name, :phone, :teacher)
-    @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
+    @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인']
   end
 
   def create
@@ -9,7 +9,7 @@ class RegistrationsController < ApplicationController
     if params[:password] != params[:password_confirmation]
       flash.now[:alert] = "비밀번호와 비밀번호 확인이 일치하지 않습니다."
       @user_params = params.permit(:username, :name, :phone, :teacher)
-      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
+      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인']
       render :new, status: :unprocessable_entity and return
     end
     
@@ -17,7 +17,7 @@ class RegistrationsController < ApplicationController
     unless session[:phone_verified] && session[:verified_phone] == params[:phone]
       flash.now[:alert] = "전화번호 인증을 완료해주세요."
       @user_params = params.permit(:username, :name, :phone, :teacher)
-      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
+      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인']
       render :new, status: :unprocessable_entity and return
     end
     
@@ -78,7 +78,7 @@ class RegistrationsController < ApplicationController
       
       flash.now[:alert] = error_messages.join(", ")
       @user_params = params.permit(:username, :name, :phone, :teacher)
-      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인']
+      @teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인']
       render :new, status: :unprocessable_entity
     end
   end
