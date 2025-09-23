@@ -540,7 +540,10 @@ function selectTime(element) {
   
   // 좌석 로드
   var startDateTime = new Date(selectedTime.time);
-  var endDateTime = new Date(startDateTime.getTime() + 30 * 60000);
+  // 목요일(4) 또는 금요일(5)인 경우 50분, 그 외는 30분
+  var dayOfWeek = startDateTime.getDay();
+  var duration = (dayOfWeek === 4 || dayOfWeek === 5) ? 50 : 30;
+  var endDateTime = new Date(startDateTime.getTime() + duration * 60000);
   
   fetch('/makeup/available_rooms?start_time=' + encodeURIComponent(selectedTime.time) + '&end_time=' + endDateTime.toISOString())
     .then(function(response) { return response.text(); })
@@ -583,7 +586,10 @@ function selectRoom(element) {
 
 function showConfirmation() {
   var selectedDateTime = new Date(selectedTime.time);
-  var endDateTime = new Date(selectedDateTime.getTime() + 30 * 60000);
+  // 목요일(4) 또는 금요일(5)인 경우 50분, 그 외는 30분
+  var dayOfWeek = selectedDateTime.getDay();
+  var duration = (dayOfWeek === 4 || dayOfWeek === 5) ? 50 : 30;
+  var endDateTime = new Date(selectedDateTime.getTime() + duration * 60000);
   
   // lesson content 가져오기
   var lessonContent = document.getElementById('lesson-content').value;

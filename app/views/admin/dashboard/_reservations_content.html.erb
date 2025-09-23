@@ -373,7 +373,11 @@
               </td>
               <td><%= reservation.start_time&.strftime('%Y-%m-%d') || 'N/A' %></td>
               <td>
-                <%= reservation.start_time&.strftime('%H:%M') || 'N/A' %> - <%= reservation.end_time&.strftime('%H:%M') || 'N/A' %>
+                <% if service_type == 'makeup' && reservation.start_time && [4, 5].include?(reservation.start_time.wday) %>
+                  <%= reservation.start_time.strftime('%H:%M') %> - <%= (reservation.start_time + 50.minutes).strftime('%H:%M') %>
+                <% else %>
+                  <%= reservation.start_time&.strftime('%H:%M') || 'N/A' %> - <%= reservation.end_time&.strftime('%H:%M') || 'N/A' %>
+                <% end %>
               </td>
               <td>
                 <% if service_type == 'makeup' %>

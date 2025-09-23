@@ -438,7 +438,11 @@
               <div class="reservation-info">
                 <h3><%= reservation.start_time.strftime('%Y년 %m월 %d일') %></h3>
                 <p class="reservation-detail">
-                  <%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>
+                  <% if [4, 5].include?(reservation.start_time.wday) %>
+                    <%= reservation.start_time.strftime('%H:%M') %> - <%= (reservation.start_time + 50.minutes).strftime('%H:%M') %>
+                  <% else %>
+                    <%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>
+                  <% end %>
                 </p>
                 <p class="reservation-detail"><%= reservation.makeup_room&.number %>석</p>
               </div>
