@@ -79,7 +79,7 @@ class MakeupController < ApplicationController
     # 하루 한 번 제한 확인
     reservation_date = start_time.to_date
     existing_today = current_user.makeup_reservations
-                                 .where(status: ['pending', 'active', 'completed'])
+                                 .where(status: ['pending', 'active'])
                                  .where('DATE(start_time) = ?', reservation_date)
                                  .exists?
     
