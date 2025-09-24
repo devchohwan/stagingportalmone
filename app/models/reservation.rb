@@ -77,6 +77,16 @@ class Reservation < ApplicationRecord
     current_time < (reservation_start - 30.minutes)
   end
   
+  def changeable?
+    return false unless status == 'active'
+    
+    current_time = Time.current.in_time_zone('Asia/Seoul')
+    reservation_start = start_time
+    
+    # 1시간 전까지만 시간 변경 가능
+    current_time < (reservation_start - 1.hour)
+  end
+  
   private
   
   def no_time_overlap

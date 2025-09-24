@@ -1,6 +1,6 @@
 class PracticeController < ApplicationController
   before_action :require_login
-  before_action :set_reservation, only: [:cancel_reservation]
+  before_action :set_reservation, only: [:cancel_reservation, :change_reservation, :update_reservation]
   
   def index
     # 과거 예약 자동 상태 업데이트
@@ -106,6 +106,32 @@ class PracticeController < ApplicationController
       redirect_to practice_my_reservations_path, alert: '예약 시작 30분 전까지만 취소 가능합니다.'
     end
   end
+
+  def change_reservation
+    @date = Date.current
+    @rooms = Room.order(:number)
+  end
+
+  def update_reservation
+    if @reservation.changeable?
+      new_start = Time.parse(params[:start_time])
+      new_end = Time.parse(params[:end_time])
+      room = Room.find(params[:room_id])
+
+      if room.available_at?(new_start, new_end, @reservation.id)
+        @reservation.update!(
+          start_time: new_start,
+          end_time: new_end,
+          room: room
+        )
+        redirect_to practice_my_reservations_path, notice: '예약 시간이 변경되었습니다.'
+      else
+        redirect_to change_practice_reservation_path(@reservation), alert: '해당 시간대에 이미 예약이 있습니다.'
+      end
+    else
+      redirect_to practice_my_reservations_path, alert: '예약 시작 1시간 전까지만 시간 변경이 가능합니다.'
+    end
+  end
   
   def calendar
     @date = params[:date] ? Date.parse(params[:date]) : Date.current
@@ -124,11 +150,12 @@ class PracticeController < ApplicationController
   def available_rooms
     start_time = Time.parse(params[:start_time])
     end_time = Time.parse(params[:end_time])
+    exclude_reservation_id = params[:exclude_reservation_id]
     
     @all_rooms = Room.order(:number).map do |room|
       {
         room: room,
-        available: room.available_at?(start_time, end_time)
+        available: room.available_at?(start_time, end_time, exclude_reservation_id)
       }
     end
     

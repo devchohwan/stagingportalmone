@@ -27,6 +27,25 @@
     max-width: 500px;
   }
   
+  .current-info {
+    background: #f7fafc;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .info-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+  
+  .info-detail {
+    color: #4a5568;
+    margin-bottom: 5px;
+  }
+  
   .step-section {
     background: #ffffff;
     border-radius: 12px;
@@ -50,7 +69,7 @@
   }
   
   .btn-primary {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     padding: 12px 20px;
     border-radius: 8px;
@@ -66,12 +85,12 @@
   
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
   }
   
   .confirmation-card {
-    background: linear-gradient(135deg, rgba(240, 147, 251, 0.05), rgba(245, 87, 108, 0.05));
-    border: 2px solid rgba(240, 147, 251, 0.2);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+    border: 2px solid rgba(102, 126, 234, 0.2);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
@@ -162,13 +181,13 @@
   
   .calendar-day-cell:hover:not(.past-day):not(.monday-closed) {
     background-color: #f7fafc;
-    border-color: #f093fb;
+    border-color: #667eea;
   }
   
   .calendar-day-cell.selected {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    border-color: #f093fb;
+    border-color: #667eea;
   }
   
   .calendar-day-cell.not-current-month {
@@ -246,13 +265,13 @@
   
   .time-slot-btn:hover:not(.disabled):not(.selected) {
     background-color: #f7fafc;
-    border-color: #f093fb;
+    border-color: #667eea;
   }
   
   .time-slot-btn.selected {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    border-color: #f093fb;
+    border-color: #667eea;
   }
   
   .time-slot-btn.disabled,
@@ -285,13 +304,13 @@
   }
   
   .room-btn:hover:not(.unavailable):not(.selected) {
-    border-color: #f093fb;
+    border-color: #667eea;
     background-color: #f7fafc;
   }
   
   .room-btn.selected {
-    background-color: rgba(240, 147, 251, 0.1);
-    border-color: #f093fb;
+    background-color: rgba(102, 126, 234, 0.1);
+    border-color: #667eea;
   }
   
   .room-btn.unavailable {
@@ -316,31 +335,6 @@
     align-items: center;
   }
   
-  .room-btn.pending {
-    cursor: not-allowed;
-    background-color: #fffbeb;
-    border-color: #fbbf24;
-    opacity: 0.8;
-  }
-  
-  .status-pending {
-    font-size: 0.75rem;
-    background-color: #fef3c7;
-    color: #92400e;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: 500;
-  }
-  
-  .status-available {
-    font-size: 0.75rem;
-    background-color: #dcfce7;
-    color: #166534;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: 500;
-  }
-  
   .status-unavailable {
     font-size: 0.75rem;
     background-color: #fee2e2;
@@ -348,6 +342,10 @@
     padding: 4px 8px;
     border-radius: 4px;
     font-weight: 500;
+  }
+  
+  .outlet-icon {
+    font-size: 0.75rem;
   }
   
   @media (max-width: 480px) {
@@ -422,22 +420,29 @@
 
 <div class="reserve-container">
   <div class="reserve-header">
-    <h1 class="reserve-title">보충수업 예약하기</h1>
+    <h1 class="reserve-title">예약 시간 변경</h1>
   </div>
 
   <div class="content-wrapper">
     <% if flash[:alert] %>
-      <script>
-        alert('이미 예약하셨습니다. 예약한 시간을 먼저 사용해주세요');
-      </script>
+      <div class="alert" style="background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <%= flash[:alert] %>
+      </div>
     <% end %>
+
+    <div class="current-info">
+      <div class="info-title">현재 예약 정보</div>
+      <div class="info-detail">날짜: <%= @reservation.start_time.strftime('%Y년 %m월 %d일') %></div>
+      <div class="info-detail">시간: <%= @reservation.start_time.strftime('%H:%M') %> - <%= @reservation.end_time.strftime('%H:%M') %></div>
+      <div class="info-detail">연습실: <%= @reservation.room.number %>번</div>
+    </div>
     
     <div>
       <!-- Step 1: 날짜 선택 -->
       <div class="step-section" data-reservation-target="dateSection">
         <h3 class="step-title">1. 날짜 선택</h3>
         <div id="calendar-container" class="calendar-container">
-          <%= render partial: 'calendar', locals: { date: @date, selected_date: nil } %>
+          <%= render partial: 'calendar', locals: { date: @date || Date.current, selected_date: nil } %>
         </div>
       </div>
       
@@ -449,65 +454,41 @@
         </div>
       </div>
       
-      <!-- Step 3: 좌석 선택 -->
+      <!-- Step 3: 연습실 선택 -->
       <div class="step-section hidden" data-reservation-target="roomSection">
-        <h3 class="step-title">3. 좌석 선택</h3>
+        <h3 class="step-title">3. 연습실 선택</h3>
         <div id="rooms-container">
           <!-- Available rooms will be loaded here -->
         </div>
       </div>
       
-      <!-- Step 4: 보충수업 내용 입력 -->
-      <div class="step-section hidden" data-reservation-target="contentSection">
-        <h3 class="step-title">4. 보충수업 정보</h3>
-        
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">주차</label>
-          <input type="number" 
-                 id="week-number" 
-                 placeholder="몇 주차인지 입력해주세요 (예: 1, 2, 3...)" 
-                 style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;"
-                 min="1" max="20"
-                 oninput="updateConfirmationIfReady()">
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-          <label style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">보충수업 받고 싶은 내용</label>
-          <textarea id="lesson-content" 
-                    placeholder="보충수업 받고 싶으신 내용을 적어주세요😊" 
-                    style="width: 100%; min-height: 120px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"
-                    oninput="updateConfirmationIfReady()"></textarea>
-        </div>
-      </div>
-      
       <!-- 예약 확인 -->
       <div class="hidden" data-reservation-target="confirmSection">
-        <%= form_with url: makeup_path, method: :post, local: true, data: { reservation_target: "form", turbo: false } do |f| %>
-          <%= hidden_field_tag "makeup_lesson[makeup_room_id]", nil, data: { reservation_target: "roomId" } %>
-          <%= hidden_field_tag "makeup_lesson[start_time]", nil, data: { reservation_target: "startTime" } %>
-          <%= hidden_field_tag "makeup_lesson[end_time]", nil, data: { reservation_target: "endTime" } %>
-          <%= hidden_field_tag "makeup_lesson[lesson_content]", nil, data: { reservation_target: "lessonContent" } %>
-          <%= hidden_field_tag "makeup_lesson[week_number]", nil, data: { reservation_target: "weekNumber" } %>
+        <%= form_with url: update_practice_reservation_path(@reservation), method: :patch, data: { reservation_target: "form", turbo: false } do |f| %>
+          <%= f.hidden_field :room_id, data: { reservation_target: "roomId" } %>
+          <%= f.hidden_field :start_time, data: { reservation_target: "startTime" } %>
+          <%= f.hidden_field :end_time, data: { reservation_target: "endTime" } %>
           
           <div class="confirmation-card">
-            <h3 class="confirmation-title">예약 정보 확인</h3>
+            <h3 class="confirmation-title">변경할 예약 정보</h3>
             <div class="confirmation-text" data-reservation-target="summary"></div>
           </div>
           
-          <button type="button" class="btn-primary" id="reservation-submit-btn" onclick="window.confirmMakeupReservation()">예약하기</button>
+          <%= f.submit "시간 변경", class: "btn-primary", id: "reservation-submit-btn" %>
         <% end %>
       </div>
     </div>
 
-    <%= link_to "← 뒤로가기", makeup_path, class: "back-link" %>
+    <%= link_to "← 뒤로가기", practice_my_reservations_path, class: "back-link" %>
   </div>
 </div>
 
 <script>
-// 보충수업 예약 JavaScript - 전역 스코프로 수정
-var selectedDate = null;
-var selectedTime = null;
-var selectedRoom = null;
+(function() {
+  // 연습실 예약 변경 JavaScript - isolated scope
+  var selectedDate = null;
+  var selectedTime = null;
+  var selectedRoom = null;
 
 function selectDate(element) {
   selectedDate = element.getAttribute('data-date');
@@ -521,7 +502,7 @@ function selectDate(element) {
   element.classList.add('selected');
   
   // 시간 슬롯 로드
-  fetch('/makeup/time_slots?date=' + selectedDate)
+  fetch('/practice/time_slots?date=' + selectedDate)
     .then(function(response) { return response.text(); })
     .then(function(html) {
       document.getElementById('time-slots-container').innerHTML = html;
@@ -552,26 +533,24 @@ function selectTime(element) {
   }
   element.classList.add('selected');
   
-  // 좌석 로드
+  // 연습실 로드 (현재 예약 제외)
   var startDateTime = new Date(selectedTime.time);
-  // 목요일(4) 또는 금요일(5)인 경우 50분, 그 외는 30분
-  var dayOfWeek = startDateTime.getDay();
-  var duration = (dayOfWeek === 4 || dayOfWeek === 5) ? 50 : 30;
-  var endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+  var endDateTime = new Date(startDateTime.getTime() + 30 * 60000);
+  var reservationId = '<%= @reservation.id %>';
   
-  fetch('/makeup/available_rooms?start_time=' + encodeURIComponent(selectedTime.time) + '&end_time=' + endDateTime.toISOString())
+  fetch('/practice/available_rooms?start_time=' + encodeURIComponent(selectedTime.time) + '&end_time=' + endDateTime.toISOString() + '&exclude_reservation_id=' + reservationId)
     .then(function(response) { return response.text(); })
     .then(function(html) {
       document.getElementById('rooms-container').innerHTML = html;
       var roomSection = document.querySelector('[data-reservation-target="roomSection"]');
       if (roomSection) {
         roomSection.classList.remove('hidden');
-        console.log('좌석 선택 섹션 표시');
+        console.log('연습실 선택 섹션 표시');
       }
       hideSection('confirmSection');
     })
     .catch(function(error) {
-      console.error('좌석 로드 오류:', error);
+      console.error('연습실 로드 오류:', error);
     });
 }
 
@@ -580,7 +559,7 @@ function selectRoom(element) {
     id: element.getAttribute('data-room-id'),
     number: element.getAttribute('data-room-number')
   };
-  console.log('좌석 선택:', selectedRoom);
+  console.log('연습실 선택:', selectedRoom);
   
   // 시각적 선택 업데이트
   var roomElements = document.querySelectorAll('.room-btn');
@@ -589,59 +568,22 @@ function selectRoom(element) {
   }
   element.classList.add('selected');
   
-  // 보충수업 내용 입력 섹션 표시
-  var contentSection = document.querySelector('[data-reservation-target="contentSection"]');
-  if (contentSection) {
-    contentSection.classList.remove('hidden');
-    console.log('보충수업 내용 입력 섹션 표시');
-  }
-  hideSection('confirmSection');
-}
-
-function updateConfirmationIfReady() {
-  var weekNumber = document.getElementById('week-number').value;
-  var lessonContent = document.getElementById('lesson-content').value.trim();
-  
-  // 주차와 내용이 모두 입력되면 자동으로 확인 섹션 표시
-  if (weekNumber && lessonContent) {
-    showConfirmation();
-  } else {
-    // 하나라도 비어있으면 확인 섹션 숨김
-    hideSection('confirmSection');
-  }
+  // 확인 섹션 표시
+  showConfirmation();
 }
 
 function showConfirmation() {
   var selectedDateTime = new Date(selectedTime.time);
-  // 목요일(4) 또는 금요일(5)인 경우 50분, 그 외는 30분
-  var dayOfWeek = selectedDateTime.getDay();
-  var duration = (dayOfWeek === 4 || dayOfWeek === 5) ? 50 : 30;
-  var endDateTime = new Date(selectedDateTime.getTime() + duration * 60000);
-  
-  // lesson content와 week number 가져오기
-  var lessonContent = document.getElementById('lesson-content').value;
-  var weekNumber = document.getElementById('week-number').value;
+  var endDateTime = new Date(selectedDateTime.getTime() + 30 * 60000);
   
   // 폼 필드 설정
   var roomIdField = document.querySelector('[data-reservation-target="roomId"]');
   var startTimeField = document.querySelector('[data-reservation-target="startTime"]');
   var endTimeField = document.querySelector('[data-reservation-target="endTime"]');
-  var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
-  var weekNumberField = document.querySelector('[data-reservation-target="weekNumber"]');
   
   if (roomIdField) roomIdField.value = selectedRoom.id;
   if (startTimeField) startTimeField.value = selectedTime.time;
   if (endTimeField) endTimeField.value = endDateTime.toISOString();
-  if (lessonContentField) lessonContentField.value = lessonContent;
-  if (weekNumberField) weekNumberField.value = weekNumber;
-  
-  console.log('Form values set:', {
-    roomId: roomIdField.value,
-    startTime: startTimeField.value,
-    endTime: endTimeField.value,
-    lessonContent: lessonContentField.value,
-    weekNumber: weekNumberField.value
-  });
   
   // 요약 정보 업데이트
   var dateObj = new Date(selectedDate);
@@ -651,14 +593,10 @@ function showConfirmation() {
   
   var summaryElement = document.querySelector('[data-reservation-target="summary"]');
   if (summaryElement) {
-    var contentPreview = lessonContent.length > 50 ? lessonContent.substring(0, 50) + '...' : lessonContent;
-    
     summaryElement.innerHTML = 
       '<div>날짜: ' + formattedDate + '</div>' +
       '<div>시간: ' + selectedTime.display + ' - ' + endDateTime.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', hour12: false}) + '</div>' +
-      '<div>좌석: ' + selectedRoom.number + '번</div>' +
-      '<div>주차: ' + weekNumber + '주차</div>' +
-      '<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;">보충수업 내용: ' + contentPreview + '</div>';
+      '<div>연습실: ' + selectedRoom.number + '번</div>';
   }
   
   var confirmSection = document.querySelector('[data-reservation-target="confirmSection"]');
@@ -675,7 +613,7 @@ function hideSection(target) {
   }
 }
 
-window.confirmMakeupReservation = function() {
+window.confirmPracticeReservationChange = function() {
   if (!selectedDate || !selectedTime || !selectedRoom) {
     alert('예약 정보가 불완전합니다.');
     return false;
@@ -686,47 +624,48 @@ window.confirmMakeupReservation = function() {
   var weekday = weekdays[dateObj.getDay()];
   var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
   
-  var lessonContent = document.getElementById('lesson-content').value.trim();
-  var weekNumber = document.getElementById('week-number').value;
-  
-  var confirmMessage = '예약을 진행하시겠습니까?\n\n날짜: ' + formattedDate + '\n시간: ' + selectedTime.display + '\n좌석: ' + selectedRoom.number + '번\n주차: ' + weekNumber + '주차\n내용: ' + (lessonContent.length > 30 ? lessonContent.substring(0, 30) + '...' : lessonContent);
+  var confirmMessage = '예약 시간을 변경하시겠습니까?\n\n날짜: ' + formattedDate + '\n시간: ' + selectedTime.display + '\n연습실: ' + selectedRoom.number + '번';
   
   if (confirm(confirmMessage)) {
     var submitBtn = document.getElementById('reservation-submit-btn');
-    var form = document.querySelector('[data-reservation-target="form"]');
-    
     if (submitBtn) {
+      // 중복 제출 방지
       if (submitBtn.disabled) {
-        alert('이미 예약 요청이 처리 중입니다.');
+        alert('이미 변경 요청이 처리 중입니다.');
         return false;
       }
       
       submitBtn.disabled = true;
-      submitBtn.textContent = '예약 중...';
-    }
-    
-    if (form) {
-      if (form.requestSubmit) {
-        var hiddenSubmit = document.createElement('input');
-        hiddenSubmit.type = 'submit';
-        hiddenSubmit.style.display = 'none';
-        form.appendChild(hiddenSubmit);
-        hiddenSubmit.click();
-        form.removeChild(hiddenSubmit);
-      } else {
-        form.submit();
-      }
+      submitBtn.textContent = '변경 중...';
+      
+      // 3초 후 다시 활성화 (타임아웃)
+      setTimeout(function() {
+        if (submitBtn.disabled) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '시간 변경';
+        }
+      }, 3000);
     }
     return true;
   }
   return false;
 };
 
-window.showPendingMessage = function() {
-  alert('⏳ 예약 승인중인 자리입니다.\n\n' +
-        '관리자 승인 후 예약이 확정되므로\n' +
-        '다른 좌석을 선택해주세요.');
-};
+// 전역 함수로 등록
+window.selectDate = selectDate;
+window.selectTime = selectTime;
+window.selectRoom = selectRoom;
 
-console.log('보충수업 예약 JavaScript 로드 완료');
+// 폼 제출 이벤트
+var form = document.querySelector('[data-reservation-target="form"]');
+if (form) {
+  form.addEventListener('submit', function(e) {
+    if (!window.confirmPracticeReservationChange()) {
+      e.preventDefault();
+    }
+  });
+}
+
+console.log('연습실 예약 변경 JavaScript 로드 완료');
+})(); // IIFE 종료
 </script>

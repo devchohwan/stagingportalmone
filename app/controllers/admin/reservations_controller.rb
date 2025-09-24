@@ -138,11 +138,17 @@ class Admin::ReservationsController < ApplicationController
   def lesson_content
     reservation = MakeupReservation.find(params[:id])
     
+    Rails.logger.info "=== Lesson Content Debug ==="
+    Rails.logger.info "Reservation ID: #{reservation.id}"
+    Rails.logger.info "Week Number: #{reservation.week_number.inspect}"
+    Rails.logger.info "Lesson Content: #{reservation.lesson_content.inspect}"
+    
     render json: {
       success: true,
       user_name: reservation.user.name,
       date: reservation.start_time.strftime('%Y년 %m월 %d일'),
       time: "#{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}",
+      week_number: reservation.week_number,
       lesson_content: reservation.lesson_content
     }
   rescue ActiveRecord::RecordNotFound

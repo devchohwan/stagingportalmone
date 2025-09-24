@@ -345,14 +345,21 @@
               </div>
             </div>
             
-            <% if reservation.cancellable? %>
+            <% if reservation.changeable? || reservation.cancellable? %>
               <div class="cancel-section">
-                <%= link_to "예약 취소", cancel_practice_reservation_path(reservation), 
-                            data: { 
-                              turbo_method: :patch,
-                              turbo_confirm: "예약 정보\n\n날짜: #{reservation.start_time.strftime('%Y년 %m월 %d일')}\n시간: #{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}\n연습실: #{reservation.room.number}번\n\n예약을 취소하시겠습니까?"
-                            },
-                            class: "cancel-btn" %>
+                <% if reservation.changeable? %>
+                  <%= link_to "시간 변경", change_practice_reservation_path(reservation), 
+                              class: "cancel-btn", 
+                              style: "color: #059669; margin-right: 15px;" %>
+                <% end %>
+                <% if reservation.cancellable? %>
+                  <%= link_to "예약 취소", cancel_practice_reservation_path(reservation), 
+                              data: { 
+                                turbo_method: :patch,
+                                turbo_confirm: "예약 정보\n\n날짜: #{reservation.start_time.strftime('%Y년 %m월 %d일')}\n시간: #{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}\n연습실: #{reservation.room.number}번\n\n예약을 취소하시겠습니까?"
+                              },
+                              class: "cancel-btn" %>
+                <% end %>
               </div>
             <% end %>
           </div>

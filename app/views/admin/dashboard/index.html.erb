@@ -1481,6 +1481,7 @@
           document.getElementById('modal-user-name').textContent = data.user_name;
           document.getElementById('modal-date').textContent = data.date;
           document.getElementById('modal-time').textContent = data.time;
+          document.getElementById('modal-week-number').textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
           document.getElementById('modal-lesson-content').textContent = data.lesson_content || '내용이 없습니다.';
           document.getElementById('lesson-content-modal').classList.add('show');
         } else {

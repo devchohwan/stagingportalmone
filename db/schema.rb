@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_17_064929) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_24_070923) do
   create_table "makeup_availabilities", force: :cascade do |t|
     t.string "teacher_name", null: false
     t.integer "day_of_week"
@@ -67,6 +67,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_064929) do
     t.datetime "updated_at", null: false
     t.text "lesson_content"
     t.text "cancellation_reason"
+    t.integer "week_number"
     t.index ["makeup_room_id", "start_time"], name: "index_makeup_reservations_on_makeup_room_id_and_start_time"
     t.index ["makeup_room_id"], name: "index_makeup_reservations_on_makeup_room_id"
     t.index ["start_time", "end_time"], name: "index_makeup_reservations_on_start_time_and_end_time"

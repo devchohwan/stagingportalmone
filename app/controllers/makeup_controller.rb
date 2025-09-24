@@ -219,7 +219,7 @@ class MakeupController < ApplicationController
   end
   
   def reservation_params
-    params.require(:makeup_lesson).permit(:makeup_room_id, :start_time, :end_time, :lesson_content)
+    params.require(:makeup_lesson).permit(:makeup_room_id, :start_time, :end_time, :lesson_content, :week_number)
   end
   
   def generate_time_slots(date)

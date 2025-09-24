@@ -20,6 +20,8 @@ Rails.application.routes.draw do
   post "practice/reservations", to: "practice#create_reservation"
   get "practice/my_reservations", to: "practice#my_reservations"
   patch "practice/reservations/:id/cancel", to: "practice#cancel_reservation", as: :cancel_practice_reservation
+  get "practice/reservations/:id/change", to: "practice#change_reservation", as: :change_practice_reservation
+  patch "practice/reservations/:id/update", to: "practice#update_reservation", as: :update_practice_reservation
   
   # 예약 관련 partial views
   get "practice/calendar", to: "practice#calendar"
