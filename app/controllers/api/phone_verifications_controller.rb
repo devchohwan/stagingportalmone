@@ -38,13 +38,19 @@ class Api::PhoneVerificationsController < ApplicationController
     code = params[:code]
     verification_id = session[:phone_verification_id]
     
+    # 디버깅용 로그 추가
+    Rails.logger.info "=== VERIFY CODE DEBUG ==="
+    Rails.logger.info "Received code: #{code}"
+    Rails.logger.info "Session verification_id: #{verification_id}"
+    Rails.logger.info "Full session: #{session.to_hash.inspect}"
+    
     if code.blank? || code.length != 6
       render json: { success: false, message: "6자리 인증번호를 입력해주세요." }, status: :bad_request
       return
     end
     
     if verification_id.blank?
-      render json: { success: false, message: "인증번호를 먼저 발송해주세요." }, status: :bad_request
+      render json: { success: false, message: "인증번호를 먼저 발송해주세요. 세션이 만료되었을 수 있습니다." }, status: :unprocessable_entity
       return
     end
     

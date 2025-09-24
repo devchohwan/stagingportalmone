@@ -243,6 +243,7 @@ function verifyCode() {
   // 인증번호 확인 API 호출
   fetch('/api/verify-code', {
     method: 'POST',
+    credentials: 'same-origin',  // 세션 쿠키 포함
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
@@ -250,16 +251,20 @@ function verifyCode() {
     body: JSON.stringify({ code: code })
   })
   .then(response => {
-    // 응답 상태 먼저 확인
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
     // Content-Type 확인
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       throw new Error("서버 응답이 JSON 형식이 아닙니다. 페이지를 새로고침 후 다시 시도해주세요.");
     }
-    return response.json();
+    
+    // JSON 파싱 후 응답 상태에 따라 처리
+    return response.json().then(data => {
+      if (!response.ok) {
+        // 422 등의 에러인 경우에도 메시지 표시
+        throw new Error(data.message || `오류가 발생했습니다. (상태: ${response.status})`);
+      }
+      return data;
+    });
   })
   .then(data => {
     if (!data.success) {

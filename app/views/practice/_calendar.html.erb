@@ -43,11 +43,15 @@
                onclick="selectDate(this)"
              <% end %>>
           <div class="day-number"><%= day.day %></div>
-          <% if is_today %>
-            <div class="day-label">오늘</div>
-          <% elsif is_monday && is_current_month %>
-            <div class="day-label">휴무</div>
-          <% end %>
+          <div class="day-label">
+            <% if is_today %>
+              오늘
+            <% elsif is_monday && is_current_month %>
+              휴무
+            <% else %>
+              &nbsp;
+            <% end %>
+          </div>
         </div>
       <% end %>
     <% end %>
