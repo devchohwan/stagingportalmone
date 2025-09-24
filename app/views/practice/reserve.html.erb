@@ -469,11 +469,10 @@
 </div>
 
 <script>
-(function() {
-  // 연습실 예약 JavaScript - isolated scope
-  var selectedDate = null;
-  var selectedTime = null;
-  var selectedRoom = null;
+// 연습실 예약 JavaScript - 전역 스코프
+var selectedDate = null;
+var selectedTime = null;
+var selectedRoom = null;
 
 function selectDate(element) {
   selectedDate = element.getAttribute('data-date');
@@ -691,6 +690,14 @@ window.selectTime = selectTime;
 window.selectRoom = selectRoom;
 window.navigateMonth = navigateMonth;
 
+// 디버깅용 로그 추가
+console.log('Practice reservation functions loaded:', {
+  selectDate: typeof window.selectDate,
+  selectTime: typeof window.selectTime,
+  selectRoom: typeof window.selectRoom,
+  navigateMonth: typeof window.navigateMonth
+});
+
 // 폼 제출 이벤트
 var form = document.querySelector('[data-reservation-target="form"]');
 if (form) {
@@ -702,6 +709,5 @@ if (form) {
 }
 
 console.log('연습실 예약 JavaScript 로드 완료');
-})(); // IIFE 종료
 </script>
 

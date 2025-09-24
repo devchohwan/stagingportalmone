@@ -741,7 +741,7 @@ window.showPendingMessage = function() {
 };
 
 // 달력 네비게이션 함수
-window.navigateMakeupMonth = function(direction) {
+function navigateMakeupMonth(direction) {
   var currentCalendar = document.querySelector('.calendar');
   var currentMonth = currentCalendar.getAttribute('data-month');
   var [year, month] = currentMonth.split('-').map(Number);
@@ -789,7 +789,10 @@ window.navigateMakeupMonth = function(direction) {
     .catch(function(error) {
       console.error('달력 로드 오류:', error);
     });
-};
+}
+
+// 전역 함수로 등록
+window.navigateMakeupMonth = navigateMakeupMonth;
 
 console.log('보충수업 예약 JavaScript 로드 완료');
 </script>
