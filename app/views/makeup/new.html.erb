@@ -760,14 +760,8 @@ window.navigateMakeupMonth = function(direction) {
   })
     .then(function(response) { return response.text(); })
     .then(function(html) {
-      // HTML에서 달력 부분만 추출
-      var tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      var newCalendar = tempDiv.querySelector('#calendar-container .calendar');
-      
-      if (newCalendar) {
-        document.getElementById('calendar-container').innerHTML = newCalendar.outerHTML;
-      }
+      // 서버에서 partial을 직접 반환하므로 그대로 사용
+      document.getElementById('calendar-container').innerHTML = html;
       
       // 다른 섹션들 숨기기
       hideSection('timeSection');
