@@ -86,6 +86,20 @@ class MakeupController < ApplicationController
     @reservation = current_user.makeup_reservations.build(reservation_params)
     @reservation.status = 'pending'  # 관리자 승인 대기 상태
     
+    # 동일 시간대에 이미 pending/active 예약이 있는지 체크
+    existing = MakeupReservation
+      .where(makeup_room_id: @reservation.makeup_room_id)
+      .where(status: ['pending', 'active'])
+      .where('(start_time < ? AND end_time > ?) OR (start_time < ? AND end_time > ?)',
+             @reservation.end_time, @reservation.start_time, 
+             @reservation.end_time, @reservation.start_time)
+      .exists?
+    
+    if existing
+      redirect_to makeup_new_path, alert: '이미 예약된 시간입니다. 다른 좌석이나 시간을 선택해주세요.'
+      return
+    end
+    
     if @reservation.save
       redirect_to makeup_my_lessons_path, notice: '예약 신청이 완료되었습니다. 관리자 승인을 기다려주세요.'
     else
