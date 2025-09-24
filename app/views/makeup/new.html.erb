@@ -1,3 +1,55 @@
+<script>
+// 달력 네비게이션 함수를 먼저 정의 (보충수업용)
+function navigateMonth(direction) {
+  var currentCalendar = document.querySelector('.calendar');
+  if (!currentCalendar) {
+    console.error('Calendar element not found');
+    return;
+  }
+  
+  var currentMonth = currentCalendar.getAttribute('data-month');
+  var [year, month] = currentMonth.split('-').map(Number);
+  
+  if (direction === 'prev') {
+    month--;
+    if (month < 1) {
+      month = 12;
+      year--;
+    }
+  } else {
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+  
+  // 두 자리 숫자로 포맷
+  var formattedMonth = month < 10 ? '0' + month : month.toString();
+  var newDate = year + '-' + formattedMonth + '-01';
+  
+  // 새 달력 로드
+  fetch('/makeup/new?date=' + newDate, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('calendar-container').innerHTML = html;
+      
+      // 선택 초기화
+      if (typeof selectedDate !== 'undefined') {
+        selectedDate = null;
+        updateTimeSlots(); // 시간 슬롯 업데이트
+      }
+    })
+    .catch(function(error) {
+      console.error('달력 로드 오류:', error);
+    });
+}
+</script>
+
 <style>
   .reserve-container {
     min-height: 100vh;

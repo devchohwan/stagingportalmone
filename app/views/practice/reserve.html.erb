@@ -1,3 +1,63 @@
+<script>
+// 달력 네비게이션 함수를 먼저 정의
+function navigateMonth(direction) {
+  var currentCalendar = document.querySelector('.calendar');
+  if (!currentCalendar) {
+    console.error('Calendar element not found');
+    return;
+  }
+  
+  var currentMonth = currentCalendar.getAttribute('data-month');
+  var [year, month] = currentMonth.split('-').map(Number);
+  
+  if (direction === 'prev') {
+    month--;
+    if (month < 1) {
+      month = 12;
+      year--;
+    }
+  } else {
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+  
+  // 두 자리 숫자로 포맷
+  var formattedMonth = month < 10 ? '0' + month : month.toString();
+  var newDate = year + '-' + formattedMonth + '-01';
+  
+  // 새 달력 로드
+  fetch('/practice/reserve?date=' + newDate, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('calendar-container').innerHTML = html;
+      
+      // 다른 섹션들 숨기기
+      var timeSection = document.querySelector('[data-reservation-target="timeSection"]');
+      var roomSection = document.querySelector('[data-reservation-target="roomSection"]');
+      var confirmSection = document.querySelector('[data-reservation-target="confirmSection"]');
+      
+      if (timeSection) timeSection.classList.add('hidden');
+      if (roomSection) roomSection.classList.add('hidden');
+      if (confirmSection) confirmSection.classList.add('hidden');
+      
+      // 선택 초기화
+      if (typeof selectedDate !== 'undefined') selectedDate = null;
+      if (typeof selectedTime !== 'undefined') selectedTime = null;
+      if (typeof selectedRoom !== 'undefined') selectedRoom = null;
+    })
+    .catch(function(error) {
+      console.error('달력 로드 오류:', error);
+    });
+}
+</script>
+
 <style>
   .reserve-container {
     min-height: 100vh;
@@ -634,61 +694,13 @@ window.confirmPracticeReservation = function() {
   return false;
 };
 
-// 달력 네비게이션 함수
-function navigateMonth(direction) {
-  var currentCalendar = document.querySelector('.calendar');
-  var currentMonth = currentCalendar.getAttribute('data-month');
-  var [year, month] = currentMonth.split('-').map(Number);
-  
-  if (direction === 'prev') {
-    month--;
-    if (month < 1) {
-      month = 12;
-      year--;
-    }
-  } else {
-    month++;
-    if (month > 12) {
-      month = 1;
-      year++;
-    }
-  }
-  
-  // 두 자리 숫자로 포맷
-  var formattedMonth = month < 10 ? '0' + month : month.toString();
-  var newDate = year + '-' + formattedMonth + '-01';
-  
-  // 새 달력 로드
-  fetch('/practice/reserve?date=' + newDate, {
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  })
-    .then(function(response) { return response.text(); })
-    .then(function(html) {
-      // 서버에서 partial을 직접 반환하므로 그대로 사용
-      document.getElementById('calendar-container').innerHTML = html;
-      
-      // 다른 섹션들 숨기기
-      hideSection('timeSection');
-      hideSection('roomSection');
-      hideSection('confirmSection');
-      
-      // 선택 초기화
-      selectedDate = null;
-      selectedTime = null;
-      selectedRoom = null;
-    })
-    .catch(function(error) {
-      console.error('달력 로드 오류:', error);
-    });
-}
+// navigateMonth 함수는 상단에 이미 정의됨
 
 // 전역 함수로 등록
 window.selectDate = selectDate;
 window.selectTime = selectTime;
 window.selectRoom = selectRoom;
-window.navigateMonth = navigateMonth;
+// navigateMonth는 이미 전역 함수로 상단에 정의됨
 
 // 디버깅용 로그 추가
 console.log('Practice reservation functions loaded:', {
