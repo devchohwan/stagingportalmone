@@ -7,9 +7,9 @@
 
 <div class="calendar" data-month="<%= date.strftime('%Y-%m') %>">
   <div class="calendar-header">
-    <button class="calendar-nav-btn">←</button>
+    <button class="calendar-nav-btn" onclick="navigateMakeupMonth('prev')">←</button>
     <h3 class="calendar-month-title"><%= date.strftime('%Y년 %m월') %></h3>
-    <button class="calendar-nav-btn">→</button>
+    <button class="calendar-nav-btn" onclick="navigateMakeupMonth('next')">→</button>
   </div>
   
   <div class="calendar-grid">

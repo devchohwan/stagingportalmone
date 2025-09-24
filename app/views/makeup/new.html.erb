@@ -728,5 +728,62 @@ window.showPendingMessage = function() {
         '다른 좌석을 선택해주세요.');
 };
 
+// 달력 네비게이션 함수
+window.navigateMakeupMonth = function(direction) {
+  var currentCalendar = document.querySelector('.calendar');
+  var currentMonth = currentCalendar.getAttribute('data-month');
+  var [year, month] = currentMonth.split('-').map(Number);
+  
+  if (direction === 'prev') {
+    month--;
+    if (month < 1) {
+      month = 12;
+      year--;
+    }
+  } else {
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+  
+  // 두 자리 숫자로 포맷
+  var formattedMonth = month < 10 ? '0' + month : month.toString();
+  var newDate = year + '-' + formattedMonth + '-01';
+  
+  // 새 달력 로드
+  fetch('/makeup/new?date=' + newDate, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      // HTML에서 달력 부분만 추출
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      var newCalendar = tempDiv.querySelector('#calendar-container .calendar');
+      
+      if (newCalendar) {
+        document.getElementById('calendar-container').innerHTML = newCalendar.outerHTML;
+      }
+      
+      // 다른 섹션들 숨기기
+      hideSection('timeSection');
+      hideSection('roomSection');
+      hideSection('contentSection');
+      hideSection('confirmSection');
+      
+      // 선택 초기화
+      selectedDate = null;
+      selectedTime = null;
+      selectedRoom = null;
+    })
+    .catch(function(error) {
+      console.error('달력 로드 오류:', error);
+    });
+};
+
 console.log('보충수업 예약 JavaScript 로드 완료');
 </script>

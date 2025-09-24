@@ -627,10 +627,67 @@ window.confirmPracticeReservation = function() {
   return false;
 };
 
+// 달력 네비게이션 함수
+function navigateMonth(direction) {
+  var currentCalendar = document.querySelector('.calendar');
+  var currentMonth = currentCalendar.getAttribute('data-month');
+  var [year, month] = currentMonth.split('-').map(Number);
+  
+  if (direction === 'prev') {
+    month--;
+    if (month < 1) {
+      month = 12;
+      year--;
+    }
+  } else {
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+  
+  // 두 자리 숫자로 포맷
+  var formattedMonth = month < 10 ? '0' + month : month.toString();
+  var newDate = year + '-' + formattedMonth + '-01';
+  
+  // 새 달력 로드
+  fetch('/practice/reserve?date=' + newDate, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      // HTML에서 달력 부분만 추출
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      var newCalendar = tempDiv.querySelector('#calendar-container .calendar');
+      
+      if (newCalendar) {
+        document.getElementById('calendar-container').innerHTML = newCalendar.outerHTML;
+      }
+      
+      // 다른 섹션들 숨기기
+      hideSection('timeSection');
+      hideSection('roomSection');
+      hideSection('confirmSection');
+      
+      // 선택 초기화
+      selectedDate = null;
+      selectedTime = null;
+      selectedRoom = null;
+    })
+    .catch(function(error) {
+      console.error('달력 로드 오류:', error);
+    });
+}
+
 // 전역 함수로 등록
 window.selectDate = selectDate;
 window.selectTime = selectTime;
 window.selectRoom = selectRoom;
+window.navigateMonth = navigateMonth;
 
 // 폼 제출 이벤트
 var form = document.querySelector('[data-reservation-target="form"]');

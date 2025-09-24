@@ -25,6 +25,11 @@ class PracticeController < ApplicationController
     
     @reservation = Reservation.new
     @date = params[:date] ? Date.parse(params[:date]) : Date.current
+    
+    # AJAX 요청인 경우 달력만 렌더링
+    if request.xhr?
+      render partial: 'calendar', locals: { date: @date, selected_date: nil }
+    end
   end
   
   def create_reservation
