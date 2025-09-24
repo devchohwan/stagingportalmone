@@ -99,6 +99,13 @@ Rails.application.routes.draw do
     patch 'makeup/users/:id/reset_password', to: 'dashboard#reset_makeup_password'
     patch 'makeup/users/:id/update_info', to: 'dashboard#update_makeup_user_info'
     get 'makeup/penalties', to: 'dashboard#makeup_penalties'
+    
+    # Penalties management
+    resources :penalties, only: [:index] do
+      member do
+        post :reset
+      end
+    end
   end
   
   # 테스트 컨트롤러
