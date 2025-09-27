@@ -217,7 +217,7 @@ function navigateMonth(direction) {
     justify-content: center;
   }
   
-  .calendar-day-cell:hover:not(.past-day):not(.monday-closed) {
+  .calendar-day-cell:hover:not(.past-day):not(.monday-closed):not(.blocked-day):not(.same-day-disabled) {
     background-color: #f7fafc;
     border-color: #f093fb;
   }
@@ -233,7 +233,9 @@ function navigateMonth(direction) {
   }
   
   .calendar-day-cell.past-day,
-  .calendar-day-cell.monday-closed {
+  .calendar-day-cell.monday-closed,
+  .calendar-day-cell.blocked-day,
+  .calendar-day-cell.same-day-disabled {
     cursor: not-allowed;
     opacity: 0.4;
     background-color: #f9fafb;

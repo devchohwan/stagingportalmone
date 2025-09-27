@@ -25,7 +25,11 @@
           is_same_day = day == today  # 당일인지 체크
           is_current_month = day.month == date.month
           is_monday = day.wday == 1  # 월요일 체크
-          
+
+          # 2025년 10월 2-10일 비활성화
+          blocked_dates = (Date.new(2025, 10, 2)..Date.new(2025, 10, 10)).to_a
+          is_blocked = blocked_dates.include?(day)
+
           css_classes = []
           css_classes << "calendar-day-cell"
           css_classes << "not-current-month" unless is_current_month
@@ -33,9 +37,10 @@
           css_classes << "today" if is_today
           css_classes << "same-day-disabled" if is_same_day  # 당일 예약 불가 스타일
           css_classes << "monday-closed" if is_monday
-          
+          css_classes << "blocked-day" if is_blocked
+
           # 클릭 가능한지 확인 (당일 예약 불가 추가)
-          is_clickable = is_current_month && !is_past && !is_monday && !is_same_day
+          is_clickable = is_current_month && !is_past && !is_monday && !is_same_day && !is_blocked
         %>
         
         <div class="<%= css_classes.join(' ') %>" 
@@ -47,6 +52,8 @@
           <div class="day-number"><%= day.day %></div>
           <div class="day-label">
             <% if is_today %>
+              예약불가
+            <% elsif is_blocked && is_current_month %>
               예약불가
             <% elsif is_monday && is_current_month %>
               휴무
