@@ -1120,7 +1120,14 @@
 
     window.resetPenalty = function(userId, system, event) {
       if(confirm('이 사용자의 페널티를 초기화하시겠습니까?')) {
-        const url = system === 'makeup' ? `/admin/makeup/users/${userId}/reset_penalty` : `/admin/practice/users/${userId}/reset_penalty`;
+        let url;
+        if (system === 'pitch') {
+          url = `/admin/pitch/penalties/${userId}/reset`;
+        } else if (system === 'makeup') {
+          url = `/admin/makeup/users/${userId}/reset_penalty`;
+        } else {
+          url = `/admin/practice/users/${userId}/reset_penalty`;
+        }
         
         const button = event.currentTarget;
         button.disabled = true;
@@ -1256,14 +1263,16 @@
       const button = event ? event.currentTarget : null;
       const row = button ? button.closest('tr') : null;
       const selectElement = row ? row.querySelector('select') : null;
-      
+
       if (button) {
         button.disabled = true;
         button.textContent = '처리중...';
         button.style.opacity = '0.6';
       }
-      
-      window.updateReservationStatusSmooth(reservationId, 'active', service, selectElement);
+
+      // 음정수업은 'approved', 보충수업은 'active'
+      const targetStatus = service === 'pitch' ? 'approved' : 'active';
+      window.updateReservationStatusSmooth(reservationId, targetStatus, service, selectElement);
     };
     
     window.rejectReservationSmooth = function(reservationId, service, event) {
@@ -1385,8 +1394,9 @@
           const statusBadge = row.querySelector('.status-badge');
           if (statusBadge) {
             const statusTexts = {
-              'pending': service === 'makeup' ? '승인 대기' : '대기',
+              'pending': service === 'makeup' || service === 'pitch' ? '승인 대기' : '대기',
               'active': service === 'makeup' ? '수업 대기' : '이용 전',
+              'approved': service === 'pitch' ? '수업 대기' : '승인',
               'completed': '완료',
               'cancelled': '취소',
               'rejected': '거절됨',
@@ -1399,7 +1409,12 @@
             statusBadge.style.transform = 'scale(1.1)';
             
             setTimeout(() => {
-              statusBadge.className = 'status-badge status-' + status;
+              // CSS 클래스 매핑 (음정수업의 approved는 active 스타일 사용)
+              let cssClass = status.replace('_', '-');
+              if (service === 'pitch' && status === 'approved') {
+                cssClass = 'active';  // 음정수업의 승인 완료는 active 스타일 사용
+              }
+              statusBadge.className = 'status-badge status-' + cssClass;
               statusBadge.textContent = statusTexts[status] || status;
               statusBadge.style.transform = 'scale(1)';
               console.log('🎯 상태 변경 완료:', statusTexts[status]);
@@ -1408,9 +1423,12 @@
           
           // data-status 업데이트
           row.setAttribute('data-status', status);
-          
-          // 승인/거절 버튼 숨기기 (보충수업이고 pending에서 변경된 경우)
-          if (service === 'makeup' && status !== 'pending') {
+
+          // select 박스 값도 업데이트
+          selectElement.value = status;
+
+          // 승인/거절 버튼 숨기기 (pending에서 변경된 경우)
+          if ((service === 'makeup' || service === 'pitch') && status !== 'pending') {
             const approveBtn = row.querySelector('.btn-approve');
             const rejectBtn = row.querySelector('.btn-reject');
             if (approveBtn || rejectBtn) {
@@ -1484,6 +1502,33 @@
           document.getElementById('modal-week-number').textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
           document.getElementById('modal-lesson-content').textContent = data.lesson_content || '내용이 없습니다.';
           document.getElementById('lesson-content-modal').classList.add('show');
+        } else {
+          alert('예약 정보를 불러올 수 없습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('오류가 발생했습니다.');
+      });
+  }
+
+  // 음정수업 메모 보기
+  window.showPitchNotes = function(reservationId) {
+    fetch('/admin/reservations/' + reservationId + '/lesson_content?service=pitch')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // 음정수업용 모달이 없으면 보충수업 모달 재사용
+          var modal = document.getElementById('pitch-notes-modal');
+          if (!modal) {
+            // 기존 lesson-content-modal 사용
+            document.getElementById('modal-user-name').textContent = data.user_name;
+            document.getElementById('modal-date').textContent = data.date;
+            document.getElementById('modal-time').textContent = data.time;
+            document.getElementById('modal-week-number').textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
+            document.getElementById('modal-lesson-content').textContent = data.notes || '메모가 없습니다.';
+            document.getElementById('lesson-content-modal').classList.add('show');
+          }
         } else {
           alert('예약 정보를 불러올 수 없습니다.');
         }

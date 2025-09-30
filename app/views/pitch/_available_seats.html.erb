@@ -1,0 +1,89 @@
+<% if @available_seats.any? %>
+  <div class="seats-grid">
+    <% @available_seats.each do |seat| %>
+      <div class="seat-card"
+           data-seat-id="<%= seat.id %>"
+           data-seat-name="<%= seat.name %>"
+           onclick="window.selectSeat(this)">
+        <div class="seat-icon">💺</div>
+        <div class="seat-name"><%= seat.name %></div>
+        <div class="seat-status">예약 가능</div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="no-seats-available">
+    <p>이 시간대는 모든 좌석이 예약되었습니다.</p>
+    <p>다른 시간을 선택해주세요.</p>
+  </div>
+<% end %>
+
+<style>
+.seats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.seat-card {
+  background: white;
+  border: 2px solid #8b5cf6;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.seat-card:hover {
+  background: #f3e8ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.seat-card.selected {
+  background: #8b5cf6;
+  color: white;
+}
+
+.seat-icon {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.seat-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.seat-status {
+  font-size: 0.85rem;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.seat-card.selected .seat-status {
+  color: white;
+}
+
+.no-seats-available {
+  text-align: center;
+  padding: 40px 20px;
+  background: #fef2f2;
+  border: 2px solid #fca5a5;
+  border-radius: 12px;
+  color: #991b1b;
+}
+
+.no-seats-available p {
+  margin: 10px 0;
+}
+
+@media (max-width: 480px) {
+  .seats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

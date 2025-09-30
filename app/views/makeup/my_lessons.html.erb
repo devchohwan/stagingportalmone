@@ -524,8 +524,8 @@
   
   window.confirmAndShowModal = function(reservationId, date, time, room) {
     // 먼저 confirm 창 띄우기
-    const confirmMessage = '예약 정보\n\n날짜: ' + date + '\n시간: ' + time + '\n좌석: ' + room + '\n\n정말로 예약을 취소하시겠습니까?';
-    
+    const confirmMessage = '날짜: ' + date + '\n시간: ' + time + '\n좌석: ' + room + '\n\n정말로 취소하시겠습니까?';
+
     if (confirm(confirmMessage)) {
       // 확인을 누르면 취소사유 모달 띄우기
       window.showCancelModal(reservationId, date, time, room);

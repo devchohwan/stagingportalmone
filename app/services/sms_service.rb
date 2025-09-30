@@ -80,6 +80,48 @@ class SmsService
     end
   end
   
+  # 음정수업 승인 알림
+  def send_pitch_approval_notification(phone, name, reservation = nil)
+    if @api_key.nil? || @api_secret.nil? || @sender.nil?
+      Rails.logger.error "솔라피 환경변수가 설정되지 않았습니다."
+      return { success: false, message: "SMS 발송 설정이 올바르지 않습니다." }
+    end
+
+    begin
+      # 예약 시간 정보가 있으면 포함, 없으면 기본 메시지
+      if reservation && reservation.start_time
+        date_time = reservation.start_time.strftime('%m월 %d일 %H시 %M분')
+        message_text = "안녕하세요 #{name}님.\n신청하신 #{date_time} 음정수업 예약이\n승인되셨습니다. 그때 뵐게요!"
+      else
+        message_text = "안녕하세요 #{name}님.\n신청하신 음정수업 예약이\n승인되셨습니다. 그때 뵐게요!"
+      end
+
+      message = {
+        to: phone.gsub('-', ''),
+        from: @sender.gsub('-', ''),
+        text: message_text
+      }
+
+      Rails.logger.info "===== 음정수업 승인 알림 SMS 전송 시도 ====="
+      Rails.logger.info "수신번호: #{phone}"
+      Rails.logger.info "발신번호: #{@sender}"
+      Rails.logger.info "메시지: #{message_text}"
+
+      result = send_sms(message)
+
+      Rails.logger.info "SMS 전송 결과: #{result.inspect}"
+
+      {
+        success: result[:success],
+        message: result[:success] ? "SMS 발송 성공" : "SMS 발송 실패: #{result[:message]}"
+      }
+    rescue => e
+      Rails.logger.error "SMS 발송 중 오류 발생: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      { success: false, message: e.message }
+    end
+  end
+
   # 보충수업 승인 알림
   def send_makeup_approval_notification(phone, name, reservation = nil)
     if @api_key.nil? || @api_secret.nil? || @sender.nil?

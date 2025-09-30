@@ -1,0 +1,82 @@
+<%
+  start_date = date.beginning_of_month
+  end_date = date.end_of_month
+  weeks = (start_date.beginning_of_week(:sunday)..end_date.end_of_week(:sunday)).to_a.each_slice(7)
+  today = Date.current
+%>
+
+<div class="calendar" data-month="<%= date.strftime('%Y-%m') %>">
+  <div class="calendar-header">
+    <button class="calendar-nav-btn" onclick="navigateMonth('prev')">←</button>
+    <h3 class="calendar-month-title"><%= date.strftime('%Y년 %m월') %></h3>
+    <button class="calendar-nav-btn" onclick="navigateMonth('next')">→</button>
+  </div>
+
+  <div class="calendar-grid">
+    <% %w[일 월 화 수 목 금 토].each do |day| %>
+      <div class="calendar-weekday"><%= day %></div>
+    <% end %>
+
+    <% weeks.each do |week| %>
+      <% week.each do |day| %>
+        <%
+          is_today = day == today
+          is_past = day < today
+          is_current_month = day.month == date.month
+
+          # 화수목금(2,3,4,5)만 가능, 월(1), 토(6), 일(0) 불가
+          allowed_weekdays = [2, 3, 4, 5]  # 화수목금
+          is_weekend_or_monday = !allowed_weekdays.include?(day.wday)
+
+          # 10월 14일부터 예약 가능
+          start_available_date = Date.new(2025, 10, 14)
+          is_before_start = day < start_available_date
+
+          # 공휴일 및 특별 휴무일
+          blocked_dates = [Date.new(2025, 10, 5), Date.new(2025, 10, 6), Date.new(2025, 10, 7)]
+          is_blocked = blocked_dates.include?(day)
+
+          # 이미 예약한 날짜 체크 - 보충수업과 동일하게 표시하지 않음
+          has_reservation = false
+          if logged_in? && is_current_month && !is_past
+            has_reservation = current_user.pitch_reservations.active
+              .where('DATE(start_time) = ?', day).exists?
+          end
+
+          css_classes = []
+          css_classes << "calendar-day-cell"
+          css_classes << "not-current-month" unless is_current_month
+          css_classes << "past-day" if is_past && !is_today
+          css_classes << "today" if is_today
+          css_classes << "weekend-closed" if is_weekend_or_monday
+          css_classes << "blocked-day" if is_blocked || is_before_start
+          css_classes << "has-reservation" if has_reservation
+
+          is_clickable = is_current_month && !is_past && !is_weekend_or_monday && !is_blocked && !has_reservation && !is_before_start
+        %>
+
+        <div class="<%= css_classes.join(' ') %>"
+             data-date="<%= day.strftime('%Y-%m-%d') %>"
+             <% if is_clickable %>
+               data-clickable="true"
+               onclick="selectDate(this)"
+             <% end %>>
+          <div class="day-number"><%= day.day %></div>
+          <div class="day-label">
+            <% if is_today %>
+              오늘
+            <% elsif is_before_start && is_current_month %>
+              준비중
+            <% elsif is_weekend_or_monday && is_current_month %>
+              휴무
+            <% elsif is_blocked && is_current_month %>
+              휴무
+            <% else %>
+              &nbsp;
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,527 @@
+<style>
+  .reservations-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .reservations-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .reservations-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+  }
+
+  .content-wrapper {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .filter-section {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+  }
+
+  .filter-select,
+  .filter-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+  }
+
+  .filter-select:focus,
+  .filter-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .filter-buttons {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: inline-block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    flex: 1;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+  }
+
+  .btn-secondary {
+    background: #f7fafc;
+    color: #4a5568;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: inline-block;
+    transition: all 0.3s ease;
+    border: 2px solid #e2e8f0;
+    font-size: 0.9rem;
+  }
+
+  .btn-secondary:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    transform: translateY(-1px);
+  }
+
+  .reservations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .reservation-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .reservation-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .reservation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+  }
+
+  .reservation-info h3 {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+  }
+
+  .reservation-detail {
+    font-size: 0.9rem;
+    color: #718096;
+    margin-bottom: 4px;
+  }
+
+  .reservation-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-pending {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+    color: #d97706;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  .status-approved {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .status-cancelled {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .status-rejected {
+    background: linear-gradient(135deg, rgba(254, 226, 226, 0.8), rgba(254, 202, 202, 0.8));
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .status-completed {
+    background: linear-gradient(135deg, rgba(224, 231, 255, 0.8), rgba(199, 210, 254, 0.8));
+    color: #3730a3;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  .status-no-show {
+    background: linear-gradient(135deg, rgba(254, 202, 202, 0.9), rgba(252, 165, 165, 0.9));
+    color: #7f1d1d;
+    border: 1px solid rgba(220, 38, 38, 0.4);
+  }
+
+  .reservation-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-cancel {
+    background: linear-gradient(135deg, #f56565, #e53e3e);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    text-align: center;
+    display: inline-block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .btn-cancel:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  .btn-cancel:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .no-reservations {
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .no-reservations-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+  }
+
+  .no-reservations-text {
+    color: #718096;
+    font-size: 1.1rem;
+  }
+
+  .back-link {
+    color: #718096;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+    text-align: center;
+    display: block;
+    margin-top: 30px;
+  }
+
+  .back-link:hover {
+    color: #2d3748;
+  }
+
+  /* 320px 모바일 최적화 */
+  @media (max-width: 320px) {
+    .reservations-container {
+      padding: 20px 10px;
+    }
+
+    .reservations-title {
+      font-size: 1.4rem;
+    }
+
+    .filter-section,
+    .reservation-card {
+      padding: 15px;
+    }
+
+    .filter-row {
+      flex-direction: column;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      font-size: 0.85rem;
+      padding: 8px 12px;
+    }
+  }
+
+  .notes-section {
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+  }
+
+  .notes-label {
+    font-size: 0.8rem;
+    color: #718096;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .notes-text {
+    color: #4a5568;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .info-message {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(236, 72, 153, 0.05));
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #6b46c1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-icon {
+    font-size: 1rem;
+  }
+</style>
+
+<div class="reservations-container">
+  <div class="reservations-header">
+    <h1 class="reservations-title">🎵 내 음정수업 예약</h1>
+  </div>
+
+  <div class="content-wrapper">
+    <div class="filter-section">
+      <%= form_with url: pitch_my_reservations_path, method: :get, local: true do |f| %>
+        <div class="filter-row">
+          <%= f.select :status,
+              options_for_select([
+                ['전체', ''],
+                ['승인 대기', 'pending'],
+                ['수업 대기', 'approved'],
+                ['완료', 'completed'],
+                ['거절됨', 'rejected'],
+                ['취소됨', 'cancelled'],
+                ['노쇼', 'no_show']
+              ], params[:status]),
+              {},
+              class: "filter-select" %>
+
+          <%= f.date_field :date,
+              value: params[:date],
+              class: "filter-input",
+              placeholder: "날짜 선택" %>
+        </div>
+
+        <div class="filter-buttons">
+          <button type="submit" class="btn-primary">조회</button>
+          <a href="<%= pitch_my_reservations_path %>" class="btn-secondary">초기화</a>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="reservations-list">
+      <% if @reservations.any? %>
+        <% @reservations.each do |reservation| %>
+          <div class="reservation-card">
+            <div class="reservation-header">
+              <div class="reservation-info">
+                <h3><%= reservation.pitch_room.name %></h3>
+                <% if reservation.week_number.present? %>
+                  <div class="reservation-detail">
+                    📊 <%= reservation.week_number %>주차
+                  </div>
+                <% end %>
+                <div class="reservation-detail">
+                  📅 <%= reservation.start_time.strftime('%Y년 %m월 %d일') %>
+                </div>
+                <div class="reservation-detail">
+                  ⏰ <%= reservation.start_time.strftime('%H:%M') %> - <%= reservation.end_time.strftime('%H:%M') %>
+                </div>
+                <div class="reservation-detail">
+                  🕐 신청: <%= reservation.created_at.strftime('%m/%d %H:%M') %>
+                </div>
+              </div>
+
+              <div class="reservation-status">
+                <% case reservation.status %>
+                <% when 'pending' %>
+                  <span class="status-badge status-pending">승인 대기</span>
+                <% when 'approved' %>
+                  <span class="status-badge status-approved">수업 대기</span>
+                <% when 'completed' %>
+                  <span class="status-badge status-completed">완료</span>
+                <% when 'rejected' %>
+                  <span class="status-badge status-rejected">거절됨</span>
+                <% when 'cancelled' %>
+                  <span class="status-badge status-cancelled">취소됨</span>
+                <% when 'no_show' %>
+                  <span class="status-badge status-no-show">노쇼</span>
+                <% end %>
+              </div>
+            </div>
+
+            <% if reservation.approved_at %>
+              <div class="info-message">
+                <span class="info-icon">✅</span>
+                <span>승인일시: <%= reservation.approved_at.strftime('%m/%d %H:%M') %></span>
+              </div>
+            <% end %>
+
+            <% if reservation.notes.present? %>
+              <div class="notes-section">
+                <div class="notes-label">📝 메모</div>
+                <div class="notes-text"><%= reservation.notes %></div>
+              </div>
+            <% end %>
+
+            <% if reservation.admin_note.present? %>
+              <div class="notes-section">
+                <div class="notes-label">💬 관리자 메모</div>
+                <div class="notes-text"><%= reservation.admin_note %></div>
+              </div>
+            <% end %>
+
+            <% if reservation.can_cancel? %>
+              <div class="reservation-actions">
+                <button type="button"
+                        onclick="<%= reservation.status == 'approved' ?
+                          "confirmCancelWithPenalty(#{reservation.id}, '#{reservation.start_time.strftime('%Y년 %m월 %d일')}', '#{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}', '#{reservation.pitch_room.name}')" :
+                          "confirmCancel(#{reservation.id}, '#{reservation.start_time.strftime('%Y년 %m월 %d일')}', '#{reservation.start_time.strftime('%H:%M')} - #{reservation.end_time.strftime('%H:%M')}', '#{reservation.pitch_room.name}')" %>"
+                        class="btn-cancel">
+                  예약 취소
+                </button>
+              </div>
+            <% elsif reservation.status == 'approved' && reservation.start_time <= 30.minutes.from_now %>
+              <div class="info-message">
+                <span class="info-icon">⚠️</span>
+                <span>수업 시작 30분 전부터는 취소할 수 없습니다</span>
+              </div>
+            <% end %>
+
+            <% if reservation.cancelled_at %>
+              <div class="notes-section">
+                <div class="notes-label">❌ 취소 정보</div>
+                <div class="notes-text">
+                  취소일시: <%= reservation.cancelled_at.strftime('%m/%d %H:%M') %><br>
+                  <% if reservation.cancelled_by %>
+                    취소자: <%= reservation.cancelled_by %>
+                  <% end %>
+                  <% if reservation.cancellation_reason.present? %>
+                    <br>사유: <%= reservation.cancellation_reason %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="no-reservations">
+          <div class="no-reservations-icon">📭</div>
+          <div class="no-reservations-text">
+            예약 내역이 없습니다
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <a href="<%= pitch_path %>" class="back-link">← 돌아가기</a>
+  </div>
+</div>
+
+<script>
+  function confirmCancel(reservationId, date, time, room) {
+    const confirmMessage = '날짜: ' + date + '\n시간: ' + time + '\n좌석: ' + room + '\n\n정말로 취소하시겠습니까?';
+
+    if (confirm(confirmMessage)) {
+      // 취소 폼 생성 및 제출
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/pitch/reservations/' + reservationId + '/cancel';
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'authenticity_token';
+      csrfInput.value = csrfToken;
+
+      const methodInput = document.createElement('input');
+      methodInput.type = 'hidden';
+      methodInput.name = '_method';
+      methodInput.value = 'PATCH';
+
+      form.appendChild(csrfInput);
+      form.appendChild(methodInput);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+
+  function confirmCancelWithPenalty(reservationId, date, time, room) {
+    const warningMessage = '⚠️ 주의: 승인된 예약 취소\n\n' +
+                          '날짜: ' + date + '\n' +
+                          '시간: ' + time + '\n' +
+                          '좌석: ' + room + '\n\n' +
+                          '승인된 예약을 취소하시면 페널티가 부과됩니다.\n' +
+                          '(월 2회 이상 취소/노쇼 시 이용이 제한됩니다)\n\n' +
+                          '정말로 취소하시겠습니까?';
+
+    if (confirm(warningMessage)) {
+      // 취소 폼 생성 및 제출
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/pitch/reservations/' + reservationId + '/cancel';
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'authenticity_token';
+      csrfInput.value = csrfToken;
+
+      const methodInput = document.createElement('input');
+      methodInput.type = 'hidden';
+      methodInput.name = '_method';
+      methodInput.value = 'PATCH';
+
+      form.appendChild(csrfInput);
+      form.appendChild(methodInput);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+</script>

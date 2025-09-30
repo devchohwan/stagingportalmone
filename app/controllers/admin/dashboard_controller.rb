@@ -137,7 +137,34 @@ class Admin::DashboardController < ApplicationController
         )
       end
       
-      @users_with_penalties = practice_penalties + makeup_penalties
+      pitch_penalty_users = PitchPenalty.includes(:user)
+        .where(month: current_month, year: current_year)
+        .where('no_show_count > 0 OR cancel_count > 0 OR is_blocked = true')
+      
+      pitch_penalties = pitch_penalty_users.map do |pitch_penalty|
+        user = pitch_penalty.user
+        
+        latest_cancelled_pitch = user.pitch_reservations
+          .where(status: ['cancelled', 'no_show'])
+          .where('DATE(start_time) >= ?', Date.new(current_year, current_month, 1))
+          .where('DATE(start_time) <= ?', Date.new(current_year, current_month, -1))
+          .order(updated_at: :desc)
+          .first
+        
+        reservation_time = latest_cancelled_pitch&.created_at
+        
+        user_to_hash(user).merge(
+          'no_show_count' => pitch_penalty.no_show_count,
+          'cancel_count' => pitch_penalty.cancel_count,
+          'is_blocked' => pitch_penalty.is_blocked,
+          'system' => 'pitch',
+          'penalty_id' => pitch_penalty.id,
+          'penalty_created_at' => pitch_penalty.created_at,
+          'reservation_time' => reservation_time
+        )
+      end
+      
+      @users_with_penalties = practice_penalties + makeup_penalties + pitch_penalties
     rescue => e
       Rails.logger.error "Error fetching penalties: #{e.message}"
       @users_with_penalties = []
@@ -365,7 +392,36 @@ class Admin::DashboardController < ApplicationController
   def makeup_penalties
     @users_with_penalties = []
   end
-  
+
+  def pitch_penalties
+    @penalties = PitchPenalty.includes(:user)
+                       .where(month: Date.current.month, year: Date.current.year)
+                       .order(created_at: :desc)
+
+    # 검색 기능 (이름/아이디)
+    if params[:search].present?
+      search_term = "%#{params[:search]}%"
+      @penalties = @penalties.joins(:user)
+                            .where("users.name LIKE ? OR users.username LIKE ?", search_term, search_term)
+    end
+
+    # 차단된 회원만 보기
+    if params[:blocked] == 'true'
+      @penalties = @penalties.where(is_blocked: true)
+    end
+
+    render 'admin/pitch/penalties/index'
+  end
+
+  def reset_pitch_penalty
+    @penalty = PitchPenalty.find(params[:id])
+    if @penalty.update(penalty_count: 0, no_show_count: 0, cancel_count: 0, is_blocked: false)
+      head :ok
+    else
+      head :unprocessable_entity
+    end
+  end
+
   def update_reservation_status
     head :ok
   end

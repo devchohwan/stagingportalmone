@@ -1,0 +1,567 @@
+<script>
+// 달력 네비게이션 함수를 먼저 정의
+function navigateMonth(direction) {
+  var currentCalendar = document.querySelector('.calendar');
+  if (!currentCalendar) {
+    console.error('Calendar element not found');
+    return;
+  }
+
+  var currentMonth = currentCalendar.getAttribute('data-month');
+  var [year, month] = currentMonth.split('-').map(Number);
+
+  if (direction === 'prev') {
+    month--;
+    if (month < 1) {
+      month = 12;
+      year--;
+    }
+  } else {
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+
+  // 두 자리 숫자로 포맷
+  var formattedMonth = month < 10 ? '0' + month : month.toString();
+  var newDate = year + '-' + formattedMonth + '-01';
+
+  // 새 달력 로드
+  fetch('/pitch/reserve?date=' + newDate, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('calendar-container').innerHTML = html;
+
+      // 다른 섹션들 숨기기
+      var timeSection = document.querySelector('[data-reservation-target="timeSection"]');
+      var seatSection = document.querySelector('[data-reservation-target="seatSection"]');
+      var confirmSection = document.querySelector('[data-reservation-target="confirmSection"]');
+
+      if (timeSection) timeSection.classList.add('hidden');
+      if (seatSection) seatSection.classList.add('hidden');
+      if (confirmSection) confirmSection.classList.add('hidden');
+
+      // 선택 초기화
+      if (typeof selectedDate !== 'undefined') selectedDate = null;
+      if (typeof selectedTime !== 'undefined') selectedTime = null;
+      if (typeof selectedSeat !== 'undefined') selectedSeat = null;
+    })
+    .catch(function(error) {
+      console.error('달력 로드 오류:', error);
+    });
+}
+
+// 전역 변수 선언
+var selectedDate = null;
+var selectedTime = null;
+var selectedSeat = null;
+
+// 날짜 선택 함수
+function selectDate(element) {
+  selectedDate = element.getAttribute('data-date');
+
+  // 기존 선택 해제
+  document.querySelectorAll('.calendar-day-cell.selected').forEach(function(el) {
+    el.classList.remove('selected');
+  });
+  element.classList.add('selected');
+
+  // 시간 슬롯 로드
+  fetch('/pitch/time_slots?date=' + selectedDate)
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('time-slots-container').innerHTML = html;
+      var timeSection = document.querySelector('[data-reservation-target="timeSection"]');
+      if (timeSection) {
+        timeSection.classList.remove('hidden');
+      }
+
+      // 이후 섹션 숨기기
+      var seatSection = document.querySelector('[data-reservation-target="seatSection"]');
+      var confirmSection = document.querySelector('[data-reservation-target="confirmSection"]');
+      if (seatSection) seatSection.classList.add('hidden');
+      if (confirmSection) confirmSection.classList.add('hidden');
+    });
+}
+
+// 시간 선택 함수
+function selectTime(element) {
+  selectedTime = {
+    start: element.getAttribute('data-start-time'),
+    end: element.getAttribute('data-end-time')
+  };
+
+  // 기존 선택 해제
+  document.querySelectorAll('.time-slot.selected').forEach(function(el) {
+    el.classList.remove('selected');
+  });
+  element.classList.add('selected');
+
+  // 좌석 정보 로드
+  fetch('/pitch/available_seats?start_time=' + selectedTime.start + '&end_time=' + selectedTime.end)
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('seats-container').innerHTML = html;
+      var seatSection = document.querySelector('[data-reservation-target="seatSection"]');
+      if (seatSection) {
+        seatSection.classList.remove('hidden');
+      }
+    });
+}
+
+// 좌석 선택 함수
+function selectSeat(element) {
+  selectedSeat = {
+    id: element.getAttribute('data-seat-id'),
+    name: element.getAttribute('data-seat-name')
+  };
+
+  // 기존 선택 해제
+  document.querySelectorAll('.seat-card.selected').forEach(function(el) {
+    el.classList.remove('selected');
+  });
+  element.classList.add('selected');
+
+  // 음정수업 정보 입력 섹션 표시
+  var contentSection = document.querySelector('[data-reservation-target="contentSection"]');
+  if (contentSection) {
+    contentSection.classList.remove('hidden');
+  }
+}
+
+// 주차 입력 업데이트
+function updateWeekNumber() {
+  var weekNumber = document.getElementById('week-number').value;
+  document.getElementById('pitch_reservation_week_number').value = weekNumber;
+}
+
+// 메모 업데이트
+function updateNotes() {
+  var notes = document.getElementById('reservation-notes').value;
+  document.getElementById('pitch_reservation_notes').value = notes;
+}
+
+// 확인 섹션 표시
+function showConfirmSection() {
+  var weekNumber = document.getElementById('week-number').value;
+
+  if (!weekNumber) {
+    alert('주차를 입력해주세요.');
+    return;
+  }
+
+  showReservationSummary();
+
+  var confirmSection = document.querySelector('[data-reservation-target="confirmSection"]');
+  if (confirmSection) {
+    confirmSection.classList.remove('hidden');
+  }
+}
+
+function showReservationSummary() {
+  var startTime = new Date(selectedTime.start);
+  var endTime = new Date(selectedTime.end);
+  var dateStr = startTime.toLocaleDateString('ko-KR');
+  var timeStr = startTime.getHours() + ':00 - ' + endTime.getHours() + ':00';
+  var weekNumber = document.getElementById('week-number').value;
+  var notes = document.getElementById('reservation-notes').value;
+
+  var summary = '<div class="reservation-item"><span class="item-label">날짜:</span> ' + dateStr + '</div>' +
+                '<div class="reservation-item"><span class="item-label">시간:</span> ' + timeStr + '</div>' +
+                '<div class="reservation-item"><span class="item-label">좌석:</span> ' + selectedSeat.name + '</div>' +
+                '<div class="reservation-item"><span class="item-label">주차:</span> ' + (weekNumber ? weekNumber + '주차' : '미입력') + '</div>' +
+                '<div class="reservation-item"><span class="item-label">메모:</span> ' + (notes || '없음') + '</div>';
+
+  document.getElementById('reservation-summary').innerHTML = summary;
+
+  // hidden 필드 값 설정
+  document.getElementById('pitch_reservation_pitch_room_id').value = selectedSeat.id;
+  document.getElementById('pitch_reservation_start_time').value = selectedTime.start;
+  document.getElementById('pitch_reservation_end_time').value = selectedTime.end;
+  document.getElementById('pitch_reservation_week_number').value = weekNumber;
+  document.getElementById('pitch_reservation_notes').value = notes;
+}
+
+// Window 객체에 함수들 할당 (전역 접근을 위해)
+window.navigateMonth = navigateMonth;
+window.selectDate = selectDate;
+window.selectTime = selectTime;
+window.selectSeat = selectSeat;
+window.updateWeekNumber = updateWeekNumber;
+window.updateNotes = updateNotes;
+window.showConfirmSection = showConfirmSection;
+</script>
+
+<style>
+  .reserve-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .reserve-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .reserve-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  .content-wrapper {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .step-section {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    padding: 25px;
+  }
+
+  .step-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+  }
+
+  .calendar-container {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+  }
+
+  .confirmation-card {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(236, 72, 153, 0.05));
+    border: 2px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .confirmation-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+
+  .confirmation-text {
+    color: #4a5568;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .back-link {
+    color: #718096;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+    text-align: center;
+    display: block;
+    margin-top: 30px;
+  }
+
+  .back-link:hover {
+    color: #2d3748;
+    text-decoration: none;
+  }
+
+  /* Calendar specific styles */
+  .calendar {
+    width: 100%;
+  }
+
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+
+  .calendar-nav-btn {
+    color: #718096;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+
+  .calendar-nav-btn:hover {
+    color: #2d3748;
+    background-color: #f7fafc;
+  }
+
+  .calendar-month-title {
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .calendar-weekday {
+    text-align: center;
+    font-weight: 600;
+    color: #718096;
+    font-size: 0.8rem;
+    padding: 10px 0;
+  }
+
+  .calendar-day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #f7fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .calendar-day-cell:hover:not(.past-day):not(.weekend-closed):not(.blocked-day):not(.not-current-month) {
+    background: #e9d5ff;
+    transform: translateY(-2px);
+  }
+
+  .calendar-day-cell.selected {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  .calendar-day-cell.today {
+    background: #ddd6fe;
+  }
+
+  .calendar-day-cell.past-day,
+  .calendar-day-cell.weekend-closed,
+  .calendar-day-cell.blocked-day {
+    background: #f1f5f9;
+    color: #cbd5e0;
+    cursor: not-allowed;
+  }
+
+  .calendar-day-cell.not-current-month {
+    opacity: 0.3;
+  }
+
+  .calendar-day-cell.has-reservation {
+    background: #e9d5ff;
+    color: #6b46c1;
+    cursor: not-allowed;
+  }
+
+  .day-number {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .day-label {
+    font-size: 0.6rem;
+    margin-top: 2px;
+    color: #8b5cf6;
+    font-weight: 600;
+  }
+
+  .calendar-day-cell.selected .day-label {
+    color: white;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .reservation-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .reservation-item:last-child {
+    border-bottom: none;
+  }
+
+  .item-label {
+    color: #718096;
+    font-weight: 500;
+    margin-right: 10px;
+  }
+
+  .form-group {
+    margin-top: 20px;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #4a5568;
+    font-weight: 500;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    resize: vertical;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  /* 320px 모바일 최적화 */
+  @media (max-width: 320px) {
+    .reserve-container {
+      padding: 20px 10px;
+    }
+
+    .reserve-title {
+      font-size: 1.2rem;
+    }
+
+    .step-section {
+      padding: 18px;
+      border-radius: 10px;
+    }
+
+    .calendar-day-cell {
+      font-size: 0.85rem;
+    }
+
+    .day-number {
+      font-size: 0.8rem;
+    }
+
+    .day-label {
+      font-size: 0.55rem;
+    }
+  }
+</style>
+
+<div class="reserve-container" data-controller="reservation">
+  <div class="reserve-header">
+    <h1 class="reserve-title">🎵 음정수업 예약</h1>
+  </div>
+
+  <div class="content-wrapper">
+    <!-- Step 1: 날짜 선택 -->
+    <div class="step-section">
+      <h2 class="step-title">1️⃣ 날짜 선택</h2>
+      <div class="calendar-container" id="calendar-container">
+        <%= render partial: 'calendar', locals: { date: @date, selected_date: nil } %>
+      </div>
+    </div>
+
+    <!-- Step 2: 시간 선택 -->
+    <div class="step-section hidden" data-reservation-target="timeSection">
+      <h2 class="step-title">2️⃣ 시간 선택</h2>
+      <div id="time-slots-container"></div>
+    </div>
+
+    <!-- Step 3: 좌석 선택 -->
+    <div class="step-section hidden" data-reservation-target="seatSection">
+      <h2 class="step-title">3️⃣ 좌석 선택</h2>
+      <div id="seats-container"></div>
+    </div>
+
+    <!-- Step 4: 음정수업 정보 입력 -->
+    <div class="step-section hidden" data-reservation-target="contentSection">
+      <h2 class="step-title">4️⃣ 음정수업 정보</h2>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">주차</label>
+        <input type="number"
+               id="week-number"
+               placeholder="몇 주차인지 입력해주세요 (예: 1, 2, 3...)"
+               style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;"
+               min="1" max="20"
+               onchange="updateWeekNumber()">
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">예약 메모 (선택사항)</label>
+        <textarea id="reservation-notes"
+                  placeholder="특별한 요청사항이 있으면 입력해주세요"
+                  style="width: 100%; min-height: 100px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"
+                  onchange="updateNotes()"></textarea>
+      </div>
+
+      <button type="button" class="btn-primary" onclick="showConfirmSection()">
+        다음 단계
+      </button>
+    </div>
+
+    <!-- Step 5: 예약 확인 -->
+    <div class="step-section hidden" data-reservation-target="confirmSection">
+      <h2 class="step-title">5️⃣ 예약 확인</h2>
+
+      <div class="confirmation-card">
+        <div class="confirmation-title">예약 정보</div>
+        <div class="confirmation-text" id="reservation-summary"></div>
+      </div>
+
+      <%= form_with model: @reservation, url: pitch_reservations_path, local: true,
+                    data: { turbo: false } do |f| %>
+        <%= f.hidden_field :pitch_room_id %>
+        <%= f.hidden_field :start_time %>
+        <%= f.hidden_field :end_time %>
+        <%= f.hidden_field :week_number %>
+        <%= f.hidden_field :notes %>
+
+        <button type="submit" class="btn-primary"
+                onclick="return confirm('예약을 신청하시겠습니까?\n관리자 승인 후 수업이 확정됩니다.')">
+          예약 신청하기
+        </button>
+      <% end %>
+    </div>
+
+    <a href="<%= pitch_path %>" class="back-link">← 돌아가기</a>
+  </div>
+</div>

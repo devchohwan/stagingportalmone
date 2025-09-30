@@ -267,11 +267,14 @@
     <h2 class="reservations-title">📅 예약 관리</h2>
     
     <div class="service-nav">
-      <button onclick="loadReservationsTab('practice')" class="service-btn <%= service_type != 'makeup' ? 'active' : '' %>">
+      <button onclick="loadReservationsTab('practice')" class="service-btn <%= service_type != 'makeup' && service_type != 'pitch' ? 'active' : '' %>">
         🎹 연습실 예약
       </button>
       <button onclick="loadReservationsTab('makeup')" class="service-btn <%= service_type == 'makeup' ? 'active' : '' %>">
         📚 보충수업 예약
+      </button>
+      <button onclick="loadReservationsTab('pitch')" class="service-btn <%= service_type == 'pitch' ? 'active' : '' %>">
+        🎵 음정수업 예약
       </button>
     </div>
     
@@ -287,6 +290,13 @@
         <% if service_type == 'makeup' %>
           <option value="pending">승인 대기</option>
           <option value="active">수업 대기</option>
+          <option value="completed">완료</option>
+          <option value="rejected">거절됨</option>
+          <option value="cancelled">취소</option>
+          <option value="no_show">노쇼</option>
+        <% elsif service_type == 'pitch' %>
+          <option value="pending">승인 대기</option>
+          <option value="approved">수업 대기</option>
           <option value="completed">완료</option>
           <option value="rejected">거절됨</option>
           <option value="cancelled">취소</option>
@@ -323,7 +333,7 @@
           <tr>
             <th>이름</th>
             <th>아이디</th>
-            <th><%= service_type == 'makeup' ? '담당' : '연습실' %></th>
+            <th><%= service_type == 'makeup' ? '담당' : (service_type == 'pitch' ? '좌석' : '연습실') %></th>
             <th>날짜</th>
             <th>시간</th>
             <th>상태</th>
@@ -343,9 +353,15 @@
               
               <td>
                 <% if service_type == 'makeup' && reservation.respond_to?(:lesson_content) && reservation.lesson_content.present? %>
-                  <span class="user-name clickable" 
-                        style="cursor: pointer; text-decoration: underline; color: #7c3aed;" 
+                  <span class="user-name clickable"
+                        style="cursor: pointer; text-decoration: underline; color: #7c3aed;"
                         onclick="window.showLessonContent('<%= reservation.id %>')">
+                    <%= reservation.user.name %>
+                  </span>
+                <% elsif service_type == 'pitch' && reservation.respond_to?(:notes) %>
+                  <span class="user-name clickable"
+                        style="cursor: pointer; text-decoration: underline; color: #7c3aed;"
+                        onclick="window.showPitchNotes('<%= reservation.id %>')">
                     <%= reservation.user.name %>
                   </span>
                 <% else %>
@@ -361,6 +377,10 @@
                     <% else %>
                       <span style="color: #9ca3af;">미지정</span>
                     <% end %>
+                  </div>
+                <% elsif service_type == 'pitch' %>
+                  <div class="room-info">
+                    <%= reservation.pitch_room.name %>
                   </div>
                 <% else %>
                   <div class="room-info">
@@ -391,8 +411,8 @@
                     <span class="status-badge status-completed"><%= status_text %></span>
                   <% when 'cancelled' %>
                     <% if reservation.cancellation_reason.present? %>
-                      <span class="status-badge status-cancelled clickable" 
-                            style="cursor: pointer; text-decoration: underline;" 
+                      <span class="status-badge status-cancelled clickable"
+                            style="cursor: pointer; text-decoration: underline;"
                             onclick="window.showMakeupCancellationReason('<%= reservation.id %>')">
                         <%= status_text %>
                       </span>
@@ -401,6 +421,24 @@
                     <% end %>
                   <% when 'rejected' %>
                     <span class="status-badge status-rejected"><%= status_text %></span>
+                  <% when 'no_show' %>
+                    <span class="status-badge status-no-show"><%= status_text %></span>
+                  <% else %>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
+                  <% end %>
+                <% elsif service_type == 'pitch' %>
+                  <% status_text = reservation.status_display %>
+                  <% case reservation.status %>
+                  <% when 'pending' %>
+                    <span class="status-badge status-pending"><%= status_text %></span>
+                  <% when 'approved' %>
+                    <span class="status-badge status-active"><%= status_text %></span>
+                  <% when 'completed' %>
+                    <span class="status-badge status-completed"><%= status_text %></span>
+                  <% when 'rejected' %>
+                    <span class="status-badge status-rejected"><%= status_text %></span>
+                  <% when 'cancelled' %>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% when 'no_show' %>
                     <span class="status-badge status-no-show"><%= status_text %></span>
                   <% else %>
@@ -430,20 +468,28 @@
                 <div class="action-controls">
                   <%= select_tag :status,
                       options_for_select(
-                        service_type == 'makeup' ? 
-                          [['승인 대기', 'pending'], ['수업 대기', 'active'], ['완료', 'completed'], 
+                        service_type == 'makeup' ?
+                          [['승인 대기', 'pending'], ['수업 대기', 'active'], ['완료', 'completed'],
                            ['거절됨', 'rejected'], ['취소', 'cancelled'], ['노쇼', 'no_show']] :
-                          [['대기', 'pending'], ['이용 전', 'active'], ['완료', 'completed'],
-                           ['취소', 'cancelled'], ['노쇼', 'no_show']],
+                          (service_type == 'pitch' ?
+                            [['승인 대기', 'pending'], ['수업 대기', 'approved'], ['완료', 'completed'],
+                             ['거절됨', 'rejected'], ['취소', 'cancelled'], ['노쇼', 'no_show']] :
+                            [['대기', 'pending'], ['이용 전', 'active'], ['완료', 'completed'],
+                             ['취소', 'cancelled'], ['노쇼', 'no_show']]),
                         reservation.status
                       ),
                       onchange: "updateReservationStatusSmooth(#{reservation.id}, this.value, '#{service_type}', this)",
                       class: "status-select" %>
-                  
+
                   <% if service_type == 'makeup' && reservation.status == 'pending' %>
-                    <button onclick="approveReservationSmooth(<%= reservation.id %>, 'makeup', event)" 
+                    <button onclick="approveReservationSmooth(<%= reservation.id %>, 'makeup', event)"
                             class="action-btn btn-approve">승인</button>
-                    <button onclick="rejectReservationSmooth(<%= reservation.id %>, 'makeup', event)" 
+                    <button onclick="rejectReservationSmooth(<%= reservation.id %>, 'makeup', event)"
+                            class="action-btn btn-reject">거절</button>
+                  <% elsif service_type == 'pitch' && reservation.status == 'pending' %>
+                    <button onclick="approveReservationSmooth(<%= reservation.id %>, 'pitch', event)"
+                            class="action-btn btn-approve">승인</button>
+                    <button onclick="rejectReservationSmooth(<%= reservation.id %>, 'pitch', event)"
                             class="action-btn btn-reject">거절</button>
                   <% end %>
                   
@@ -563,6 +609,7 @@
           const statusTexts = {
             'pending': '승인 대기',
             'active': service === 'makeup' ? '수업 대기' : '이용 전',
+            'approved': '수업 대기',
             'completed': '완료',
             'cancelled': '취소',
             'rejected': '거절됨',
@@ -574,8 +621,11 @@
           statusBadge.style.transform = 'scale(1.1)';
           
           setTimeout(() => {
-            // status의 밑줄을 하이픈으로 변환
-            const cssClass = status.replace('_', '-');
+            // CSS 클래스 매핑 (음정수업의 approved는 active 스타일 사용)
+            let cssClass = status.replace('_', '-');
+            if (service === 'pitch' && status === 'approved') {
+              cssClass = 'active';  // 음정수업의 승인 완료는 active 스타일 사용
+            }
             statusBadge.className = 'status-badge status-' + cssClass;
             statusBadge.textContent = statusTexts[status] || status;
             statusBadge.style.transform = 'scale(1)';
@@ -584,7 +634,27 @@
         
         // data-status 업데이트
         row.setAttribute('data-status', status);
-        
+
+        // select 박스 값도 업데이트
+        selectElement.value = status;
+
+        // 승인/거절 버튼 숨기기 (pending에서 변경된 경우)
+        if ((service === 'makeup' || service === 'pitch') && status !== 'pending') {
+          const approveBtn = row.querySelector('.btn-approve');
+          const rejectBtn = row.querySelector('.btn-reject');
+          if (approveBtn || rejectBtn) {
+            // 부드러운 페이드 아웃
+            [approveBtn, rejectBtn].forEach(btn => {
+              if (btn) {
+                btn.style.transition = 'all 0.3s ease';
+                btn.style.opacity = '0';
+                btn.style.transform = 'scale(0.8)';
+                setTimeout(() => btn.style.display = 'none', 300);
+              }
+            });
+          }
+        }
+
       } else {
         alert('상태 변경에 실패했습니다.');
         selectElement.value = originalValue;

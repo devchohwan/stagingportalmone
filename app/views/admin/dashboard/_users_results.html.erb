@@ -232,6 +232,8 @@
             <td>
               <% if user['system'] == 'makeup' %>
                 <span class="system-badge system-makeup">보충수업</span>
+              <% elsif user['system'] == 'pitch' %>
+                <span class="system-badge system-pitch">음정수업</span>
               <% else %>
                 <span class="system-badge system-practice">연습실</span>
               <% end %>
@@ -262,8 +264,13 @@
               <% end %>
             </td>
             <td>
-              <button onclick="resetPenalty(<%= user['id'] %>, '<%= user['system'] %>', event)" 
-                      class="action-btn btn-reset">초기화</button>
+              <% if user['system'] == 'pitch' %>
+                <button onclick="resetPenalty(<%= user['penalty_id'] %>, '<%= user['system'] %>', event)" 
+                        class="action-btn btn-reset">초기화</button>
+              <% else %>
+                <button onclick="resetPenalty(<%= user['id'] %>, '<%= user['system'] %>', event)" 
+                        class="action-btn btn-reset">초기화</button>
+              <% end %>
             </td>
           </tr>
         <% end %>

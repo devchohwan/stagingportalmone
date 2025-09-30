@@ -14,15 +14,21 @@
       <div class="border-b border-gray-200">
         <nav class="-mb-px flex gap-4" aria-label="Tabs">
           <div>
-            <a href="/admin/reservations?service=practice" 
-               class="<%= params[:service] != 'makeup' ? 'border-violet-500 text-violet-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm inline-block">
+            <a href="/admin/reservations?service=practice"
+               class="<%= params[:service] != 'makeup' && params[:service] != 'pitch' ? 'border-violet-500 text-violet-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm inline-block">
               연습실 예약
             </a>
           </div>
           <div>
-            <a href="/admin/reservations?service=makeup" 
+            <a href="/admin/reservations?service=makeup"
                class="<%= params[:service] == 'makeup' ? 'border-violet-500 text-violet-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm inline-block">
               보충수업 예약
+            </a>
+          </div>
+          <div>
+            <a href="/admin/reservations?service=pitch"
+               class="<%= params[:service] == 'pitch' ? 'border-violet-500 text-violet-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' %> whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm inline-block">
+              음정수업 예약
             </a>
           </div>
         </nav>

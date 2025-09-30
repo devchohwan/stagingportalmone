@@ -1,24 +1,13 @@
 <div class="max-w-6xl mx-auto">
-  <h2 class="text-2xl font-bold mb-6">페널티 관리</h2>
+  <h2 class="text-2xl font-bold mb-6">음정수업 페널티 관리</h2>
 
   <!-- 필터 섹션 -->
   <div class="bg-white rounded-lg p-4 shadow mb-6">
-    <%= form_with url: admin_penalties_path, method: :get, class: "flex flex-wrap gap-4" do |f| %>
+    <%= form_with url: admin_pitch_penalties_path, method: :get, class: "flex flex-wrap gap-4" do |f| %>
       <div>
         <%= f.text_field :search,
             value: params[:search],
             placeholder: "이름/아이디 검색",
-            class: "px-3 py-2 border border-gray-300 rounded-lg" %>
-      </div>
-
-      <div>
-        <%= f.select :service,
-            options_for_select([
-              ['전체 서비스', ''],
-              ['연습실', 'practice'],
-              ['음정수업', 'pitch']
-            ], params[:service]),
-            {},
             class: "px-3 py-2 border border-gray-300 rounded-lg" %>
       </div>
 
@@ -32,21 +21,20 @@
             class: "px-3 py-2 border border-gray-300 rounded-lg" %>
       </div>
 
-      <%= f.submit "검색", class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer" %>
+      <%= f.submit "검색", class: "bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 cursor-pointer" %>
 
-      <% if params[:search].present? || params[:blocked].present? || params[:service].present? %>
-        <%= link_to "초기화", admin_penalties_path, class: "bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700" %>
+      <% if params[:search].present? || params[:blocked].present? %>
+        <%= link_to "초기화", admin_pitch_penalties_path, class: "bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700" %>
       <% end %>
     <% end %>
   </div>
-  
+
   <!-- 패널티 목록 -->
   <div class="bg-white rounded-lg shadow overflow-hidden">
     <table class="w-full">
       <thead class="bg-gray-50">
         <tr>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">회원</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">서비스</th>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">노쇼 횟수</th>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">취소 횟수</th>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">총 횟수</th>
@@ -60,13 +48,6 @@
             <td class="px-4 py-3 text-sm">
               <%= penalty.user.name %>
               <span class="text-xs text-gray-500 block"><%= penalty.user.username %></span>
-            </td>
-            <td class="px-4 py-3 text-sm">
-              <% if penalty.is_a?(PitchPenalty) %>
-                <span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">음정수업</span>
-              <% else %>
-                <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">연습실</span>
-              <% end %>
             </td>
             <td class="px-4 py-3 text-sm">
               <%= penalty.no_show_count %>
@@ -86,11 +67,10 @@
             </td>
             <td class="px-4 py-3 text-sm">
               <% if penalty.no_show_count > 0 || penalty.cancel_count > 0 || penalty.is_blocked? %>
-                <% penalty_type = penalty.is_a?(PitchPenalty) ? 'pitch' : 'practice' %>
-                <%= link_to "패널티 초기화", reset_admin_penalty_path(penalty, type: penalty_type),
+                <%= link_to "패널티 초기화", reset_admin_pitch_penalty_path(penalty),
                             method: :patch,
                             data: { turbo_method: :patch, turbo_confirm: "패널티를 초기화하시겠습니까?" },
-                            class: "text-blue-600 hover:text-blue-800 text-xs" %>
+                            class: "text-purple-600 hover:text-purple-800 text-xs" %>
               <% else %>
                 <span class="text-gray-400 text-xs">없음</span>
               <% end %>
@@ -99,22 +79,18 @@
         <% end %>
       </tbody>
     </table>
-    
+
     <% if @penalties.empty? %>
       <div class="text-center py-8 text-gray-500">
         패널티 기록이 없습니다.
       </div>
     <% end %>
   </div>
-  
+
   <div class="mt-6 flex justify-between items-center">
     <div>
       <p class="text-sm text-gray-600">
-        <% if @penalties.is_a?(Array) %>
-          총 <%= @penalties.count %>명 | 차단: <%= @penalties.select(&:is_blocked?).count %>명
-        <% else %>
-          총 <%= @penalties.count %>명 | 차단: <%= @penalties.where(is_blocked: true).count %>명
-        <% end %>
+        총 <%= @penalties.count %>명 | 차단: <%= @penalties.where(is_blocked: true).count %>명
       </p>
       <p class="text-xs text-gray-500 mt-1">
         <%= Date.current.year %>년 <%= Date.current.month %>월 기준

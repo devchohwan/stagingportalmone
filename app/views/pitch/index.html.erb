@@ -1,5 +1,5 @@
 <style>
-  .makeup-container {
+  .pitch-container {
     min-height: 100vh;
     background: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -8,24 +8,25 @@
     flex-direction: column;
     align-items: center;
   }
-  
-  .makeup-header {
+
+  .pitch-header {
     text-align: center;
     margin-bottom: 30px;
   }
-  
-  .makeup-title {
-    font-size: 1.8rem;
+
+  .pitch-title {
+    font-size: 1.4rem;
     font-weight: bold;
     color: #2d3748;
     margin-bottom: 20px;
+    line-height: 1.3;
   }
-  
+
   .content-wrapper {
     width: 100%;
     max-width: 400px;
   }
-  
+
   .user-info-card {
     background: #ffffff;
     border-radius: 12px;
@@ -34,16 +35,16 @@
     border: 1px solid #e2e8f0;
     margin-bottom: 30px;
   }
-  
+
   .action-buttons {
     display: flex;
     flex-direction: column;
     gap: 15px;
     margin-bottom: 30px;
   }
-  
+
   .btn-primary {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
     color: white;
     padding: 15px 20px;
     border-radius: 12px;
@@ -55,12 +56,12 @@
     border: none;
     cursor: pointer;
   }
-  
+
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
   }
-  
+
   .btn-secondary {
     background: #f7fafc;
     color: #4a5568;
@@ -73,13 +74,13 @@
     transition: all 0.3s ease;
     border: 2px solid #e2e8f0;
   }
-  
+
   .btn-secondary:hover {
     background: #edf2f7;
     border-color: #cbd5e0;
     transform: translateY(-2px);
   }
-  
+
   .btn-disabled {
     background: #e2e8f0;
     color: #a0aec0;
@@ -89,7 +90,7 @@
     display: block;
     cursor: not-allowed;
   }
-  
+
   .warning-card {
     background: #fffbeb;
     border: 2px solid #fbbf24;
@@ -97,18 +98,18 @@
     padding: 20px;
     margin-bottom: 30px;
   }
-  
+
   .warning-text {
     color: #92400e;
     font-weight: 600;
   }
-  
+
   .warning-subtext {
     color: #b45309;
     font-size: 0.9rem;
     margin-top: 8px;
   }
-  
+
   .info-section {
     background: #ffffff;
     border-radius: 12px;
@@ -117,7 +118,7 @@
     margin-bottom: 30px;
     overflow: hidden;
   }
-  
+
   .info-header {
     padding: 20px;
     cursor: pointer;
@@ -129,23 +130,23 @@
     color: #4a5568;
     border-bottom: 1px solid #e2e8f0;
   }
-  
+
   .info-title {
-    font-weight: bold;
-    font-size: 1.1rem;
+    font-weight: 600;
+    font-size: 1rem;
   }
-  
+
   .info-arrow {
     position: absolute;
     right: 20px;
     transition: transform 0.3s ease;
     color: #718096;
   }
-  
+
   .info-content {
     padding: 25px;
   }
-  
+
   .info-welcome {
     font-weight: bold;
     color: #2d3748;
@@ -153,20 +154,14 @@
     padding: 15px 0;
     font-size: 1.2rem;
     margin-bottom: 20px;
+    white-space: nowrap;
   }
-  
+
   .info-section-title {
     font-weight: bold;
     color: #2d3748;
     margin-bottom: 12px;
     font-size: 1.1rem;
-  }
-  
-  .info-text {
-    margin-left: 20px;
-    margin-bottom: 20px;
-    color: #4a5568;
-    line-height: 1.6;
   }
 
   .info-list {
@@ -181,87 +176,108 @@
     color: #4a5568;
     line-height: 1.5;
   }
-  
+
+  .info-text {
+    margin-left: 20px;
+    margin-bottom: 20px;
+    color: #4a5568;
+    line-height: 1.6;
+  }
+
+  .info-footer {
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    color: #4a5568;
+    line-height: 1.6;
+  }
+
   .back-link {
     color: #718096;
     text-decoration: none;
     font-size: 0.9rem;
     transition: color 0.3s ease;
   }
-  
+
   .back-link:hover {
     color: #2d3748;
     text-decoration: none;
   }
-  
+
   @media (max-width: 768px) {
-    .makeup-title {
+    .pitch-title {
       font-size: 1.2rem;
       white-space: nowrap;
     }
-    
-    .makeup-container {
+
+    .pitch-container {
       padding: 20px 15px;
     }
-    
+
     body {
       font-size: 14px;
     }
-    
+
     .btn-primary, .btn-secondary {
       font-size: 14px;
       padding: 12px 16px;
     }
-    
+
     .info-section-title {
       font-size: 0.9rem;
-    }
-    
-    .info-text {
-      font-size: 12px;
-      line-height: 1.4;
-      margin-left: 15px;
     }
 
     .info-list li {
       font-size: 12px;
       line-height: 1.4;
     }
-    
+
+    .info-text {
+      font-size: 12px;
+      line-height: 1.4;
+      margin-left: 15px;
+    }
+
     .info-title {
       font-size: 14px;
     }
-    
+
     .info-welcome {
       font-size: 1.2rem;
       white-space: nowrap;
     }
-    
+
     .info-content {
       padding: 20px;
     }
-    
+
     .info-header {
       padding: 16px;
     }
-    
+
     .content-wrapper {
       max-width: 100%;
     }
-    
+
     .user-info-card {
       padding: 16px;
     }
-    
+
     .action-buttons {
       gap: 12px;
+    }
+
+    .info-footer {
+      padding-top: 16px;
+      font-size: 12px;
+      line-height: 1.4;
     }
   }
 </style>
 
-<div class="makeup-container">
-  <div class="makeup-header">
-    <h1 class="makeup-title">모네뮤직 보충수업에 어서오세요!</h1>
+<div class="pitch-container">
+  <div class="pitch-header">
+    <h1 class="pitch-title">모네뮤직 음정수업에&nbsp;어서오세요!</h1>
   </div>
 
   <div class="content-wrapper">
@@ -272,90 +288,90 @@
       </div>
 
       <div class="info-section">
-      <details class="group">
-        <summary class="info-header list-none">
-          <h2 class="info-title">이용안내 펼쳐보기 (필독!)</h2>
-          <span class="info-arrow group-open:rotate-180">▼</span>
-        </summary>
-        
-        <div class="info-content">
-          <p class="info-welcome">모네뮤직 보충수업에 오신 걸 환영합니다😊</p>
+        <details class="group">
+          <summary class="info-header list-none">
+            <h2 class="info-title">이용안내 펼쳐보기 (필독!)</h2>
+            <span class="info-arrow group-open:rotate-180">▼</span>
+          </summary>
 
-          <div>
-            <h3 class="info-section-title">📢 추석연휴 공지!</h3>
-            <p class="info-text">
-              추석연휴 관계로 연습실은 5,6,7일<br>
-              보충수업은 10월 2~10일간 운영되지 않습니다!<br>
-              학원은 5,6,7일만 쉬고 정상오픈합니다!
-            </p>
-          </div>
+          <div class="info-content">
+            <p class="info-welcome">모네뮤직 음정수업에 어서오세요🎵</p>
 
-          <div>
-            <h3 class="info-section-title">😀 보충수업은,</h3>
-            <p class="info-text">
-              주 1회 정규 수업 후<br>
-              보충수업 선생님과 함께<br>
-              지난 수업을 복습하는 수업입니다!<br><br>
-              
-              이렇게 했을 때<br>
-              혼자 연습하는 것보다<br>
-              월등한 실력향상이 있었어요!
-            </p>
-          </div>
-          
-          <div>
-            <h3 class="info-section-title">🚶 방문하실 거라면!</h3>
-            <p class="info-text">
-              신청 양식을 작성하셔서<br>
-              예약하신 뒤,<br>
-              학원에 직접 방문해<br>
-              수업을 들으실 수 있어요!
-            </p>
-          </div>
-          
-          <div>
-            <h3 class="info-section-title">📱 학원에 오기 어려우신 분들의 경우,</h3>
-            <p class="info-text">
-              궁금한 점, 복습하고 싶은 내용을<br>
-              질문하시거나 녹음해서 보내주시면<br>
-              친절히 답변해드리겠습니다😁
-            </p>
-          </div>
+            <div>
+              <h3 class="info-section-title">📢 운영 안내</h3>
+              <p class="info-text">
+                음정수업은 10월 14일부터 시작됩니다!<br>
+                화, 수, 목, 금요일에만 운영됩니다.<br>
+                한 타임에 최대 2명까지 수업 가능합니다.
+              </p>
+            </div>
 
-          <div>
-            <h3 class="info-section-title">😉 보충수업 안내!</h3>
-            <p class="info-text">
-              화~일요일 14시~22시<br>
-              정규수업일 포함 주 4회 가능<br>
-              하루에 1타임만 가능<br>
-              당일 예약은 어렵습니다!<br><br>
+            <div>
+              <h3 class="info-section-title">📱 예약 규칙</h3>
+              <p class="info-text">
+                하루에 1회만 예약 가능합니다.<br>
+                관리자 승인 후 수업이 확정됩니다.<br>
+                승인된 예약은 취소할 수 없습니다.<br>
+                승인 후 불참 시 페널티가 부과됩니다.
+              </p>
+            </div>
 
-              예약된 수업을 진행해야만<br>
-              다음 수업을 예약하실 수 있어요!
-            </p>
+            <div>
+              <h3 class="info-section-title">📍 이용 시간</h3>
+              <p class="info-text">
+                운영시간: 13:00 ~ 21:00<br>
+                수업시간: 1시간 단위<br>
+                운영요일: 화, 수, 목, 금
+              </p>
+            </div>
+
+            <div>
+              <h3 class="info-section-title">🎤 수업 내용</h3>
+              <p class="info-text">
+                음정 트레이닝 및 시창 연습<br>
+                개인별 맞춤 음정 교정<br>
+                화음 및 코러스 연습<br>
+                음악 이론 기초 학습
+              </p>
+            </div>
+
+            <div>
+              <h3 class="info-section-title">⚠️ 주의사항</h3>
+              <p class="info-text">
+                승인 대기 중인 예약은 취소 가능합니다.<br>
+                승인 완료된 예약은 취소가 불가능합니다.<br>
+                불참 시 다음 달 예약이 제한될 수 있습니다.<br>
+                월 3회 이상 페널티 시 당월 이용이 제한됩니다.
+              </p>
+            </div>
+
+            <div>
+              <h3 class="info-section-title">👥 이용 대상</h3>
+              <p class="info-text">
+                모든 보컬 수강생분들이 참여 가능합니다!<br>
+                음정에 어려움이 있거나 개선이 필요한 분들<br>
+                화음과 코러스를 배우고 싶은 분들
+              </p>
+            </div>
+
+            <div class="info-footer">
+              <p>
+                모네뮤직 음정수업으로<br>
+                더 나은 보컬 실력을 만들어가세요🎵
+              </p>
+            </div>
           </div>
+        </details>
+      </div>
 
-          <div>
-            <h3 class="info-section-title">📌 주의사항!</h3>
-            <p class="info-text">
-              보충수업 취소 및 시간 변경의<br>
-              횟수가 2회를 넘기시면<br>
-              그 달은 예약이 불가능합니다!
-            </p>
-          </div>
-
-        </div>
-      </details>
-    </div>
-      
       <% if current_user.approved? %>
         <div class="action-buttons">
-          <% if current_user.makeup_penalty.is_blocked? %>
+          <% if @penalty && @penalty.is_blocked? %>
             <button onclick="alert('월 2회 이상 노쇼/취소하여 이용이 제한되었습니다')" class="btn-disabled">예약하기 (제한됨)</button>
           <% else %>
-            <%= link_to "예약하기", makeup_new_path, class: "btn-primary" %>
+            <%= link_to "예약하기", pitch_reserve_path, class: "btn-primary" %>
           <% end %>
-          <%= link_to "내 예약 확인", makeup_my_lessons_path, class: "btn-secondary" %>
+          <%= link_to "내 예약 확인", pitch_my_reservations_path, class: "btn-secondary" %>
         </div>
       <% else %>
         <div class="warning-card">

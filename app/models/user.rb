@@ -10,6 +10,8 @@ class User < ApplicationRecord
   has_many :makeup_lessons, dependent: :destroy
   has_many :makeup_reservations, dependent: :destroy
   has_many :makeup_quotas, dependent: :destroy
+  has_many :pitch_reservations, dependent: :destroy
+  has_many :pitch_penalties, dependent: :destroy
   
   # makeup system에서는 MakeupUser를 통해 연결
   
@@ -58,6 +60,11 @@ class User < ApplicationRecord
   # 보충수업 전용 페널티
   def makeup_penalty
     current_month_penalty('makeup')
+  end
+
+  # 음정수업 전용 페널티
+  def pitch_penalty
+    PitchPenalty.for_user_this_month(self)
   end
   
   # 비밀번호 업데이트 메서드

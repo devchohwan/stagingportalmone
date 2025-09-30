@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_24_070923) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_30_064156) do
   create_table "makeup_availabilities", force: :cascade do |t|
     t.string "teacher_name", null: false
     t.integer "day_of_week"
@@ -114,6 +114,55 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_070923) do
     t.index ["phone"], name: "index_phone_verifications_on_phone"
   end
 
+  create_table "pitch_penalties", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "penalty_count", default: 0, null: false
+    t.integer "month", null: false
+    t.integer "year", null: false
+    t.boolean "is_blocked", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "no_show_count", default: 0, null: false
+    t.integer "cancel_count", default: 0, null: false
+    t.index ["user_id", "month", "year"], name: "index_pitch_penalties_on_user_id_and_month_and_year", unique: true
+    t.index ["user_id"], name: "index_pitch_penalties_on_user_id"
+  end
+
+  create_table "pitch_reservations", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "pitch_room_id", null: false
+    t.datetime "start_time", null: false
+    t.datetime "end_time", null: false
+    t.string "status", default: "pending"
+    t.datetime "approved_at"
+    t.string "approved_by"
+    t.string "cancelled_by"
+    t.datetime "cancelled_at"
+    t.text "cancellation_reason"
+    t.text "notes"
+    t.text "admin_note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "week_number"
+    t.index ["pitch_room_id", "start_time"], name: "index_pitch_reservations_on_pitch_room_id_and_start_time"
+    t.index ["pitch_room_id"], name: "index_pitch_reservations_on_pitch_room_id"
+    t.index ["start_time", "end_time"], name: "index_pitch_reservations_on_start_time_and_end_time"
+    t.index ["status"], name: "index_pitch_reservations_on_status"
+    t.index ["user_id", "start_time"], name: "index_pitch_reservations_on_user_id_and_start_time"
+    t.index ["user_id", "status"], name: "index_pitch_reservations_on_user_id_and_status"
+    t.index ["user_id"], name: "index_pitch_reservations_on_user_id"
+  end
+
+  create_table "pitch_rooms", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "seat_number", null: false
+    t.boolean "is_active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["is_active"], name: "index_pitch_rooms_on_is_active"
+    t.index ["seat_number"], name: "index_pitch_rooms_on_seat_number", unique: true
+  end
+
   create_table "reservations", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "room_id", null: false
@@ -173,6 +222,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_070923) do
   add_foreign_key "makeup_reservations", "makeup_rooms"
   add_foreign_key "makeup_reservations", "users"
   add_foreign_key "penalties", "users"
+  add_foreign_key "pitch_penalties", "users"
+  add_foreign_key "pitch_reservations", "pitch_rooms"
+  add_foreign_key "pitch_reservations", "users"
   add_foreign_key "reservations", "rooms"
   add_foreign_key "reservations", "users"
 end

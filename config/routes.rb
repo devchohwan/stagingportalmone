@@ -33,15 +33,27 @@ Rails.application.routes.draw do
   get "makeup/new", to: "makeup#new"
   post "makeup", to: "makeup#create"
   get "makeup/my_lessons", to: "makeup#my_lessons"
-  
+
   # 보충수업 예약 관련 partial views - MUST be before :id routes
   get "makeup/calendar", to: "makeup#calendar"
   get "makeup/time_slots", to: "makeup#time_slots"
   get "makeup/available_rooms", to: "makeup#available_rooms"
-  
+
   # Dynamic routes MUST be last
   get "makeup/:id", to: "makeup#show", as: :makeup_lesson
   patch "makeup/:id/cancel", to: "makeup#cancel", as: :cancel_makeup_lesson
+
+  # 음정수업 페이지
+  get "pitch", to: "pitch#index"
+  get "pitch/reserve", to: "pitch#reserve"
+  post "pitch/reservations", to: "pitch#create_reservation"
+  get "pitch/my_reservations", to: "pitch#my_reservations"
+  patch "pitch/reservations/:id/cancel", to: "pitch#cancel_reservation", as: :cancel_pitch_reservation
+
+  # 음정수업 관련 partial views
+  get "pitch/calendar", to: "pitch#calendar"
+  get "pitch/time_slots", to: "pitch#time_slots"
+  get "pitch/available_seats", to: "pitch#available_seats"
   
   get "profile/edit", to: "profile#edit", as: :edit_profile
   patch "profile/update_password", to: "profile#update_password", as: :update_password
@@ -99,6 +111,13 @@ Rails.application.routes.draw do
     patch 'makeup/users/:id/reset_password', to: 'dashboard#reset_makeup_password'
     patch 'makeup/users/:id/update_info', to: 'dashboard#update_makeup_user_info'
     get 'makeup/penalties', to: 'dashboard#makeup_penalties'
+
+    # Pitch admin pages
+    get 'pitch/reservations', to: 'dashboard#pitch_reservations'
+    patch 'pitch/reservations/:id/approve', to: 'dashboard#approve_pitch_reservation'
+    patch 'pitch/reservations/:id/reject', to: 'dashboard#reject_pitch_reservation'
+    get 'pitch/penalties', to: 'dashboard#pitch_penalties'
+    patch 'pitch/penalties/:id/reset', to: 'dashboard#reset_pitch_penalty', as: 'reset_pitch_penalty'
     
     # Penalties management
     resources :penalties, only: [:index] do

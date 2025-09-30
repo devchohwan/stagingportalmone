@@ -81,6 +81,10 @@
   .admin-icon {
     background: linear-gradient(135deg, #fa709a, #fee140);
   }
+
+  .pitch-icon {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  }
   
   .service-title {
     font-size: 1.5rem;
@@ -288,7 +292,15 @@
       <h3 class="service-title">보충수업 관리</h3>
       <p class="service-description">보충수업 일정을 확인하고 관리합니다</p>
     <% end %>
-    
+
+    <div class="service-card" onclick="alert('곧 오픈예정입니다! 많이 기대해주세요😊');" style="cursor: pointer;">
+      <div class="service-icon pitch-icon">
+        🎵
+      </div>
+      <h3 class="service-title">음정수업 예약</h3>
+      <p class="service-description">음정수업을 예약하고 관리합니다</p>
+    </div>
+
     <%= link_to edit_profile_path, class: "service-card" do %>
       <div class="service-icon password-icon">
         🔒

@@ -1,0 +1,88 @@
+<div class="time-slots-container">
+  <div class="time-grid">
+    <% @time_slots.each do |slot| %>
+      <div class="time-slot <%= 'disabled' unless slot[:is_available] %>"
+           <% if slot[:is_available] %>
+             data-start-time="<%= slot[:start_time].iso8601 %>"
+             data-end-time="<%= slot[:end_time].iso8601 %>"
+             onclick="window.selectTime(this)"
+           <% end %>>
+        <div class="time-display">
+          <%= slot[:start_time].strftime('%H:%M') %>
+        </div>
+        <div class="time-status">
+          <% if slot[:is_available] %>
+            <span style="color: #10b981;">좌석 <%= slot[:available_count] %>/2</span>
+          <% else %>
+            <span style="color: #ef4444;">만석</span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.time-slots-container {
+  width: 100%;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.time-slot {
+  background: #ffffff;
+  border: 2px solid #8b5cf6;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.time-slot:hover:not(.disabled) {
+  background: #f3e8ff;
+  transform: translateY(-2px);
+}
+
+.time-slot.selected {
+  background: #8b5cf6;
+  color: white;
+}
+
+.time-slot.disabled {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.time-display {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.time-status {
+  font-size: 0.85rem;
+}
+
+.time-slot.selected .time-status span {
+  color: white !important;
+}
+
+@media (max-width: 480px) {
+  .time-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 320px) {
+  .time-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

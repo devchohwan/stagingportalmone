@@ -117,18 +117,83 @@ class MakeupController < ApplicationController
   end
   
   def cancel
+    Rails.logger.info "=== MAKEUP CANCEL ATTEMPT START ==="
+    Rails.logger.info "Request ID: #{request.uuid}"
+    Rails.logger.info "IP: #{request.remote_ip}"
+    Rails.logger.info "User Agent: #{request.user_agent}"
+
+    # 사용자 정보
+    Rails.logger.info "Current User: #{current_user.username} (ID: #{current_user.id})"
+    Rails.logger.info "User reservations count: #{current_user.makeup_reservations.count}"
+
+    # 예약 찾기
+    begin
+      Rails.logger.info "Finding reservation ID: #{params[:id]}"
+      @reservation = current_user.makeup_reservations.find(params[:id])
+      Rails.logger.info "Reservation found: #{@reservation.inspect}"
+    rescue ActiveRecord::RecordNotFound => e
+      Rails.logger.error "Reservation not found: #{e.message}"
+      redirect_to makeup_my_lessons_path, alert: '예약을 찾을 수 없습니다.'
+      return
+    end
+
+    # 예약 상세 정보
+    Rails.logger.info "Reservation ID: #{@reservation.id}"
+    Rails.logger.info "Reservation User ID: #{@reservation.user_id}"
+    Rails.logger.info "Reservation status: #{@reservation.status}"
+    Rails.logger.info "Reservation start_time: #{@reservation.start_time}"
+    Rails.logger.info "Reservation start_time class: #{@reservation.start_time.class}"
+
+    # 시간 계산 상세
+    Rails.logger.info "Current time: #{Time.current}"
+    Rails.logger.info "Current time zone: #{Time.zone.name}"
+    Rails.logger.info "30.minutes.from_now: #{30.minutes.from_now}"
+    Rails.logger.info "Time difference (minutes): #{((@reservation.start_time - Time.current) / 60).round}"
+
+    # cancellable? 조건 분해
+    status_check = (@reservation.status == 'pending' || @reservation.status == 'active')
+    time_check = @reservation.start_time > 30.minutes.from_now
+    Rails.logger.info "Status check (pending or active): #{status_check}"
+    Rails.logger.info "Time check (start > 30min from now): #{time_check}"
+    Rails.logger.info "Cancellable? final: #{@reservation.cancellable?}"
+
     if @reservation.cancellable?
-      # 예약 상태를 cancelled로 변경 (모델의 after_update에서 페널티 처리)
-      @reservation.update(
-        status: 'cancelled', 
+      Rails.logger.info "Attempting to update reservation..."
+
+      # Update 전 상태
+      Rails.logger.info "Before update - status: #{@reservation.status}"
+
+      result = @reservation.update(
+        status: 'cancelled',
         cancelled_by: 'user',
         cancellation_reason: params[:cancellation_reason]
       )
-      
+
+      Rails.logger.info "Update result: #{result}"
+
+      if result
+        Rails.logger.info "Update successful"
+        Rails.logger.info "After update - status: #{@reservation.reload.status}"
+        Rails.logger.info "Redirecting with success notice"
+      else
+        Rails.logger.error "Update failed!"
+        Rails.logger.error "Errors: #{@reservation.errors.full_messages}"
+        Rails.logger.error "Validation errors: #{@reservation.errors.to_json}"
+      end
+
       redirect_to makeup_my_lessons_path, notice: '예약이 취소되었습니다.'
     else
+      Rails.logger.info "Not cancellable - redirecting with alert"
+      Rails.logger.info "Final status: #{@reservation.status}"
+      Rails.logger.info "Final time check: #{@reservation.start_time} > #{30.minutes.from_now} = #{@reservation.start_time > 30.minutes.from_now}"
       redirect_to makeup_my_lessons_path, alert: '예약 시작 30분 전까지만 취소 가능합니다.'
     end
+
+    Rails.logger.info "=== MAKEUP CANCEL ATTEMPT END ==="
+  rescue => e
+    Rails.logger.error "Unexpected error in cancel: #{e.class} - #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    redirect_to makeup_my_lessons_path, alert: '오류가 발생했습니다.'
   end
   
   def my_lessons
