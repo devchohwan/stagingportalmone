@@ -65,8 +65,8 @@ COPY --from=build /rails /rails
 RUN groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
     mkdir -p log storage tmp /rails/public/uploads/verifications && \
-    chown -R rails:rails db log storage tmp /rails/public/uploads && \
-    chmod -R 755 /rails/public/uploads
+    chown -R rails:rails db log storage tmp /rails/public/uploads /rails/app && \
+    chmod -R 755 /rails/public/uploads /rails/app
 USER 1000:1000
 
 # Entrypoint prepares the database.

@@ -742,36 +742,80 @@ function hideSection(target) {
 }
 
 window.confirmMakeupReservation = function() {
-  if (!selectedDate || !selectedTime || !selectedRoom) {
-    alert('예약 정보가 불완전합니다.');
-    return false;
-  }
-
-  var dateObj = new Date(selectedDate);
-  var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  var weekday = weekdays[dateObj.getDay()];
-  var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
-  
-  var lessonContent = document.getElementById('lesson-content').value.trim();
-  var weekNumber = document.getElementById('week-number').value;
-  
-  var confirmMessage = '예약을 진행하시겠습니까?\n\n날짜: ' + formattedDate + '\n시간: ' + selectedTime.display + '\n좌석: ' + selectedRoom.number + '번\n주차: ' + weekNumber + '주차\n내용: ' + (lessonContent.length > 30 ? lessonContent.substring(0, 30) + '...' : lessonContent);
-  
-  if (confirm(confirmMessage)) {
-    var submitBtn = document.getElementById('reservation-submit-btn');
-    var form = document.querySelector('[data-reservation-target="form"]');
-    
-    if (submitBtn) {
-      if (submitBtn.disabled) {
-        alert('이미 예약 요청이 처리 중입니다.');
-        return false;
-      }
-      
-      submitBtn.disabled = true;
-      submitBtn.textContent = '예약 중...';
+  try {
+    if (!selectedDate || !selectedTime || !selectedRoom) {
+      alert('예약 정보가 불완전합니다.');
+      return false;
     }
-    
-    if (form) {
+
+    var dateObj = new Date(selectedDate);
+    var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    var weekday = weekdays[dateObj.getDay()];
+    var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
+
+    var lessonContent = document.getElementById('lesson-content').value.trim();
+    var weekNumber = document.getElementById('week-number').value;
+
+    // 폼 제출 전 필수 필드 최종 검증
+    var form = document.querySelector('[data-reservation-target="form"]');
+    var roomIdField = document.querySelector('[data-reservation-target="roomId"]');
+    var startTimeField = document.querySelector('[data-reservation-target="startTime"]');
+    var endTimeField = document.querySelector('[data-reservation-target="endTime"]');
+    var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
+    var weekNumberField = document.querySelector('[data-reservation-target="weekNumber"]');
+
+    // 필드 존재 확인
+    if (!form || !roomIdField || !startTimeField || !endTimeField || !lessonContentField || !weekNumberField) {
+      console.error('Form validation failed: Missing form elements', {
+        form: !!form,
+        roomIdField: !!roomIdField,
+        startTimeField: !!startTimeField,
+        endTimeField: !!endTimeField,
+        lessonContentField: !!lessonContentField,
+        weekNumberField: !!weekNumberField
+      });
+      alert('예약 폼 오류가 발생했습니다.\n페이지를 새로고침 후 다시 시도해주세요.');
+      return false;
+    }
+
+    // 값 존재 확인
+    console.log('Pre-submit validation:', {
+      roomId: roomIdField.value,
+      startTime: startTimeField.value,
+      endTime: endTimeField.value,
+      lessonContent: lessonContentField.value,
+      weekNumber: weekNumberField.value
+    });
+
+    if (!roomIdField.value || !startTimeField.value || !endTimeField.value || !lessonContentField.value || !weekNumberField.value) {
+      console.error('Form validation failed: Empty values detected');
+      alert('예약 정보가 누락되었습니다.\n처음부터 다시 선택해주세요.');
+      return false;
+    }
+
+    var confirmMessage = '예약을 진행하시겠습니까?\n\n날짜: ' + formattedDate + '\n시간: ' + selectedTime.display + '\n좌석: ' + selectedRoom.number + '번\n주차: ' + weekNumber + '주차\n내용: ' + (lessonContent.length > 30 ? lessonContent.substring(0, 30) + '...' : lessonContent);
+
+    if (confirm(confirmMessage)) {
+      var submitBtn = document.getElementById('reservation-submit-btn');
+
+      if (submitBtn) {
+        if (submitBtn.disabled) {
+          alert('이미 예약 요청이 처리 중입니다.');
+          return false;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '예약 중...';
+      }
+
+      console.log('Submitting form with values:', {
+        roomId: roomIdField.value,
+        startTime: startTimeField.value,
+        endTime: endTimeField.value,
+        lessonContent: lessonContentField.value,
+        weekNumber: weekNumberField.value
+      });
+
       if (form.requestSubmit) {
         var hiddenSubmit = document.createElement('input');
         hiddenSubmit.type = 'submit';
@@ -782,10 +826,14 @@ window.confirmMakeupReservation = function() {
       } else {
         form.submit();
       }
+      return true;
     }
-    return true;
+    return false;
+  } catch (error) {
+    console.error('Error in confirmMakeupReservation:', error);
+    alert('예약 처리 중 오류가 발생했습니다.\n페이지를 새로고침 후 다시 시도해주세요.\n\n오류: ' + error.message);
+    return false;
   }
-  return false;
 };
 
 window.showPendingMessage = function() {

@@ -52,19 +52,61 @@ class MakeupController < ApplicationController
   end
   
   def create
-    # 파라미터 검증
-    if reservation_params[:start_time].blank? || reservation_params[:end_time].blank? || reservation_params[:makeup_room_id].blank?
-      redirect_to makeup_new_path, alert: '예약 정보가 불완전합니다. 날짜, 시간, 좌석을 모두 선택해주세요.'
+    # === 디버그 로깅 시작 ===
+    Rails.logger.info "=== MAKEUP CREATE DEBUG START ==="
+    Rails.logger.info "Request ID: #{request.uuid}"
+    Rails.logger.info "User: #{current_user.username} (ID: #{current_user.id})"
+    Rails.logger.info "IP: #{request.remote_ip}"
+    Rails.logger.info "User Agent: #{request.user_agent}"
+    Rails.logger.info "Raw params: #{params.inspect}"
+
+    # 파라미터 존재 여부 먼저 확인
+    unless params[:makeup_lesson]
+      Rails.logger.error "REJECTED: makeup_lesson params missing entirely"
+      redirect_to makeup_new_path, alert: '예약 요청 형식이 올바르지 않습니다. 페이지를 새로고침 후 다시 시도해주세요.'
       return
     end
-    
+
+    Rails.logger.info "makeup_lesson params: #{params[:makeup_lesson].inspect}"
+
+    # 개별 필드 검증
+    begin
+      Rails.logger.info "start_time: '#{reservation_params[:start_time]}' (blank?: #{reservation_params[:start_time].blank?})"
+      Rails.logger.info "end_time: '#{reservation_params[:end_time]}' (blank?: #{reservation_params[:end_time].blank?})"
+      Rails.logger.info "room_id: '#{reservation_params[:makeup_room_id]}' (blank?: #{reservation_params[:makeup_room_id].blank?})"
+      Rails.logger.info "lesson_content: '#{reservation_params[:lesson_content]}' (blank?: #{reservation_params[:lesson_content].blank?})"
+      Rails.logger.info "week_number: '#{reservation_params[:week_number]}' (blank?: #{reservation_params[:week_number].blank?})"
+    rescue => e
+      Rails.logger.error "Failed to parse reservation_params: #{e.message}"
+    end
+
+    # 파라미터 검증
+    missing_fields = []
+    missing_fields << '시작 시간' if reservation_params[:start_time].blank?
+    missing_fields << '종료 시간' if reservation_params[:end_time].blank?
+    missing_fields << '좌석' if reservation_params[:makeup_room_id].blank?
+    missing_fields << '수업 내용' if reservation_params[:lesson_content].blank?
+    missing_fields << '주차' if reservation_params[:week_number].blank?
+
+    if missing_fields.any?
+      error_msg = "다음 정보가 누락되었습니다: #{missing_fields.join(', ')}"
+      Rails.logger.warn "REJECTED: #{error_msg}"
+      redirect_to makeup_new_path, alert: error_msg
+      return
+    end
+
     # 중복 예약 체크
-    existing = current_user.makeup_reservations
-                          .where(status: ['pending', 'active'])
-                          .where('end_time > ?', Time.current)
-                          .exists?
-    
-    if existing
+    existing_reservations = current_user.makeup_reservations
+                                        .where(status: ['pending', 'active'])
+                                        .where('end_time > ?', Time.current)
+
+    Rails.logger.info "Existing active reservations count: #{existing_reservations.count}"
+    existing_reservations.each do |r|
+      Rails.logger.info "  - Reservation ##{r.id}: #{r.start_time} ~ #{r.end_time} (status: #{r.status})"
+    end
+
+    if existing_reservations.exists?
+      Rails.logger.warn "REJECTED: User already has active reservation(s)"
       redirect_to makeup_new_path, alert: '이미 예약하셨습니다. 예약한 시간을 먼저 사용해주세요.'
       return
     end
@@ -106,8 +148,12 @@ class MakeupController < ApplicationController
     end
     
     if @reservation.save
+      Rails.logger.info "SUCCESS: Makeup reservation created ##{@reservation.id}"
+      Rails.logger.info "=== MAKEUP CREATE DEBUG END ==="
       redirect_to makeup_my_lessons_path, notice: '예약 신청이 완료되었습니다. 관리자 승인을 기다려주세요.'
     else
+      Rails.logger.error "FAILED: Reservation save failed - #{@reservation.errors.full_messages.join(', ')}"
+      Rails.logger.info "=== MAKEUP CREATE DEBUG END ==="
       flash[:alert] = @reservation.errors.full_messages.first || '예약을 처리할 수 없습니다.'
       redirect_to makeup_new_path
     end
