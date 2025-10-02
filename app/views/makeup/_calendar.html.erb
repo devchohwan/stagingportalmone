@@ -52,9 +52,9 @@
           <div class="day-number"><%= day.day %></div>
           <div class="day-label">
             <% if is_today %>
-              오늘
+              예약불가
             <% elsif is_blocked && is_current_month %>
-              휴무
+              예약불가
             <% elsif is_monday && is_current_month %>
               휴무
             <% else %>
