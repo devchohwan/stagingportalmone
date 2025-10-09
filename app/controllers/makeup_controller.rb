@@ -382,7 +382,9 @@ class MakeupController < ApplicationController
     else
       # 다른 요일: 기존 로직 유지
       # 화, 수, 토, 일 제한 시간 (14:30, 15:30, 16:30, 19:30, 20:30)
+      # 수요일 추가 제한 시간 (17:00, 19:00)
       restricted_times = [1430, 1530, 1630, 1930, 2030]
+      wednesday_restricted_times = [1700, 1900]
       restricted_days = [0, 2, 3, 6]  # 0=일, 2=화, 3=수, 6=토
       
       # 14:30부터 21:30까지 30분 단위 (브레이크타임 제외)
@@ -405,6 +407,11 @@ class MakeupController < ApplicationController
           
           # 화, 수, 토, 일 특정 시간 제한
           if restricted_days.include?(date.wday) && restricted_times.include?(hour_minute)
+            next
+          end
+
+          # 수요일 추가 제한 시간 (17:00, 19:00)
+          if date.wday == 3 && wednesday_restricted_times.include?(hour_minute)
             next
           end
           
