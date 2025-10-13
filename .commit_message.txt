@@ -1,1 +1,1 @@
-✨ 선생님 변경 이력 추적 - teacher_history 컬럼 추가 및 자동 기록
+🐛 수업일시 계산 수정 - UserEnrollment 기반으로 변경하여 스케줄 반영

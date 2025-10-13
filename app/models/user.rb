@@ -83,16 +83,20 @@ class User < ApplicationRecord
 
   # 정규 수업일시 가져오기 (스케줄 관리에서 설정된 정보)
   def regular_lesson_schedule
-    return nil unless teacher.present?
+    # UserEnrollment에서 활성 스케줄 찾기 (day와 time_slot이 있는 첫 번째)
+    enrollment = user_enrollments.where(is_paid: true)
+                                 .where.not(day: nil, time_slot: nil)
+                                 .where('remaining_lessons > 0')
+                                 .first
 
-    schedule = TeacherSchedule.where(teacher: teacher, user_id: id).first
-    return nil unless schedule
+    return nil unless enrollment
 
     {
-      day: schedule.day,
-      time_slot: schedule.time_slot,
-      day_korean: day_to_korean(schedule.day),
-      time_display: schedule.time_slot.split('-').first
+      day: enrollment.day,
+      time_slot: enrollment.time_slot,
+      day_korean: day_to_korean(enrollment.day),
+      time_display: enrollment.time_slot.split('-').first,
+      teacher: enrollment.teacher
     }
   end
 
