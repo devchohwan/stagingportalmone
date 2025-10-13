@@ -695,17 +695,15 @@ class Admin::DashboardController < ApplicationController
         pass_request = MakeupPassRequest.where(
           user_id: user.id,
           request_type: 'pass',
-          request_date: target_date,
-          status: 'active'
-        ).first
+          request_date: target_date
+        ).where(status: ['active', 'completed']).first
 
         # 이 날짜에 보강 신청(원래 자리에서 이동)이 있는지 확인
         makeup_away_request = MakeupPassRequest.where(
           user_id: user.id,
           request_type: 'makeup',
-          request_date: target_date,
-          status: 'active'
-        ).first
+          request_date: target_date
+        ).where(status: ['active', 'completed']).first
 
         # 이 날짜에 취소된 보강 신청이 있는지 확인 (결석 처리)
         cancelled_makeup_request = MakeupPassRequest.where(
