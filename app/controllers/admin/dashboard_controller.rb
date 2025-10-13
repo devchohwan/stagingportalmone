@@ -1421,4 +1421,135 @@ class Admin::DashboardController < ApplicationController
     @total_pages = 1
     render partial: 'admin/dashboard/payments_content', layout: false
   end
+
+  # 회원 정보 조회 (결제용)
+  def get_user
+    user = User.find(params[:id])
+    render json: {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      teacher: user.teacher,
+      remaining_lessons: user.remaining_lessons || 0,
+      remaining_passes: user.remaining_passes || 0
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: '회원을 찾을 수 없습니다.' }, status: :not_found
+  end
+
+  # 결제 처리
+  def process_payment
+    user_id = params[:user_id]
+    enrollments = params[:enrollments] || []
+    payment_date = params[:payment_date]
+    discounts = params[:discounts] || []
+    total_price = params[:total_price].to_i
+    discount_amount = params[:discount_amount].to_i
+    final_price = params[:final_price].to_i
+
+    user = User.find(user_id)
+
+    ActiveRecord::Base.transaction do
+      enrollments.each do |enrollment|
+        # Payment 레코드 생성
+        payment = Payment.create!(
+          user_id: user_id,
+          payment_date: payment_date,
+          amount: enrollment['price'],
+          discount_amount: discount_amount / enrollments.length, # 할인을 과목 수로 나눔
+          subject: enrollment['subject'],
+          teacher: enrollment['teacher'],
+          months: enrollment['months'],
+          lessons: enrollment['lessons'],
+          first_lesson_date: enrollment['first_lesson_date'],
+          first_lesson_time: enrollment['time_slot'],
+          discounts: discounts.join(',')
+        )
+
+        # UserEnrollment 생성
+        user_enrollment = UserEnrollment.create!(
+          user_id: user_id,
+          teacher: enrollment['teacher'],
+          subject: enrollment['subject'],
+          day_of_week: enrollment['day_of_week'],
+          time_slot: enrollment['time_slot'],
+          remaining_lessons: enrollment['lessons'],
+          status: 'active',
+          is_paid: true
+        )
+
+        # TeacherSchedule 등록 (중복 체크)
+        existing_schedule = TeacherSchedule.find_by(
+          teacher: enrollment['teacher'],
+          day_of_week: enrollment['day_of_week'],
+          time_slot: enrollment['time_slot']
+        )
+
+        if existing_schedule
+          # 기존 스케줄이 있으면 end_date 업데이트 (더 늦은 날짜로)
+          new_end_date = Date.parse(enrollment['end_date'])
+          if existing_schedule.end_date.nil? || new_end_date > existing_schedule.end_date
+            existing_schedule.update!(end_date: new_end_date)
+          end
+        else
+          # 새 스케줄 생성
+          TeacherSchedule.create!(
+            teacher: enrollment['teacher'],
+            day_of_week: enrollment['day_of_week'],
+            time_slot: enrollment['time_slot'],
+            end_date: enrollment['end_date']
+          )
+        end
+
+        # User의 remaining_lessons 업데이트
+        current_lessons = user.remaining_lessons || 0
+        user.update!(remaining_lessons: current_lessons + enrollment['lessons'])
+      end
+    end
+
+    render json: { success: true }
+  rescue => e
+    Rails.logger.error "Payment processing error: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
+
+  # 결제 이력 조회
+  def payment_history
+    user = User.find(params[:user_id])
+    payments = Payment.where(user_id: user.id).order(payment_date: :desc)
+
+    payment_list = payments.map do |payment|
+      {
+        payment_date: payment.payment_date.strftime('%Y.%m.%d'),
+        subject: payment.subject,
+        teacher: payment.teacher,
+        months: payment.months,
+        lessons: payment.lessons,
+        amount: payment.amount,
+        discount_amount: payment.discount_amount || 0
+      }
+    end
+
+    render json: {
+      user_name: user.name,
+      payments: payment_list
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: '회원을 찾을 수 없습니다.' }, status: :not_found
+  end
+
+  # 수강 등록 상태 토글
+  def toggle_enrollment_status
+    enrollment = UserEnrollment.find(params[:id])
+    new_status = params[:status]
+
+    enrollment.update!(status: new_status)
+
+    render json: { success: true }
+  rescue ActiveRecord::RecordNotFound
+    render json: { success: false, error: '수강 등록을 찾을 수 없습니다.' }, status: :not_found
+  rescue => e
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
 end

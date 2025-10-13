@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_10_125333) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_13_113502) do
   create_table "makeup_availabilities", force: :cascade do |t|
     t.string "teacher_name", null: false
     t.integer "day_of_week"
@@ -123,6 +123,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_125333) do
     t.json "discount_items"
     t.integer "discount_amount"
     t.integer "final_amount"
+    t.string "teacher"
+    t.integer "months"
+    t.string "discounts"
     t.index ["user_id"], name: "index_payments_on_user_id"
   end
 

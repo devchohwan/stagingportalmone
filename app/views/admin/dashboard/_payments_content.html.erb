@@ -698,3 +698,548 @@
     <% end %>
   </div>
 </div>
+
+<script>
+(function() {
+  // 과목별 가격 정보
+  const SUBJECT_PRICES = {
+    '클린': { 1: 370000, 3: 950000 },
+    '언클린': { 1: 370000, 3: 950000 },
+    '믹싱': { 1: 280000, 4: 990000 },
+    '작곡': { 1: 350000, 3: 950000 },
+    '기타': { 1: 300000, 3: 770000 }
+  };
+
+  // 할인 정보
+  const DISCOUNTS = {
+    'text_review': 30000,
+    'video_review': 30000,
+    'referral': 50000,
+    'bundle_2': 50000,
+    'bundle_3': 100000
+  };
+
+  let currentUserId = null;
+  let currentUserName = null;
+  let enrollments = []; // 추가할 과목 목록
+
+  // 결제 모달 열기
+  window.openPaymentModal = function(userId) {
+    fetch(`/admin/users/${userId}`)
+      .then(response => response.json())
+      .then(data => {
+        currentUserId = userId;
+        currentUserName = data.name;
+        enrollments = [];
+
+        document.getElementById('payment-modal-user-name').textContent = data.name + ' - 결제 등록';
+        document.getElementById('enrollment-list').innerHTML = '';
+        document.getElementById('payment-section').innerHTML = '';
+        document.getElementById('payment-modal').style.display = 'flex';
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('회원 정보를 불러오는데 실패했습니다.');
+      });
+  };
+
+  // 결제 모달 닫기
+  window.closePaymentModal = function(event) {
+    if (!event || event.target.id === 'payment-modal') {
+      document.getElementById('payment-modal').style.display = 'none';
+      enrollments = [];
+    }
+  };
+
+  // 새 과목 추가 모달 열기
+  window.addNewEnrollment = function() {
+    document.getElementById('add-enrollment-modal').style.display = 'flex';
+    initializeEnrollmentForm();
+  };
+
+  // 새 과목 추가 모달 닫기
+  window.closeAddEnrollmentModal = function(event) {
+    if (!event || event.target.id === 'add-enrollment-modal') {
+      document.getElementById('add-enrollment-modal').style.display = 'none';
+    }
+  };
+
+  // 과목 추가 폼 초기화
+  function initializeEnrollmentForm() {
+    // 선생님 선택 시 과목 자동 입력
+    document.getElementById('new-enrollment-teacher').addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      const subject = selectedOption.getAttribute('data-subject');
+      document.getElementById('new-enrollment-subject').value = subject || '';
+
+      if (subject) {
+        showCalendar();
+      }
+    });
+
+    // 폼 리셋
+    document.getElementById('new-enrollment-teacher').value = '';
+    document.getElementById('new-enrollment-subject').value = '';
+    document.getElementById('new-enrollment-date').value = '';
+    document.getElementById('new-enrollment-time').value = '';
+    document.getElementById('new-enrollment-months').value = '';
+    document.getElementById('new-enrollment-lessons').value = '';
+    document.getElementById('new-enrollment-time-section').style.display = 'none';
+    document.getElementById('new-enrollment-duration-section').style.display = 'none';
+    document.getElementById('new-enrollment-summary').style.display = 'none';
+  }
+
+  // 달력 표시
+  function showCalendar() {
+    const calendarDiv = document.getElementById('new-enrollment-calendar');
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+
+    let html = '<div style="text-align: center; margin-bottom: 10px; font-weight: 600;">';
+    html += year + '년 ' + (month + 1) + '월</div>';
+    html += '<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">';
+
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    dayNames.forEach(day => {
+      html += '<div style="text-align: center; font-weight: 600; padding: 8px; font-size: 0.85rem;">' + day + '</div>';
+    });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+      html += '<div></div>';
+    }
+
+    for (let date = 1; date <= lastDate; date++) {
+      const fullDate = new Date(year, month, date);
+      const dateStr = fullDate.toISOString().split('T')[0];
+      const isPast = fullDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+      html += '<div onclick="selectDate(\'' + dateStr + '\')" style="';
+      html += 'text-align: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer;';
+      html += isPast ? 'opacity: 0.3; pointer-events: none;' : 'hover: background: #f3f4f6;';
+      html += '" data-date="' + dateStr + '">' + date + '</div>';
+    }
+
+    html += '</div>';
+    calendarDiv.innerHTML = html;
+  }
+
+  // 날짜 선택
+  window.selectDate = function(dateStr) {
+    document.getElementById('new-enrollment-date').value = dateStr;
+
+    // 선택된 날짜 표시
+    document.querySelectorAll('[data-date]').forEach(el => {
+      el.style.background = '';
+      el.style.color = '';
+    });
+    document.querySelector('[data-date="' + dateStr + '"]').style.background = '#667eea';
+    document.querySelector('[data-date="' + dateStr + '"]').style.color = 'white';
+
+    showTimeSlots(dateStr);
+  };
+
+  // 시간대 표시
+  function showTimeSlots(dateStr) {
+    const date = new Date(dateStr);
+    const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+
+    document.getElementById('new-enrollment-time-section').style.display = 'block';
+
+    const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
+    let html = '';
+
+    timeSlots.forEach(slot => {
+      html += '<button type="button" onclick="selectTime(\'' + slot + '\')" class="time-slot-btn" data-time="' + slot + '" style="';
+      html += 'padding: 10px; border: 2px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;';
+      html += '">' + slot.replace('-', ':00-') + ':00</button>';
+    });
+
+    document.getElementById('new-enrollment-time-slots').innerHTML = html;
+  }
+
+  // 시간 선택
+  window.selectTime = function(timeSlot) {
+    document.getElementById('new-enrollment-time').value = timeSlot;
+
+    // 선택된 시간 표시
+    document.querySelectorAll('.time-slot-btn').forEach(btn => {
+      btn.style.background = 'white';
+      btn.style.borderColor = '#e2e8f0';
+      btn.style.color = '#374151';
+    });
+    document.querySelector('[data-time="' + timeSlot + '"]').style.background = '#667eea';
+    document.querySelector('[data-time="' + timeSlot + '"]').style.borderColor = '#667eea';
+    document.querySelector('[data-time="' + timeSlot + '"]').style.color = 'white';
+
+    showDurationOptions();
+  };
+
+  // 수강 기간 옵션 표시
+  function showDurationOptions() {
+    const subject = document.getElementById('new-enrollment-subject').value;
+    document.getElementById('new-enrollment-duration-section').style.display = 'block';
+
+    // 과목에 따라 가능한 기간만 활성화
+    const availableMonths = Object.keys(SUBJECT_PRICES[subject] || {});
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+      const months = btn.getAttribute('data-months');
+      if (availableMonths.includes(months)) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.3';
+      }
+    });
+  }
+
+  // 수강 기간 선택
+  window.selectDuration = function(months, lessons, element) {
+    document.getElementById('new-enrollment-months').value = months;
+    document.getElementById('new-enrollment-lessons').value = lessons;
+
+    // 선택된 기간 표시
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+      btn.style.borderColor = '#e2e8f0';
+      btn.style.background = 'white';
+    });
+    element.style.borderColor = '#667eea';
+    element.style.background = '#f0f4ff';
+
+    updateSummary();
+  };
+
+  // 요약 정보 업데이트
+  function updateSummary() {
+    const teacher = document.getElementById('new-enrollment-teacher').value;
+    const subject = document.getElementById('new-enrollment-subject').value;
+    const dateStr = document.getElementById('new-enrollment-date').value;
+    const timeSlot = document.getElementById('new-enrollment-time').value;
+    const months = parseInt(document.getElementById('new-enrollment-months').value);
+    const lessons = parseInt(document.getElementById('new-enrollment-lessons').value);
+
+    if (!teacher || !subject || !dateStr || !timeSlot || !months) return;
+
+    const date = new Date(dateStr);
+    const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+    const endDate = new Date(date);
+    endDate.setMonth(endDate.getMonth() + months);
+
+    document.getElementById('summary-teacher').textContent = teacher;
+    document.getElementById('summary-subject').textContent = subject;
+    document.getElementById('summary-schedule').textContent = dayOfWeek + '요일 ' + timeSlot.replace('-', ':00-') + ':00';
+    document.getElementById('summary-first-lesson').textContent = dateStr;
+    document.getElementById('summary-end-date').textContent = endDate.toISOString().split('T')[0];
+    document.getElementById('summary-lessons').textContent = lessons + '회';
+
+    document.getElementById('new-enrollment-summary').style.display = 'block';
+  }
+
+  // 새 과목 저장
+  window.saveNewEnrollment = function() {
+    const teacher = document.getElementById('new-enrollment-teacher').value;
+    const subject = document.getElementById('new-enrollment-subject').value;
+    const dateStr = document.getElementById('new-enrollment-date').value;
+    const timeSlot = document.getElementById('new-enrollment-time').value;
+    const months = parseInt(document.getElementById('new-enrollment-months').value);
+    const lessons = parseInt(document.getElementById('new-enrollment-lessons').value);
+
+    if (!teacher || !subject || !dateStr || !timeSlot || !months) {
+      alert('모든 정보를 입력해주세요.');
+      return;
+    }
+
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay(); // 0=일, 1=월, ...
+    const endDate = new Date(date);
+    endDate.setMonth(endDate.getMonth() + months);
+
+    enrollments.push({
+      teacher: teacher,
+      subject: subject,
+      first_lesson_date: dateStr,
+      time_slot: timeSlot,
+      day_of_week: dayOfWeek,
+      months: months,
+      lessons: lessons,
+      end_date: endDate.toISOString().split('T')[0],
+      price: SUBJECT_PRICES[subject][months]
+    });
+
+    closeAddEnrollmentModal();
+    updateEnrollmentList();
+    updatePaymentSection();
+  };
+
+  // 등록 과목 목록 업데이트
+  function updateEnrollmentList() {
+    const listDiv = document.getElementById('enrollment-list');
+    if (enrollments.length === 0) {
+      listDiv.innerHTML = '';
+      return;
+    }
+
+    let html = '<div style="margin-bottom: 20px;"><h4 style="font-weight: 600; margin-bottom: 10px;">등록할 과목</h4>';
+    enrollments.forEach((enroll, index) => {
+      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+      html += '<div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0;">';
+      html += '<div style="display: flex; justify-content: space-between; align-items: start;">';
+      html += '<div>';
+      html += '<div style="font-weight: 600; margin-bottom: 5px;">' + enroll.subject + ' - ' + enroll.teacher + '</div>';
+      html += '<div style="font-size: 0.85rem; color: #6b7280;">' + dayNames[enroll.day_of_week] + '요일 ' + enroll.time_slot.replace('-', ':00-') + ':00</div>';
+      html += '<div style="font-size: 0.85rem; color: #6b7280;">첫수업: ' + enroll.first_lesson_date + ' | 종료: ' + enroll.end_date + '</div>';
+      html += '<div style="font-size: 0.85rem; color: #667eea; font-weight: 600; margin-top: 5px;">' + enroll.price.toLocaleString() + '원 (' + enroll.months + '개월/' + enroll.lessons + '회)</div>';
+      html += '</div>';
+      html += '<button onclick="removeEnrollment(' + index + ')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">삭제</button>';
+      html += '</div></div>';
+    });
+    html += '</div>';
+
+    listDiv.innerHTML = html;
+  }
+
+  // 과목 삭제
+  window.removeEnrollment = function(index) {
+    enrollments.splice(index, 1);
+    updateEnrollmentList();
+    updatePaymentSection();
+  };
+
+  // 결제 섹션 업데이트
+  function updatePaymentSection() {
+    if (enrollments.length === 0) {
+      document.getElementById('payment-section').innerHTML = '';
+      return;
+    }
+
+    const totalPrice = enrollments.reduce((sum, e) => sum + e.price, 0);
+
+    let html = '<h4 style="font-weight: 600; margin-bottom: 15px;">결제 정보</h4>';
+
+    // 할인 선택
+    html += '<div style="margin-bottom: 20px;">';
+    html += '<div style="font-weight: 600; margin-bottom: 10px;">할인 적용</div>';
+    html += '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
+    html += '<label style="display: flex; align-items: center; gap: 5px; cursor: pointer;"><input type="checkbox" class="discount-checkbox" data-discount="text_review" value="30000"> 글 후기 (-3만원)</label>';
+    html += '<label style="display: flex; align-items: center; gap: 5px; cursor: pointer;"><input type="checkbox" class="discount-checkbox" data-discount="video_review" value="30000"> 영상 후기 (-3만원)</label>';
+    html += '<label style="display: flex; align-items: center; gap: 5px; cursor: pointer;"><input type="checkbox" class="discount-checkbox" data-discount="referral" value="50000"> 친구 추천 (-5만원)</label>';
+    if (enrollments.length >= 2) {
+      html += '<label style="display: flex; align-items: center; gap: 5px; cursor: pointer;"><input type="checkbox" class="discount-checkbox" data-discount="bundle_2" value="50000"> 2과목 묶음 (-5만원)</label>';
+    }
+    if (enrollments.length >= 3) {
+      html += '<label style="display: flex; align-items: center; gap: 5px; cursor: pointer;"><input type="checkbox" class="discount-checkbox" data-discount="bundle_3" value="100000"> 3과목 묶음 (-10만원)</label>';
+    }
+    html += '</div></div>';
+
+    // 결제일
+    html += '<div style="margin-bottom: 20px;">';
+    html += '<label style="display: block; font-weight: 600; margin-bottom: 8px;">결제일</label>';
+    html += '<input type="date" id="payment-date" value="' + new Date().toISOString().split('T')[0] + '" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">';
+    html += '</div>';
+
+    // 금액 요약
+    html += '<div id="payment-summary" style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #667eea;">';
+    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>기본 금액</span><span id="base-price">' + totalPrice.toLocaleString() + '원</span></div>';
+    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #ef4444;"><span>할인</span><span id="discount-price">0원</span></div>';
+    html += '<div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; padding-top: 10px; border-top: 2px solid #e2e8f0;"><span>최종 금액</span><span id="final-price" style="color: #667eea;">' + totalPrice.toLocaleString() + '원</span></div>';
+    html += '</div>';
+
+    // 결제 버튼
+    html += '<button onclick="processPayment()" style="width: 100%; margin-top: 20px; padding: 15px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer;">결제 완료</button>';
+
+    document.getElementById('payment-section').innerHTML = html;
+
+    // 할인 체크박스 이벤트
+    document.querySelectorAll('.discount-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', calculateFinalPrice);
+    });
+  }
+
+  // 최종 금액 계산
+  function calculateFinalPrice() {
+    const totalPrice = enrollments.reduce((sum, e) => sum + e.price, 0);
+    let totalDiscount = 0;
+
+    document.querySelectorAll('.discount-checkbox:checked').forEach(checkbox => {
+      totalDiscount += parseInt(checkbox.value);
+    });
+
+    const finalPrice = Math.max(0, totalPrice - totalDiscount);
+
+    document.getElementById('base-price').textContent = totalPrice.toLocaleString() + '원';
+    document.getElementById('discount-price').textContent = '-' + totalDiscount.toLocaleString() + '원';
+    document.getElementById('final-price').textContent = finalPrice.toLocaleString() + '원';
+  }
+
+  // 결제 처리
+  window.processPayment = function() {
+    if (enrollments.length === 0) {
+      alert('등록할 과목을 추가해주세요.');
+      return;
+    }
+
+    const paymentDate = document.getElementById('payment-date').value;
+    if (!paymentDate) {
+      alert('결제일을 선택해주세요.');
+      return;
+    }
+
+    // 할인 정보 수집
+    const selectedDiscounts = [];
+    document.querySelectorAll('.discount-checkbox:checked').forEach(checkbox => {
+      selectedDiscounts.push(checkbox.getAttribute('data-discount'));
+    });
+
+    const totalPrice = enrollments.reduce((sum, e) => sum + e.price, 0);
+    let totalDiscount = 0;
+    selectedDiscounts.forEach(discountKey => {
+      totalDiscount += DISCOUNTS[discountKey];
+    });
+    const finalPrice = Math.max(0, totalPrice - totalDiscount);
+
+    // 서버에 전송
+    fetch('/admin/process_payment', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: currentUserId,
+        enrollments: enrollments,
+        payment_date: paymentDate,
+        discounts: selectedDiscounts,
+        total_price: totalPrice,
+        discount_amount: totalDiscount,
+        final_price: finalPrice
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('결제가 완료되었습니다!');
+        closePaymentModal();
+        window.loadPaymentsTab(); // 목록 새로고침
+      } else {
+        alert('결제 처리 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('결제 처리 중 오류가 발생했습니다.');
+    });
+  };
+
+  // 결제 이력 보기
+  window.showPaymentHistory = function(userId) {
+    fetch(`/admin/payment_history/${userId}`)
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('payment-history-user-name').textContent = data.user_name + ' - 결제 이력';
+
+        const listDiv = document.getElementById('payment-history-list');
+        if (data.payments.length === 0) {
+          listDiv.innerHTML = '<div class="payment-history-empty">결제 이력이 없습니다.</div>';
+        } else {
+          let html = '';
+          data.payments.forEach(payment => {
+            html += '<div class="payment-history-item">';
+            html += '<div class="payment-history-date">' + payment.payment_date + '</div>';
+            html += '<div class="payment-history-details">';
+            html += '<div class="payment-history-detail-row"><span class="payment-history-label">과목</span><span>' + payment.subject + '</span></div>';
+            html += '<div class="payment-history-detail-row"><span class="payment-history-label">선생님</span><span>' + payment.teacher + '</span></div>';
+            html += '<div class="payment-history-detail-row"><span class="payment-history-label">기간</span><span>' + payment.months + '개월 (' + payment.lessons + '회)</span></div>';
+            html += '<div class="payment-history-detail-row"><span class="payment-history-label">금액</span><span>' + payment.amount.toLocaleString() + '원</span></div>';
+            if (payment.discount_amount > 0) {
+              html += '<div class="payment-history-detail-row"><span class="payment-history-label">할인</span><span style="color: #ef4444;">-' + payment.discount_amount.toLocaleString() + '원</span></div>';
+            }
+            html += '</div></div>';
+          });
+          listDiv.innerHTML = html;
+        }
+
+        document.getElementById('payment-history-modal').style.display = 'flex';
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('결제 이력을 불러오는데 실패했습니다.');
+      });
+  };
+
+  // 결제 이력 모달 닫기
+  window.closePaymentHistoryModal = function(event) {
+    if (!event || event.target.id === 'payment-history-modal') {
+      document.getElementById('payment-history-modal').style.display = 'none';
+    }
+  };
+
+  // 과목별 휴원 관리 모달 열기
+  window.openEnrollmentModal = function(userId) {
+    const enrollmentData = document.getElementById('enrollment-data-' + userId);
+    if (!enrollmentData) return;
+
+    const items = enrollmentData.querySelectorAll('.enrollment-item');
+    let html = '';
+
+    items.forEach(item => {
+      const id = item.getAttribute('data-id');
+      const subject = item.getAttribute('data-subject');
+      const teacher = item.getAttribute('data-teacher');
+      const day = item.getAttribute('data-day');
+      const time = item.getAttribute('data-time');
+      const status = item.getAttribute('data-status');
+
+      html += '<div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0;">';
+      html += '<div style="font-weight: 600; margin-bottom: 8px;">' + subject + ' - ' + teacher + '</div>';
+      html += '<div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 10px;">' + day + ' ' + time + '</div>';
+      html += '<button onclick="toggleEnrollmentStatus(' + id + ', \'' + status + '\')" style="padding: 8px 16px; background: ' + (status === 'on_leave' ? '#f59e0b' : '#10b981') + '; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">';
+      html += (status === 'on_leave' ? '휴원 해제' : '휴원 처리') + '</button>';
+      html += '</div>';
+    });
+
+    document.getElementById('enrollment-manage-list').innerHTML = html;
+    document.getElementById('enrollment-manage-modal').style.display = 'flex';
+  };
+
+  // 과목별 휴원 관리 모달 닫기
+  window.closeEnrollmentManageModal = function(event) {
+    if (!event || event.target.id === 'enrollment-manage-modal') {
+      document.getElementById('enrollment-manage-modal').style.display = 'none';
+    }
+  };
+
+  // 과목별 휴원 상태 토글
+  window.toggleEnrollmentStatus = function(enrollmentId, currentStatus) {
+    const newStatus = currentStatus === 'on_leave' ? 'active' : 'on_leave';
+
+    fetch(`/admin/toggle_enrollment_status/${enrollmentId}`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('상태가 변경되었습니다.');
+        closeEnrollmentManageModal();
+        window.loadPaymentsTab(); // 목록 새로고침
+      } else {
+        alert('상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('상태 변경 중 오류가 발생했습니다.');
+    });
+  };
+
+  console.log('결제관리 JavaScript 로드 완료');
+})();
+</script>

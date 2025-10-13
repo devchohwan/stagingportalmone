@@ -94,9 +94,13 @@ Rails.application.routes.draw do
     get 'payments/content', to: 'dashboard#payments_content'
     get 'payments/calendar_data', to: 'dashboard#payment_calendar_data'
     post 'payments', to: 'dashboard#create_payment'
-    get 'payments/history/:user_id', to: 'dashboard#payment_history'
-    get 'payment_calendar', to: 'dashboard#payment_calendar'
     get 'payments/user_enrollments/:user_id', to: 'dashboard#user_enrollments'
+    get 'payment_calendar', to: 'dashboard#payment_calendar'
+
+    # 결제 시스템 API
+    get 'users/:id', to: 'dashboard#get_user'
+    post 'process_payment', to: 'dashboard#process_payment'
+    get 'payment_history/:user_id', to: 'dashboard#payment_history'
 
     # 수강 등록 관리
     post 'user_enrollments', to: 'dashboard#create_user_enrollment'
