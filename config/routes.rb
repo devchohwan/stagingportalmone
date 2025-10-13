@@ -119,7 +119,7 @@ Rails.application.routes.draw do
 
     # 보강/패스 관리 API
     get 'makeup_pass_requests', to: 'dashboard#makeup_pass_requests'
-    get 'makeup_request_info/:id', to: 'dashboard#makeup_request_info'
+    get 'makeup_request_info', to: 'dashboard#makeup_request_info'
     patch 'makeup_pass_requests/:id/approve', to: 'dashboard#approve_makeup_pass_request'
     patch 'makeup_pass_requests/:id/reject', to: 'dashboard#reject_makeup_pass_request'
     delete 'makeup_pass_requests/:id', to: 'dashboard#delete_makeup_pass_request'

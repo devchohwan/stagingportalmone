@@ -590,6 +590,7 @@ class Admin::DashboardController < ApplicationController
   def load_schedule
     teacher = params[:teacher]
     week_offset = params[:week_offset].to_i || 0
+    mode = params[:mode] || 'viewer' # 'viewer' 또는 'manager'
 
     if teacher.blank?
       render json: { success: false, message: '담당 정보가 필요합니다.' }, status: :bad_request
@@ -671,101 +672,125 @@ class Admin::DashboardController < ApplicationController
         Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / remaining=#{enrollment.remaining_lessons}"
       end
 
-      # 이 날짜에 패스 신청이 있는지 확인
-      pass_request = MakeupPassRequest.where(
-        user_id: user.id,
-        request_type: 'pass',
-        request_date: target_date,
-        status: 'active'
-      ).first
-
-      # 이 날짜에 보강 신청(원래 자리에서 이동)이 있는지 확인
-      makeup_away_request = MakeupPassRequest.where(
-        user_id: user.id,
-        request_type: 'makeup',
-        request_date: target_date,
-        status: 'active'
-      ).first
-
-      # 이 날짜에 취소된 보강 신청이 있는지 확인 (결석 처리)
-      cancelled_makeup_request = MakeupPassRequest.where(
-        user_id: user.id,
-        request_type: 'makeup',
-        request_date: target_date,
-        status: 'cancelled'
-      ).first
-
       schedule_data[day] ||= {}
       schedule_data[day][time_slot] ||= []
 
-      if pass_request
-        # 패스인 경우: 회색으로 표시, "패스" 표시
+      # 시간표 관리 모드에서는 보강/패스 영향 무시
+      if mode == 'manager'
+        # 시간표 관리: 모든 학생을 항상 정상 표시
         schedule_data[day][time_slot] << {
           id: user.id,
           name: user.name,
           username: user.username,
           teacher: user.teacher,
-          is_pass: true,
-          is_on_leave: is_on_leave
-        }
-      elsif makeup_away_request
-        # 보강으로 이동하는 경우: 회색으로 표시, "→ 선생님" 표시
-        schedule_data[day][time_slot] << {
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          teacher: user.teacher,
-          is_makeup_away: true,
-          moved_to_teacher: makeup_away_request.teacher,
-          makeup_request_id: makeup_away_request.id,
-          is_on_leave: is_on_leave
-        }
-      elsif cancelled_makeup_request
-        # 보강 취소한 경우: 회색으로 표시, "결석" 표시
-        schedule_data[day][time_slot] << {
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          teacher: user.teacher,
-          is_absent: true,
           is_on_leave: is_on_leave
         }
       else
-        # 정상 출석 또는 휴원
-        schedule_data[day][time_slot] << {
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          teacher: user.teacher,
-          is_on_leave: is_on_leave
-        }
+        # 시간표 보기: 보강/패스 상태 반영
+        # 이 날짜에 패스 신청이 있는지 확인
+        pass_request = MakeupPassRequest.where(
+          user_id: user.id,
+          request_type: 'pass',
+          request_date: target_date,
+          status: 'active'
+        ).first
+
+        # 이 날짜에 보강 신청(원래 자리에서 이동)이 있는지 확인
+        makeup_away_request = MakeupPassRequest.where(
+          user_id: user.id,
+          request_type: 'makeup',
+          request_date: target_date,
+          status: 'active'
+        ).first
+
+        # 이 날짜에 취소된 보강 신청이 있는지 확인 (결석 처리)
+        cancelled_makeup_request = MakeupPassRequest.where(
+          user_id: user.id,
+          request_type: 'makeup',
+          request_date: target_date,
+          status: 'cancelled'
+        ).first
+
+        if pass_request
+          # 패스인 경우: 회색으로 표시, "패스" 표시
+          schedule_data[day][time_slot] << {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            teacher: user.teacher,
+            is_pass: true,
+            is_on_leave: is_on_leave
+          }
+        elsif makeup_away_request
+          # 보강으로 이동하는 경우: 회색으로 표시, "→ 선생님" 표시
+          schedule_data[day][time_slot] << {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            teacher: user.teacher,
+            is_makeup_away: true,
+            moved_to_teacher: makeup_away_request.teacher,
+            makeup_request_id: makeup_away_request.id,
+            is_on_leave: is_on_leave
+          }
+        elsif cancelled_makeup_request
+          # 보강 취소한 경우: 회색으로 표시, "결석" 표시
+          schedule_data[day][time_slot] << {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            teacher: user.teacher,
+            is_absent: true,
+            is_on_leave: is_on_leave
+          }
+        else
+          # 정상 출석 또는 휴원
+          schedule_data[day][time_slot] << {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            teacher: user.teacher,
+            is_on_leave: is_on_leave
+          }
+        end
       end
     end
 
     # 이 주차의 보강 신청을 추가 (다른 선생님한테서 이동해온 학생들)
-    makeup_requests = MakeupPassRequest.includes(:user).where(
-      request_type: 'makeup',
-      teacher: teacher,
-      makeup_date: target_week_start..target_week_end,
-      status: 'active'
-    )
+    # 시간표 보기 모드에서만 표시
+    if mode != 'manager'
+      makeup_requests = MakeupPassRequest.includes(:user).where(
+        request_type: 'makeup',
+        teacher: teacher,
+        makeup_date: target_week_start..target_week_end,
+        status: 'active'
+      )
 
-    makeup_requests.each do |req|
-      day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[req.makeup_date.wday]
-      time_slot = req.time_slot
+      makeup_requests.each do |req|
+        day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[req.makeup_date.wday]
+        time_slot = req.time_slot
 
-      schedule_data[day_name] ||= {}
-      schedule_data[day_name][time_slot] ||= []
-      schedule_data[day_name][time_slot] << {
-        id: req.user.id,
-        name: req.user.name,
-        username: req.user.username,
-        teacher: req.user.teacher,
-        is_makeup: true,
-        original_teacher: req.user.teacher,
-        week_number: req.week_number,
-        makeup_request_id: req.id
-      }
+        # 원래 선생님 찾기 (request_date의 요일로 UserEnrollment 조회)
+        request_day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[req.request_date.wday]
+        original_enrollment = req.user.user_enrollments.find_by(
+          day: request_day_name,
+          is_paid: true
+        )
+        original_teacher_name = original_enrollment&.teacher || req.user.primary_teacher
+
+        schedule_data[day_name] ||= {}
+        schedule_data[day_name][time_slot] ||= []
+        schedule_data[day_name][time_slot] << {
+          id: req.user.id,
+          name: req.user.name,
+          username: req.user.username,
+          teacher: req.teacher,
+          is_makeup: true,
+          original_teacher: original_teacher_name,
+          week_number: req.week_number,
+          makeup_request_id: req.id
+        }
+      end
     end
 
     render json: { success: true, schedules: schedule_data, week_start: target_week_start.strftime('%Y-%m-%d'), week_end: target_week_end.strftime('%Y-%m-%d') }
@@ -1885,5 +1910,46 @@ class Admin::DashboardController < ApplicationController
       'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
       'remaining_lessons' => total_remaining_lessons
     }
+  end
+
+  # 보강 신청 정보 조회
+  def makeup_request_info
+    request_id = params[:id]
+    request = MakeupPassRequest.find_by(id: request_id)
+
+    if request
+      status_map = {
+        'active' => '활성',
+        'cancelled' => '취소됨',
+        'completed' => '완료'
+      }
+
+      # 원래 선생님 찾기 (request_date의 요일로 UserEnrollment 조회)
+      request_day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[request.request_date.wday]
+      enrollment = request.user.user_enrollments.find_by(
+        day: request_day_name,
+        is_paid: true
+      )
+
+      render json: {
+        success: true,
+        request: {
+          user_name: request.user.name,
+          original_teacher: enrollment&.teacher || request.user.primary_teacher,
+          request_date: request.request_date.strftime('%Y-%m-%d'),
+          teacher: request.teacher,
+          makeup_date: request.makeup_date&.strftime('%Y-%m-%d'),
+          time_slot: request.time_slot,
+          week_number: request.week_number,
+          status_korean: status_map[request.status] || request.status
+        }
+      }
+    else
+      render json: { success: false, message: '보강 신청을 찾을 수 없습니다.' }
+    end
+  rescue => e
+    Rails.logger.error "보강 신청 정보 조회 오류: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { success: false, message: e.message }
   end
 end

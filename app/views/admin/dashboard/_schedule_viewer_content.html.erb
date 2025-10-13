@@ -376,9 +376,23 @@
 
             // 보강일 경우 다른 배경색
             if (student.is_makeup) {
-              card.style.background = '#d1f4e0';  // 연한 초록색
+              card.style.background = '#fef3c7';  // 연노랑
               card.style.color = '#000';
-              card.style.border = '2px solid #7ed8a9';
+              card.style.border = '2px solid #fbbf24';
+              card.style.cursor = 'pointer';
+              card.onclick = () => showMakeupRequestInfo(student.makeup_request_id);
+            } else if (student.is_makeup_away) {
+              // 보강으로 다른 스케줄로 빠진 경우 - 회색 배경
+              card.style.background = '#e5e7eb';
+              card.style.borderColor = '#9ca3af';
+            } else if (student.is_pass) {
+              // 패스인 경우 - 회색 배경
+              card.style.background = '#e5e7eb';
+              card.style.borderColor = '#9ca3af';
+            } else if (student.is_absent) {
+              // 결석인 경우 - 회색 배경
+              card.style.background = '#e5e7eb';
+              card.style.borderColor = '#9ca3af';
             } else if (student.is_on_leave) {
               // 휴원 상태
               card.style.background = '#fef3c7'; // 연노랑
@@ -393,9 +407,18 @@
             usernameDiv.className = 'student-username';
             usernameDiv.style.fontWeight = '600';
             usernameDiv.style.textAlign = 'center';
-            // 보강일 경우: 아이디(담당선생님) 보강
+            // 보강일 경우: 이름(원래선생님)
             if (student.is_makeup && student.original_teacher) {
-              usernameDiv.textContent = `${student.username}(${student.original_teacher}) 보강`;
+              usernameDiv.textContent = `${student.name}(${student.original_teacher})`;
+            } else if (student.is_makeup_away && student.moved_to_teacher) {
+              // 보강으로 이동한 경우: 이름(→보강예정선생님)
+              usernameDiv.textContent = `${student.name}(→${student.moved_to_teacher})`;
+            } else if (student.is_pass) {
+              // 패스인 경우
+              usernameDiv.textContent = `${student.name} (패스)`;
+            } else if (student.is_absent) {
+              // 결석인 경우
+              usernameDiv.textContent = `${student.name} (결석)`;
             } else if (student.is_on_leave) {
               // 휴원 상태 표시
               usernameDiv.textContent = student.username + ' (휴원)';
@@ -484,6 +507,41 @@
         }
       });
     });
+  }
+
+  // 보강 신청 정보 표시
+  function showMakeupRequestInfo(requestId) {
+    if (!requestId) return;
+
+    fetch(`/admin/makeup_request_info?id=${requestId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const req = data.request;
+          const weekMap = {
+            1: '이번주 수업',
+            2: '다음주 수업',
+            3: '이번주+다음주 수업'
+          };
+
+          alert(`보강 신청 정보\n\n` +
+            `신청자: ${req.user_name}\n` +
+            `원래 선생님: ${req.original_teacher}\n` +
+            `원래 수업일: ${req.request_date}\n` +
+            `보강 선생님: ${req.teacher}\n` +
+            `보강일: ${req.makeup_date}\n` +
+            `보강 시간: ${req.time_slot}\n` +
+            `사용 수업: ${weekMap[req.week_number] || req.week_number}\n` +
+            `상태: ${req.status_korean}`
+          );
+        } else {
+          alert('보강 신청 정보를 불러올 수 없습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('보강 신청 정보를 불러오는 중 오류가 발생했습니다.');
+      });
   }
 
   // 초기 로드

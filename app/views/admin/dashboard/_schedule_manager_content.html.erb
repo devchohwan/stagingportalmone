@@ -677,7 +677,7 @@
     });
 
     try {
-      const response = await fetch(`/admin/load_schedule?teacher=${encodeURIComponent(window.currentScheduleTeacher)}&week_offset=${window.currentScheduleWeek}`);
+      const response = await fetch(`/admin/load_schedule?teacher=${encodeURIComponent(window.currentScheduleTeacher)}&week_offset=${window.currentScheduleWeek}&mode=manager`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
 

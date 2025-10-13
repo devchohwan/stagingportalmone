@@ -1,1 +1,1 @@
-🐛 수업일시 계산 수정 - UserEnrollment 기반으로 변경하여 스케줄 반영
+🐛 보강학생 원래선생님 표시 오류 수정 - UserEnrollment 기반으로 조회
