@@ -381,25 +381,18 @@
               card.style.border = '2px solid #7ed8a9';
             }
 
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'student-name';
-            // 보강일 경우: 회원이름(담당선생님) 보강
+            const usernameDiv = document.createElement('div');
+            usernameDiv.className = 'student-username';
+            usernameDiv.style.fontWeight = '600';
+            usernameDiv.style.textAlign = 'center';
+            // 보강일 경우: 아이디(담당선생님) 보강
             if (student.is_makeup && student.original_teacher) {
-              nameDiv.textContent = `${student.name}(${student.original_teacher}) 보강`;
+              usernameDiv.textContent = `${student.username}(${student.original_teacher}) 보강`;
             } else {
-              nameDiv.textContent = student.name;
-            }
-
-            card.appendChild(nameDiv);
-
-            // 보강이 아닐 때만 username 표시
-            if (!student.is_makeup) {
-              const usernameDiv = document.createElement('div');
-              usernameDiv.className = 'student-username';
               usernameDiv.textContent = student.username;
-              card.appendChild(usernameDiv);
             }
 
+            card.appendChild(usernameDiv);
             cell.appendChild(card);
           });
 
