@@ -603,6 +603,10 @@ class Admin::DashboardController < ApplicationController
     target_week_start = start_of_current_week + week_offset.weeks
     target_week_end = target_week_start + 6.days
 
+    Rails.logger.info "=== load_schedule 주차 계산 ==="
+    Rails.logger.info "today: #{today}, week_offset: #{week_offset}"
+    Rails.logger.info "target_week_start: #{target_week_start}, target_week_end: #{target_week_end}"
+
     schedules = TeacherSchedule.includes(:user).where(teacher: teacher)
 
     # { day: { time_slot: [{ id, name, username }] } } 형식으로 변환
@@ -767,6 +771,7 @@ class Admin::DashboardController < ApplicationController
       )
 
       makeup_requests.each do |req|
+        Rails.logger.info "보강 추가: #{req.user.name}, makeup_date: #{req.makeup_date}, wday: #{req.makeup_date.wday}"
         day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[req.makeup_date.wday]
         time_slot = req.time_slot
 
