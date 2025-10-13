@@ -374,8 +374,21 @@
             const card = document.createElement('div');
             card.className = 'student-card';
 
-            // 보강일 경우 다른 배경색
-            if (student.is_makeup) {
+            // 결석 처리 우선 체크 (실제 is_absent 필드)
+            if (student.is_absent && !student.is_makeup && !student.is_pass) {
+              // 결석인 경우 - 회색 배경
+              card.style.background = '#e5e7eb';
+              card.style.borderColor = '#9ca3af';
+              card.style.cursor = 'pointer';
+              // 결석 처리된 학생 클릭 시 결석 취소
+              if (student.schedule_id) {
+                card.onclick = (e) => {
+                  e.stopPropagation();
+                  toggleAbsence(student.schedule_id, student.name, true);
+                };
+              }
+            } else if (student.is_makeup) {
+              // 보강일 경우 다른 배경색
               card.style.background = '#fef3c7';  // 연노랑
               card.style.color = '#000';
               card.style.border = '2px solid #fbbf24';
@@ -389,10 +402,6 @@
               // 패스인 경우 - 회색 배경
               card.style.background = '#e5e7eb';
               card.style.borderColor = '#9ca3af';
-            } else if (student.is_absent) {
-              // 결석인 경우 - 회색 배경
-              card.style.background = '#e5e7eb';
-              card.style.borderColor = '#9ca3af';
             } else if (student.is_on_leave) {
               // 휴원 상태
               card.style.background = '#fef3c7'; // 연노랑
@@ -401,14 +410,27 @@
               // 활성 상태
               card.style.background = '#d9f99d'; // 연두색
               card.style.borderColor = '#84cc16';
+              card.style.cursor = 'pointer';
+              // 정상 학생 클릭 시 결석 처리
+              if (student.schedule_id) {
+                card.onclick = (e) => {
+                  e.stopPropagation();
+                  toggleAbsence(student.schedule_id, student.name, false);
+                };
+              }
             }
 
             const usernameDiv = document.createElement('div');
             usernameDiv.className = 'student-username';
             usernameDiv.style.fontWeight = '600';
             usernameDiv.style.textAlign = 'center';
-            // 보강일 경우: 이름(원래선생님)
-            if (student.is_makeup && student.original_teacher) {
+
+            // 결석 처리 우선 체크
+            if (student.is_absent && !student.is_makeup && !student.is_pass) {
+              // 결석인 경우
+              usernameDiv.textContent = `${student.name} (결석)`;
+            } else if (student.is_makeup && student.original_teacher) {
+              // 보강일 경우: 이름(원래선생님)
               usernameDiv.textContent = `${student.name}(${student.original_teacher})`;
             } else if (student.is_makeup_away && student.moved_to_teacher) {
               // 보강으로 이동한 경우: 이름(→보강예정선생님)
@@ -416,9 +438,6 @@
             } else if (student.is_pass) {
               // 패스인 경우
               usernameDiv.textContent = `${student.name} (패스)`;
-            } else if (student.is_absent) {
-              // 결석인 경우
-              usernameDiv.textContent = `${student.name} (결석)`;
             } else if (student.is_on_leave) {
               // 휴원 상태 표시
               usernameDiv.textContent = student.username + ' (휴원)';
@@ -582,6 +601,38 @@
 
     document.body.appendChild(modal);
   }
+
+  // 결석 처리/취소
+  window.toggleAbsence = function(scheduleId, studentName, isCurrentlyAbsent) {
+    const message = isCurrentlyAbsent
+      ? `${studentName} 학생의 결석처리를 취소하시겠습니까?`
+      : `${studentName} 학생을 결석처리하시겠습니까?`;
+
+    if (!confirm(message)) {
+      return;
+    }
+
+    fetch(`/admin/teacher_schedules/${scheduleId}/toggle_absence`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+          loadScheduleViewer(); // 시간표 새로고침
+        } else {
+          alert(data.message || '처리에 실패했습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Error toggling absence:', error);
+        alert('오류가 발생했습니다.');
+      });
+  };
 
   // 초기 로드
   loadScheduleViewer();

@@ -720,7 +720,9 @@ class Admin::DashboardController < ApplicationController
             name: user.name,
             username: user.username,
             teacher: user.teacher,
+            schedule_id: schedule.id,
             is_pass: true,
+            is_absent: schedule.is_absent,
             is_on_leave: is_on_leave
           }
         elsif makeup_away_request
@@ -730,9 +732,11 @@ class Admin::DashboardController < ApplicationController
             name: user.name,
             username: user.username,
             teacher: user.teacher,
+            schedule_id: schedule.id,
             is_makeup_away: true,
             moved_to_teacher: makeup_away_request.teacher,
             makeup_request_id: makeup_away_request.id,
+            is_absent: schedule.is_absent,
             is_on_leave: is_on_leave
           }
         elsif cancelled_makeup_request
@@ -742,6 +746,7 @@ class Admin::DashboardController < ApplicationController
             name: user.name,
             username: user.username,
             teacher: user.teacher,
+            schedule_id: schedule.id,
             is_absent: true,
             is_on_leave: is_on_leave
           }
@@ -752,6 +757,8 @@ class Admin::DashboardController < ApplicationController
             name: user.name,
             username: user.username,
             teacher: user.teacher,
+            schedule_id: schedule.id,
+            is_absent: schedule.is_absent,
             is_on_leave: is_on_leave
           }
         end
@@ -1932,5 +1939,50 @@ class Admin::DashboardController < ApplicationController
       'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
       'remaining_lessons' => total_remaining_lessons
     }
+  end
+
+  # 결석 처리/취소
+  def toggle_absence
+    schedule = TeacherSchedule.find(params[:id])
+    schedule_date = schedule.schedule_date
+
+    # 과거 수업일은 처리 불가
+    if schedule_date < Date.current
+      render json: { success: false, message: '과거 수업은 결석 처리할 수 없습니다.' }, status: :unprocessable_entity
+      return
+    end
+
+    # enrollment 찾기
+    enrollment = UserEnrollment.find_by(
+      user_id: schedule.user_id,
+      teacher: schedule.teacher
+    )
+
+    unless enrollment
+      render json: { success: false, message: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
+      return
+    end
+
+    if schedule.is_absent
+      # 결석 취소: 수업 횟수 복구
+      schedule.update!(is_absent: false)
+      enrollment.increment!(:remaining_lessons)
+      message = '결석 처리가 취소되었습니다.'
+    else
+      # 결석 처리: 수업 횟수 차감
+      schedule.update!(is_absent: true)
+      enrollment.decrement!(:remaining_lessons)
+      message = '결석 처리되었습니다.'
+    end
+
+    render json: {
+      success: true,
+      message: message,
+      is_absent: schedule.is_absent,
+      remaining_lessons: enrollment.remaining_lessons
+    }
+  rescue => e
+    Rails.logger.error "Toggle absence error: #{e.message}"
+    render json: { success: false, message: '오류가 발생했습니다.' }, status: :internal_server_error
   end
 end

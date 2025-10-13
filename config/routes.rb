@@ -116,6 +116,7 @@ Rails.application.routes.draw do
     post 'save_schedule', to: 'dashboard#save_schedule'
     get 'load_schedule', to: 'dashboard#load_schedule'
     get 'schedule_changes', to: 'dashboard#schedule_changes'
+    patch 'teacher_schedules/:id/toggle_absence', to: 'dashboard#toggle_absence'
 
     # 보강/패스 관리 API
     get 'makeup_pass_requests', to: 'dashboard#makeup_pass_requests'
