@@ -1914,34 +1914,6 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, error: e.message }, status: :internal_server_error
   end
 
-  private
-
-  def user_to_hash(user)
-    # 기본 사용자 정보만 반환 (penalty 정보는 별도로 처리)
-    # phone과 online_verification_image는 프로덕션 DB에 없을 수 있으므로 안전하게 처리
-
-    # UserEnrollment의 모든 remaining_lessons 합산
-    total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
-
-    {
-      'id' => user.id,
-      'username' => user.username,
-      'name' => user.name,
-      'email' => user.email,
-      'phone' => user.respond_to?(:phone) ? user.phone : nil,
-      'teacher' => user.primary_teacher,  # UserEnrollment 기반 담당 선생님
-      'status' => user.status,
-      'created_at' => user.created_at.to_s,
-      'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
-      'no_show_count' => 0,  # 기본값
-      'cancel_count' => 0,   # 기본값
-      'is_blocked' => false,  # 기본값
-      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
-      'remaining_lessons' => total_remaining_lessons
-    }
-  end
-
-  # 결석 처리/취소
   def toggle_absence
     Rails.logger.info "=== toggle_absence START ==="
     Rails.logger.info "params: #{params.inspect}"
@@ -2002,5 +1974,28 @@ class Admin::DashboardController < ApplicationController
     Rails.logger.error "Toggle absence error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
     render json: { success: false, message: "오류가 발생했습니다: #{e.message}" }, status: :internal_server_error
+  end
+
+  private
+
+  def user_to_hash(user)
+    total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
+
+    {
+      'id' => user.id,
+      'username' => user.username,
+      'name' => user.name,
+      'email' => user.email,
+      'phone' => user.respond_to?(:phone) ? user.phone : nil,
+      'teacher' => user.primary_teacher,
+      'status' => user.status,
+      'created_at' => user.created_at.to_s,
+      'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
+      'no_show_count' => 0,
+      'cancel_count' => 0,
+      'is_blocked' => false,
+      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
+      'remaining_lessons' => total_remaining_lessons
+    }
   end
 end

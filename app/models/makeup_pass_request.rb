@@ -28,7 +28,37 @@ class MakeupPassRequest < ApplicationRecord
   end
 
   def cancel!
-    update(status: 'cancelled', cancelled_at: Time.current)
+    ActiveRecord::Base.transaction do
+      update!(status: 'cancelled', cancelled_at: Time.current)
+
+      # 보강 취소 시: 원래 자리(request_date)의 스케줄을 결석 처리하고 수업 횟수 차감
+      if makeup?
+        # request_date의 요일 구하기
+        day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[request_date.wday]
+
+        # 원래 스케줄 찾기 (UserEnrollment 기반)
+        enrollment = user.user_enrollments.find_by(
+          is_paid: true,
+          day: day_name
+        )
+
+        if enrollment
+          # TeacherSchedule 찾아서 결석 처리
+          schedule = TeacherSchedule.find_by(
+            user_id: user_id,
+            teacher: enrollment.teacher,
+            day: day_name,
+            time_slot: enrollment.time_slot
+          )
+
+          if schedule && !schedule.is_absent
+            schedule.update!(is_absent: true)
+            enrollment.decrement!(:remaining_lessons)
+            Rails.logger.info "보강 취소: #{user.name} 님 결석 처리 (남은 수업: #{enrollment.remaining_lessons})"
+          end
+        end
+      end
+    end
   end
 
   def complete!
