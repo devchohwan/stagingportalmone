@@ -558,6 +558,18 @@ class Admin::DashboardController < ApplicationController
     end
 
     begin
+      # 3명 제한 검증
+      if schedules.present?
+        schedules.each do |day, time_slots|
+          time_slots.each do |time_slot, user_ids|
+            if user_ids.length > 3
+              render json: { success: false, message: "한 타임에 최대 3명까지만 배정할 수 있습니다. (#{day} #{time_slot}: #{user_ids.length}명)" }, status: :unprocessable_entity
+              return
+            end
+          end
+        end
+      end
+
       ActiveRecord::Base.transaction do
         # 해당 담당의 기존 스케줄 삭제
         TeacherSchedule.where(teacher: teacher).destroy_all
