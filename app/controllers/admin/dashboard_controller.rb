@@ -1943,18 +1943,25 @@ class Admin::DashboardController < ApplicationController
 
   # 결석 처리/취소
   def toggle_absence
+    Rails.logger.info "=== toggle_absence START ==="
+    Rails.logger.info "params: #{params.inspect}"
+
     schedule = TeacherSchedule.find(params[:id])
+    Rails.logger.info "schedule found: #{schedule.inspect}"
 
     # 현재 보고 있는 주차의 날짜 확인 (프론트엔드에서 전달)
     target_date = params[:target_date] ? Date.parse(params[:target_date]) : nil
+    Rails.logger.info "target_date: #{target_date}"
 
     # 과거 수업일은 처리 불가 (target_date가 있는 경우에만 체크)
     if target_date && target_date < Date.current
+      Rails.logger.info "REJECT: past date"
       render json: { success: false, message: '과거 수업은 결석 처리할 수 없습니다.' }, status: :unprocessable_entity
       return
     end
 
     # enrollment 찾기
+    Rails.logger.info "Finding enrollment: user_id=#{schedule.user_id}, teacher=#{schedule.teacher}, day=#{schedule.day}, time_slot=#{schedule.time_slot}"
     enrollment = UserEnrollment.find_by(
       user_id: schedule.user_id,
       teacher: schedule.teacher,
@@ -1962,24 +1969,29 @@ class Admin::DashboardController < ApplicationController
       time_slot: schedule.time_slot,
       is_paid: true
     )
+    Rails.logger.info "enrollment found: #{enrollment.inspect}"
 
     unless enrollment
+      Rails.logger.error "REJECT: enrollment not found"
       render json: { success: false, message: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
       return
     end
 
     if schedule.is_absent
       # 결석 취소: 수업 횟수 복구
+      Rails.logger.info "Cancelling absence"
       schedule.update!(is_absent: false)
       enrollment.increment!(:remaining_lessons)
       message = '결석 처리가 취소되었습니다.'
     else
       # 결석 처리: 수업 횟수 차감
+      Rails.logger.info "Marking absence"
       schedule.update!(is_absent: true)
       enrollment.decrement!(:remaining_lessons)
       message = '결석 처리되었습니다.'
     end
 
+    Rails.logger.info "SUCCESS: #{message}"
     render json: {
       success: true,
       message: message,
