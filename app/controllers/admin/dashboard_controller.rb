@@ -1272,7 +1272,7 @@ class Admin::DashboardController < ApplicationController
 
   # 결제관리 콘텐츠 (AJAX)
   def payments_content
-    users = User.where.not(username: 'admin').order(:name)
+    users = User.order(:name)
     @users = users.map do |user|
       last_payment = Payment.where(user_id: user.id).order(payment_date: :desc).first
       {
