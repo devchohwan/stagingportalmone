@@ -209,40 +209,13 @@
     background: white;
     border: 2px solid #e5e7eb;
     border-radius: 6px;
-    padding: 0.5rem 1.5rem 0.5rem 0.5rem;
-    position: relative;
+    padding: 0.5rem;
     transition: all 0.2s;
   }
 
   .schedule-manager-wrapper .student-card:hover {
     border-color: #667eea;
     box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
-    transform: translateX(2px);
-  }
-
-  .schedule-manager-wrapper .remove-btn {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    width: 18px;
-    height: 18px;
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-
-  .schedule-manager-wrapper .remove-btn:hover {
-    background: #dc2626;
-    transform: scale(1.1);
   }
 
   /* 모달 - 완전 격리 */
@@ -661,27 +634,13 @@
     card.className = 'student-card';
     card.dataset.userId = student.id;
 
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '×';
-    removeBtn.onclick = function() {
-      window.removeStudentFromSchedule(student.id, day, timeSlot);
-    };
-
-    const nameDiv = document.createElement('div');
-    nameDiv.style.fontWeight = '700';
-    nameDiv.style.fontSize = '0.875rem';
-    nameDiv.style.color = '#111827';
-    nameDiv.style.marginBottom = '0.25rem';
-    nameDiv.textContent = `🎵 ${student.name}`;
-
     const usernameDiv = document.createElement('div');
-    usernameDiv.style.fontSize = '0.75rem';
-    usernameDiv.style.color = '#6b7280';
+    usernameDiv.style.fontSize = '0.875rem';
+    usernameDiv.style.color = '#111827';
+    usernameDiv.style.fontWeight = '600';
+    usernameDiv.style.textAlign = 'center';
     usernameDiv.textContent = student.username;
 
-    card.appendChild(removeBtn);
-    card.appendChild(nameDiv);
     card.appendChild(usernameDiv);
 
     return card;
