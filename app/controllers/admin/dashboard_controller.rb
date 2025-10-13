@@ -772,7 +772,7 @@ class Admin::DashboardController < ApplicationController
         request_type: 'makeup',
         teacher: teacher,
         makeup_date: target_week_start..target_week_end
-      )
+      ).where(status: ['active', 'completed'])
 
       makeup_requests.each do |req|
         Rails.logger.info "보강 추가: #{req.user.name}, makeup_date: #{req.makeup_date}, wday: #{req.makeup_date.wday}"
