@@ -13,6 +13,7 @@ class User < ApplicationRecord
   has_many :pitch_penalties, dependent: :destroy
   has_many :payments, dependent: :destroy
   has_many :user_enrollments, dependent: :destroy
+  has_many :teacher_schedules, dependent: :destroy
   
   # makeup system에서는 MakeupUser를 통해 연결
   

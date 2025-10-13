@@ -1,1 +1,1 @@
-🐛 load_schedule에서 삭제된 회원(nil user) 처리 추가
+✨ User 모델에 teacher_schedules 연관관계 추가 (dependent: :destroy)
