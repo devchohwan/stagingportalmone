@@ -91,13 +91,13 @@ Rails.application.routes.draw do
     patch 'users/:id/toggle_all_enrollments_auto', to: 'dashboard#toggle_all_enrollments_auto'
 
     # 결제 관리
-    get 'payments/content', to: 'dashboard#payments_content'
     get 'payments/calendar_data', to: 'dashboard#payment_calendar_data'
     post 'payments', to: 'dashboard#create_payment'
     get 'payments/user_enrollments/:user_id', to: 'dashboard#user_enrollments'
     get 'payment_calendar', to: 'dashboard#payment_calendar'
 
     # 결제 시스템 API
+    get 'payments_content', to: 'dashboard#payments_content'
     get 'users/:id', to: 'dashboard#get_user'
     post 'process_payment', to: 'dashboard#process_payment'
     get 'payment_history/:user_id', to: 'dashboard#payment_history'
@@ -128,7 +128,6 @@ Rails.application.routes.draw do
     get 'schedule_viewer', to: 'dashboard#schedule_viewer'
     get 'schedule_viewer_content', to: 'dashboard#schedule_viewer_content'
     get 'schedule_manager_content', to: 'dashboard#schedule_manager_content'
-    get 'payments_content', to: 'dashboard#payments_content'
 
     # 동기화 테스트 페이지
     get 'test_sync', to: 'dashboard#test_sync'
