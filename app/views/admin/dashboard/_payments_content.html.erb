@@ -1110,10 +1110,15 @@
     }
     html += '</div></div>';
 
-    // 결제일
+    // 결제일 (한국 시간 기준)
+    const today = new Date();
+    const koreaOffset = 9 * 60; // UTC+9
+    const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
+    const todayStr = koreaTime.toISOString().split('T')[0];
+
     html += '<div style="margin-bottom: 20px;">';
     html += '<label style="display: block; font-weight: 600; margin-bottom: 8px;">결제일</label>';
-    html += '<input type="date" id="payment-date" value="' + new Date().toISOString().split('T')[0] + '" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">';
+    html += '<input type="date" id="payment-date" value="' + todayStr + '" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">';
     html += '</div>';
 
     // 금액 요약
