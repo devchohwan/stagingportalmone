@@ -1208,32 +1208,6 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, message: e.message }, status: :internal_server_error
   end
 
-  def toggle_enrollment_status
-    enrollment = UserEnrollment.find(params[:id])
-    new_status = params[:status]
-
-    enrollment.status = new_status
-    if enrollment.save
-      message = new_status == 'on_leave' ? '휴원 처리되었습니다.' : '복귀 처리되었습니다.'
-      render json: {
-        success: true,
-        message: message,
-        enrollment: {
-          id: enrollment.id,
-          user_id: enrollment.user_id,
-          teacher: enrollment.teacher,
-          day: enrollment.day,
-          time_slot: enrollment.time_slot,
-          status: enrollment.status
-        }
-      }
-    else
-      render json: { success: false, message: '상태 변경에 실패했습니다.' }, status: :unprocessable_entity
-    end
-  rescue => e
-    render json: { success: false, message: e.message }, status: :internal_server_error
-  end
-
   # 시간표 뷰어 페이지
   def schedule_viewer
     @teachers = User::TEACHERS - ['온라인']
@@ -1294,75 +1268,6 @@ class Admin::DashboardController < ApplicationController
 
     render partial: 'admin/dashboard/payment_calendar',
            locals: { date: date, teacher: teacher, row_id: user_id }
-  end
-
-  def payment_history
-    user = User.find(params[:user_id])
-    payments = user.payments.order(payment_date: :desc)
-
-    history = payments.map do |payment|
-      # 첫수업 시작일시 포맷
-      first_lesson_datetime = nil
-      if payment.first_lesson_date.present?
-        date_str = payment.first_lesson_date.strftime('%Y년 %m월 %d일')
-        if payment.first_lesson_time.present?
-          time_display = payment.first_lesson_time.split('-').join(':00-') + ':00'
-          first_lesson_datetime = "#{date_str} #{time_display}"
-        else
-          first_lesson_datetime = date_str
-        end
-      end
-
-      {
-        id: payment.id,
-        subject: payment.subject,
-        period: payment.period,
-        amount: payment.amount,
-        lessons: payment.lessons,
-        passes: payment.period, # 1개월 = 1회 패스, 3개월 = 3회 패스
-        payment_date: payment.payment_date.strftime('%Y년 %m월 %d일'),
-        first_lesson_datetime: first_lesson_datetime,
-        created_at: payment.created_at.strftime('%Y-%m-%d %H:%M')
-      }
-    end
-
-    render json: {
-      success: true,
-      user_name: user.name,
-      history: history
-    }
-  rescue => e
-    Rails.logger.error "Payment history error: #{e.message}"
-    render json: { success: false, message: e.message }, status: :internal_server_error
-  end
-
-  private
-
-  # ApplicationController의 authenticate_admin! 사용하도록 제거
-
-  def user_to_hash(user)
-    # 기본 사용자 정보만 반환 (penalty 정보는 별도로 처리)
-    # phone과 online_verification_image는 프로덕션 DB에 없을 수 있으므로 안전하게 처리
-
-    # UserEnrollment의 모든 remaining_lessons 합산
-    total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
-
-    {
-      'id' => user.id,
-      'username' => user.username,
-      'name' => user.name,
-      'email' => user.email,
-      'phone' => user.respond_to?(:phone) ? user.phone : nil,
-      'teacher' => user.teacher,
-      'status' => user.status,
-      'created_at' => user.created_at.to_s,
-      'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
-      'no_show_count' => 0,  # 기본값
-      'cancel_count' => 0,   # 기본값
-      'is_blocked' => false,  # 기본값
-      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
-      'remaining_lessons' => total_remaining_lessons
-    }
   end
 
   # 결제관리 콘텐츠 (AJAX)
@@ -1513,5 +1418,32 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, error: '수강 등록을 찾을 수 없습니다.' }, status: :not_found
   rescue => e
     render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
+
+  private
+
+  def user_to_hash(user)
+    # 기본 사용자 정보만 반환 (penalty 정보는 별도로 처리)
+    # phone과 online_verification_image는 프로덕션 DB에 없을 수 있으므로 안전하게 처리
+
+    # UserEnrollment의 모든 remaining_lessons 합산
+    total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
+
+    {
+      'id' => user.id,
+      'username' => user.username,
+      'name' => user.name,
+      'email' => user.email,
+      'phone' => user.respond_to?(:phone) ? user.phone : nil,
+      'teacher' => user.teacher,
+      'status' => user.status,
+      'created_at' => user.created_at.to_s,
+      'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
+      'no_show_count' => 0,  # 기본값
+      'cancel_count' => 0,   # 기본값
+      'is_blocked' => false,  # 기본값
+      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
+      'remaining_lessons' => total_remaining_lessons
+    }
   end
 end

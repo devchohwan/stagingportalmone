@@ -1,1 +1,1 @@
-🔧 중복 메서드 제거 - payments_content 컨트롤러 메서드 중복 삭제
+🔧 private 메서드 위치 수정 - 결제 API 메서드들을 public으로 이동
