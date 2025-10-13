@@ -271,13 +271,13 @@
         <thead>
           <tr>
             <th style="width: 100px; position: sticky; left: 0; z-index: 20;">시간</th>
-            <th id="header-mon-viewer">월<br><span style="font-weight: 400; font-size: 0.875rem;">10/13</span></th>
-            <th id="header-tue-viewer">화<br><span style="font-weight: 400; font-size: 0.875rem;">10/14</span></th>
-            <th id="header-wed-viewer">수<br><span style="font-weight: 400; font-size: 0.875rem;">10/15</span></th>
-            <th id="header-thu-viewer">목<br><span style="font-weight: 400; font-size: 0.875rem;">10/16</span></th>
-            <th id="header-fri-viewer">금<br><span style="font-weight: 400; font-size: 0.875rem;">10/17</span></th>
-            <th id="header-sat-viewer">토<br><span style="font-weight: 400; font-size: 0.875rem;">10/18</span></th>
-            <th id="header-sun-viewer">일<br><span style="font-weight: 400; font-size: 0.875rem;">10/19</span></th>
+            <th id="header-sun-viewer">일<br><span style="font-weight: 400; font-size: 0.875rem;">10/13</span></th>
+            <th id="header-mon-viewer">월<br><span style="font-weight: 400; font-size: 0.875rem;">10/14</span></th>
+            <th id="header-tue-viewer">화<br><span style="font-weight: 400; font-size: 0.875rem;">10/15</span></th>
+            <th id="header-wed-viewer">수<br><span style="font-weight: 400; font-size: 0.875rem;">10/16</span></th>
+            <th id="header-thu-viewer">목<br><span style="font-weight: 400; font-size: 0.875rem;">10/17</span></th>
+            <th id="header-fri-viewer">금<br><span style="font-weight: 400; font-size: 0.875rem;">10/18</span></th>
+            <th id="header-sat-viewer">토<br><span style="font-weight: 400; font-size: 0.875rem;">10/19</span></th>
           </tr>
         </thead>
         <tbody>
@@ -286,7 +286,7 @@
               <td class="time-cell">
                 <%= time_slot.split('-').map { |t| "#{t}:00" }.join('-') %>
               </td>
-              <% ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].each do |day| %>
+              <% ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].each do |day| %>
                 <td>
                   <div class="schedule-cell" id="cell-viewer-<%= day %>-<%= time_slot %>" data-day="<%= day %>" data-time="<%= time_slot %>">
                   </div>
@@ -444,16 +444,13 @@
   function updateWeekDisplayViewer() {
     const today = new Date();
     const weekStart = new Date(today);
-    // 일요일 시작 (시간표 관리와 동일)
+    // 일요일 시작
     weekStart.setDate(today.getDate() - today.getDay() + (window.currentWeekOffsetViewer * 7));
 
-    // 월요일 날짜로 표시
-    const monday = new Date(weekStart);
-    monday.setDate(weekStart.getDate() + 1);
-
-    const year = monday.getFullYear();
-    const month = monday.getMonth() + 1;
-    const day = monday.getDate();
+    // 일요일 날짜로 표시
+    const year = weekStart.getFullYear();
+    const month = weekStart.getMonth() + 1;
+    const day = weekStart.getDate();
 
     const weekDisplay = document.getElementById('week-display-viewer');
     if (weekDisplay) {
@@ -461,13 +458,13 @@
     }
 
     // 각 요일의 날짜 업데이트
-    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
     days.forEach((day, index) => {
       const dayDate = new Date(weekStart);
-      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
-      dayDate.setDate(weekStart.getDate() + index + 1);
+      // weekStart는 일요일이므로, sun은 +0, mon은 +1, ... sat은 +6
+      dayDate.setDate(weekStart.getDate() + index);
 
       const header = document.getElementById(`header-${day}-viewer`);
       if (header) {
@@ -482,16 +479,16 @@
   function updateHolidayCellsViewer() {
     const today = new Date();
     const weekStart = new Date(today);
-    // 일요일 시작 (시간표 관리와 동일)
+    // 일요일 시작
     weekStart.setDate(today.getDate() - today.getDay() + (window.currentWeekOffsetViewer * 7));
 
-    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
 
     days.forEach((day, index) => {
       const dayDate = new Date(weekStart);
-      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
-      dayDate.setDate(weekStart.getDate() + index + 1);
+      // weekStart는 일요일이므로, sun은 +0, mon은 +1, ... sat은 +6
+      dayDate.setDate(weekStart.getDate() + index);
       const dayOfWeek = dayDate.getDay();
 
       const isHoliday = window.isTeacherHolidayViewer(window.currentScheduleTeacherViewer, dayOfWeek);

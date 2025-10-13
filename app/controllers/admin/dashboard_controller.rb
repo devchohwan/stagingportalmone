@@ -597,7 +597,7 @@ class Admin::DashboardController < ApplicationController
       return
     end
 
-    # 현재 주차 계산
+    # 현재 주차 계산 (일요일 시작)
     today = Date.current
     start_of_current_week = today.beginning_of_week(:sunday)
     target_week_start = start_of_current_week + week_offset.weeks
