@@ -1,7 +1,8 @@
 class MakeupController < ApplicationController
   before_action :require_login
+  before_action :check_on_leave, except: [:index, :my_lessons]
   before_action :set_reservation, only: [:show, :cancel]
-  
+
   def index
     # 시간 지난 active 예약들을 completed로 업데이트 (연습실과 동일한 로직)
     current_user.makeup_reservations.where(status: 'active').each(&:update_status_by_time!)
@@ -343,7 +344,13 @@ class MakeupController < ApplicationController
   end
   
   private
-  
+
+  def check_on_leave
+    if current_user.on_leave?
+      redirect_to makeup_path, alert: '휴원중입니다. 복귀 후 만나요!'
+    end
+  end
+
   def set_reservation
     @reservation = current_user.makeup_reservations.find(params[:id])
   end

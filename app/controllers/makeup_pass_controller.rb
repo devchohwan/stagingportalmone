@@ -1,5 +1,6 @@
 class MakeupPassController < ApplicationController
   before_action :require_login
+  before_action :check_on_leave, except: [:index, :my_requests]
 
   def index
     # 메인 페이지
@@ -224,6 +225,12 @@ class MakeupPassController < ApplicationController
   end
 
   private
+
+  def check_on_leave
+    if current_user.on_leave?
+      redirect_to makeup_pass_path, alert: '휴원중입니다. 복귀 후 만나요!'
+    end
+  end
 
   def require_login
     unless logged_in?

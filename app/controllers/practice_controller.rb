@@ -1,7 +1,8 @@
 class PracticeController < ApplicationController
   before_action :require_login
+  before_action :check_on_leave, except: [:index, :my_reservations]
   before_action :set_reservation, only: [:cancel_reservation, :change_reservation, :update_reservation]
-  
+
   def index
     # 과거 예약 자동 상태 업데이트
     if logged_in?
@@ -168,7 +169,13 @@ class PracticeController < ApplicationController
   end
   
   private
-  
+
+  def check_on_leave
+    if current_user.on_leave?
+      redirect_to practice_path, alert: '휴원중입니다. 복귀 후 만나요!'
+    end
+  end
+
   def set_reservation
     @reservation = current_user.reservations.find(params[:id])
   end
