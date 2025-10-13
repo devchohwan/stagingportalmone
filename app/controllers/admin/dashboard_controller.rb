@@ -1628,27 +1628,34 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, error: e.message }, status: :internal_server_error
   end
 
-  # 미배치 학생 목록 조회
+  # 미배치 학생 목록 조회 (모든 선생님 공통)
   def unscheduled_students
-    teacher = params[:teacher]
-
-    # day와 time_slot이 null인 UserEnrollment 찾기
+    # day와 time_slot이 null인 UserEnrollment 찾기 (모든 선생님)
     enrollments = UserEnrollment.where(
-      teacher: teacher,
       day: nil,
       time_slot: nil,
       is_paid: true
     ).where('remaining_lessons > 0')
 
-    students = enrollments.map do |enrollment|
+    # 유저별로 그룹핑하여 중복 제거, teacher 정보 포함
+    students_hash = {}
+    enrollments.each do |enrollment|
       user = enrollment.user
-      {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        remaining_lessons: enrollment.remaining_lessons
-      }
-    end.uniq { |s| s[:id] }
+      if students_hash[user.id]
+        # 이미 있으면 teacher 추가
+        students_hash[user.id][:teachers] << enrollment.teacher unless students_hash[user.id][:teachers].include?(enrollment.teacher)
+      else
+        students_hash[user.id] = {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          teachers: [enrollment.teacher],
+          remaining_lessons: enrollment.remaining_lessons
+        }
+      end
+    end
+
+    students = students_hash.values
 
     render json: { success: true, students: students }
   rescue => e
