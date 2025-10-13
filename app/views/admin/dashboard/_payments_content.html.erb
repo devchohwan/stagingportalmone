@@ -825,7 +825,7 @@
       const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(date).padStart(2, '0');
       const dayOfWeek = fullDate.getDay(); // 0=일, 1=월, ..., 6=토
       const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const isPast = fullDate <= todayDate; // 오늘 포함 과거 날짜
+      const isPast = fullDate < todayDate; // 오늘은 제외, 과거만
       const isHoliday = teacherHolidays.includes(dayOfWeek);
 
       let style = 'text-align: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;';
