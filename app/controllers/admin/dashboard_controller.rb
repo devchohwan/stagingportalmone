@@ -1668,22 +1668,36 @@ class Admin::DashboardController < ApplicationController
     user_id = params[:user_id]
     day = params[:day]
     time_slot = params[:time_slot]
-    teacher = params[:teacher]
+    target_teacher = params[:teacher]
 
     ActiveRecord::Base.transaction do
       # UserEnrollment 찾기 (day, time_slot이 null인 것)
+      # target_teacher의 수강 정보를 찾되, 없으면 다른 선생님의 미배치 수강 정보를 찾음
       enrollment = UserEnrollment.find_by(
         user_id: user_id,
-        teacher: teacher,
+        teacher: target_teacher,
         day: nil,
         time_slot: nil,
         is_paid: true
       )
 
+      # target_teacher의 수강 정보가 없으면 다른 선생님의 미배치 수강 정보 찾기
+      unless enrollment
+        enrollment = UserEnrollment.find_by(
+          user_id: user_id,
+          day: nil,
+          time_slot: nil,
+          is_paid: true
+        )
+      end
+
       unless enrollment
         render json: { success: false, error: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
         return
       end
+
+      # 실제 선생님은 enrollment의 teacher 사용
+      actual_teacher = enrollment.teacher
 
       # end_date 재계산
       new_end_date = if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
@@ -1702,13 +1716,13 @@ class Admin::DashboardController < ApplicationController
       # TeacherSchedule 생성
       TeacherSchedule.create!(
         user_id: user_id,
-        teacher: teacher,
+        teacher: actual_teacher,
         day: day,
         time_slot: time_slot,
         end_date: new_end_date
       )
 
-      Rails.logger.info "미배치 학생 배치: #{User.find(user_id).name} / #{day} #{time_slot}"
+      Rails.logger.info "미배치 학생 배치: #{User.find(user_id).name} / #{actual_teacher} / #{day} #{time_slot}"
     end
 
     render json: { success: true }
