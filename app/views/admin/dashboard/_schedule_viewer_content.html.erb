@@ -449,10 +449,18 @@
             cell.appendChild(card);
           });
 
+          // 실제 출석 인원수 계산 (결석, 보강 이동, 패스 제외)
+          const activeStudents = students.filter(student =>
+            !student.is_absent &&
+            !student.is_makeup_away &&
+            !student.is_pass &&
+            !student.is_on_leave
+          ).length;
+
           // 인원수 표시
           const countBadge = document.createElement('div');
           countBadge.className = 'count-badge';
-          countBadge.textContent = `${students.length}/3명`;
+          countBadge.textContent = `${activeStudents}/3명`;
           cell.appendChild(countBadge);
         }
       }
