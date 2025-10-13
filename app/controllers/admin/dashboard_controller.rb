@@ -818,24 +818,43 @@ class Admin::DashboardController < ApplicationController
 
   # 보강 신청 상세 정보
   def makeup_request_info
-    request = MakeupPassRequest.includes(:user).find(params[:id])
+    request_id = params[:id]
+    request = MakeupPassRequest.find_by(id: request_id)
 
-    render json: {
-      success: true,
-      user_name: request.user.name,
-      user_teacher: request.user.teacher,
-      request_type: request.request_type,
-      original_date: request.request_date.strftime('%Y년 %m월 %d일'),
-      makeup_date: request.makeup_date&.strftime('%Y년 %m월 %d일'),
-      time_slot: request.formatted_time,
-      teacher: request.teacher,
-      week_number: request.week_number,
-      content: request.content,
-      created_at: request.created_at.strftime('%Y년 %m월 %d일 %H:%M')
-    }
+    if request
+      status_map = {
+        'active' => '활성',
+        'cancelled' => '취소됨',
+        'completed' => '완료'
+      }
+
+      # 원래 선생님 찾기 (request_date의 요일로 UserEnrollment 조회)
+      request_day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[request.request_date.wday]
+      enrollment = request.user.user_enrollments.find_by(
+        day: request_day_name,
+        is_paid: true
+      )
+
+      render json: {
+        success: true,
+        request: {
+          user_name: request.user.name,
+          original_teacher: enrollment&.teacher || request.user.primary_teacher,
+          request_date: request.request_date.strftime('%Y-%m-%d'),
+          teacher: request.teacher,
+          makeup_date: request.makeup_date&.strftime('%Y-%m-%d'),
+          time_slot: request.time_slot,
+          week_number: request.week_number,
+          status_korean: status_map[request.status] || request.status
+        }
+      }
+    else
+      render json: { success: false, message: '보강 신청을 찾을 수 없습니다.' }
+    end
   rescue => e
-    Rails.logger.error "보강 신청 정보 불러오기 오류: #{e.message}"
-    render json: { success: false, message: '정보를 불러오는 중 오류가 발생했습니다.' }, status: :internal_server_error
+    Rails.logger.error "보강 신청 정보 조회 오류: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { success: false, message: e.message }
   end
 
   # 보강/패스 목록 불러오기 API
@@ -1910,46 +1929,5 @@ class Admin::DashboardController < ApplicationController
       'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
       'remaining_lessons' => total_remaining_lessons
     }
-  end
-
-  # 보강 신청 정보 조회
-  def makeup_request_info
-    request_id = params[:id]
-    request = MakeupPassRequest.find_by(id: request_id)
-
-    if request
-      status_map = {
-        'active' => '활성',
-        'cancelled' => '취소됨',
-        'completed' => '완료'
-      }
-
-      # 원래 선생님 찾기 (request_date의 요일로 UserEnrollment 조회)
-      request_day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[request.request_date.wday]
-      enrollment = request.user.user_enrollments.find_by(
-        day: request_day_name,
-        is_paid: true
-      )
-
-      render json: {
-        success: true,
-        request: {
-          user_name: request.user.name,
-          original_teacher: enrollment&.teacher || request.user.primary_teacher,
-          request_date: request.request_date.strftime('%Y-%m-%d'),
-          teacher: request.teacher,
-          makeup_date: request.makeup_date&.strftime('%Y-%m-%d'),
-          time_slot: request.time_slot,
-          week_number: request.week_number,
-          status_korean: status_map[request.status] || request.status
-        }
-      }
-    else
-      render json: { success: false, message: '보강 신청을 찾을 수 없습니다.' }
-    end
-  rescue => e
-    Rails.logger.error "보강 신청 정보 조회 오류: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
-    render json: { success: false, message: e.message }
   end
 end
