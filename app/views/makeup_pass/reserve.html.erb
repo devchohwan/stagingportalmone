@@ -746,12 +746,25 @@ function selectType(element, type) {
   }
   element.classList.add('selected');
 
+  // 선택 상태 초기화
+  selectedDate = null;
+  selectedTimeSlot = null;
+  selectedTeacher = null;
+
+  // 달력 날짜 선택 초기화
+  var dateElements = document.querySelectorAll('[data-date]');
+  for (var i = 0; i < dateElements.length; i++) {
+    dateElements[i].classList.remove('selected');
+  }
+
   // 날짜 선택 섹션 표시
   var dateSection = document.querySelector('[data-reservation-target="dateSection"]');
   if (dateSection) {
     dateSection.classList.remove('hidden');
     console.log('날짜 선택 섹션 표시');
   }
+  hideSection('timeSection');
+  hideSection('teacherSection');
   hideSection('contentSection');
   hideSection('confirmSection');
 
