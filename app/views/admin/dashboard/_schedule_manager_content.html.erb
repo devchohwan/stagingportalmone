@@ -82,9 +82,9 @@
   }
 
   .schedule-manager-wrapper table {
-    width: 100%;
+    width: auto;
     border-collapse: collapse;
-    min-width: 1000px;
+    table-layout: fixed;
   }
 
   .schedule-manager-wrapper th {
@@ -94,10 +94,16 @@
     padding: 0.75rem;
     border: 1px solid white;
     text-align: center;
+    width: 140px;
+  }
+
+  .schedule-manager-wrapper th:first-child {
+    width: 80px;
   }
 
   .schedule-manager-wrapper td {
     border: 1px solid #e5e7eb;
+    width: 140px;
     vertical-align: top;
     background: white;
     padding: 0;
@@ -111,6 +117,7 @@
     position: sticky;
     left: 0;
     z-index: 10;
+    width: 80px;
   }
 
   .schedule-manager-wrapper .schedule-cell {
