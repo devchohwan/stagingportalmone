@@ -824,23 +824,19 @@
       const fullDate = new Date(year, month, date);
       const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(date).padStart(2, '0');
       const dayOfWeek = fullDate.getDay(); // 0=일, 1=월, ..., 6=토
-      const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const isPast = fullDate < todayDate; // 오늘은 제외, 과거만
       const isHoliday = teacherHolidays.includes(dayOfWeek);
 
       let style = 'text-align: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;';
 
-      if (isPast || isHoliday) {
-        // 과거 날짜(오늘 포함) 또는 휴무일은 선택 불가
+      if (isHoliday) {
+        // 휴무일은 선택 불가
         style += ' opacity: 0.5; pointer-events: none; cursor: not-allowed;';
-        if (isHoliday) {
-          style += ' background: #fef3c7;'; // 연노랑
-        }
+        style += ' background: #fef3c7;'; // 연노랑
       } else {
         style += ' cursor: pointer;';
       }
 
-      const onclick = (isPast || isHoliday) ? '' : 'onclick="selectDate(\'' + dateStr + '\')"';
+      const onclick = isHoliday ? '' : 'onclick="selectDate(\'' + dateStr + '\')"';
 
       html += '<div ' + onclick + ' style="' + style + '" data-date="' + dateStr + '">' + date + '</div>';
     }
