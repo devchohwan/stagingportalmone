@@ -39,7 +39,7 @@
           is_next_lesson = next_lesson && day == next_lesson
           is_following_lesson = following_lesson && day == following_lesson
 
-          # 이번 수업일과 다음 수업일 사이 기간 체크
+          # 이번 수업일과 다음 수업일 사이 기간 체크 (다음 수업일 전날까지만)
           is_between_lessons = false
           if next_lesson && following_lesson && day > next_lesson && day < following_lesson
             is_between_lessons = true

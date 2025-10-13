@@ -1047,20 +1047,28 @@ function updateCalendarForType(type) {
     var isBetweenLessons = cell.hasAttribute('data-original-between');
 
     if (type === 'makeup') {
-      // 보강: 모든 연노랑 복원
-      if (isNextLesson || isFollowingLesson) {
+      // 보강: 이번수업부터 다음수업 전날까지 (다음수업일 제외)
+      if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
       if (isBetweenLessons) {
         cell.classList.add('between-lessons');
       }
+      // 다음수업일은 제외
+      if (isFollowingLesson) {
+        cell.classList.remove('lesson-day');
+        cell.style.backgroundColor = '';
+        cell.style.borderColor = '';
+      }
 
       // 스타일 복원
-      cell.style.backgroundColor = '';
-      cell.style.borderColor = '';
+      if (!isFollowingLesson) {
+        cell.style.backgroundColor = '';
+        cell.style.borderColor = '';
+      }
 
-      // 연노랑 영역만 선택 가능
-      var isInYellowZone = cell.classList.contains('lesson-day') || cell.classList.contains('between-lessons');
+      // 연노랑 영역만 선택 가능 (다음수업일 제외)
+      var isInYellowZone = (cell.classList.contains('lesson-day') || cell.classList.contains('between-lessons')) && !isFollowingLesson;
 
       if (originalClickable) {
         if (isInYellowZone) {
@@ -1076,21 +1084,22 @@ function updateCalendarForType(type) {
         }
       }
     } else if (type === 'pass') {
-      // 패스: between-lessons 연노랑 제거, 이번수업과 다음수업은 유지
-      if (isBetweenLessons) {
+      // 패스: between-lessons와 다음수업 연노랑 제거, 이번수업만 유지
+      if (isBetweenLessons || isFollowingLesson) {
         cell.classList.remove('between-lessons');
+        cell.classList.remove('lesson-day');
         cell.style.backgroundColor = '';
         cell.style.borderColor = '';
       }
 
-      // 이번수업과 다음수업은 유지
-      if (isNextLesson || isFollowingLesson) {
+      // 이번수업만 유지
+      if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
 
-      // 이번수업과 다음수업만 클릭 가능
+      // 이번수업만 클릭 가능
       if (originalClickable) {
-        if (isNextLesson || isFollowingLesson) {
+        if (isNextLesson) {
           cell.setAttribute('data-clickable', 'true');
           cell.setAttribute('onclick', 'selectDate(this)');
           cell.style.cursor = 'pointer';
