@@ -905,19 +905,65 @@
     const parts = dateStr.split('-');
     const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const dayKey = dayKeys[dayOfWeek];
 
     document.getElementById('new-enrollment-time-section').style.display = 'block';
 
-    const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
-    let html = '';
+    // 로딩 표시
+    document.getElementById('new-enrollment-time-slots').innerHTML = '<div style="text-align: center; padding: 20px; color: #9ca3af;">시간표 불러오는 중...</div>';
 
-    timeSlots.forEach(slot => {
-      html += '<button type="button" onclick="selectTime(\'' + slot + '\')" class="time-slot-btn" data-time="' + slot + '" style="';
-      html += 'padding: 10px; border: 2px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;';
-      html += '">' + slot.replace('-', ':00-') + ':00</button>';
-    });
+    // 서버에서 해당 날짜/선생님의 시간표 정보 불러오기
+    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(selectedTeacher)}&date=${dateStr}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const scheduleData = data.schedules[dayKey] || {};
+          const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
+          let html = '';
 
-    document.getElementById('new-enrollment-time-slots').innerHTML = html;
+          timeSlots.forEach(slot => {
+            const students = scheduleData[slot] || [];
+            const currentCount = students.length;
+            const isFull = currentCount >= 3;
+
+            let btnStyle = 'padding: 20px; border-radius: 8px; text-align: center; border: 2px solid; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;';
+            let bgColor, borderColor, textColor;
+
+            if (isFull) {
+              bgColor = '#fee2e2'; // 연붉은색 (꽉 참, 하지만 선택 가능)
+              borderColor = '#fecaca';
+              textColor = '#dc2626';
+            } else {
+              bgColor = '#dbeafe'; // 연파랑 (선택 가능)
+              borderColor = '#93c5fd';
+              textColor = '#1e40af';
+            }
+
+            btnStyle += ` background: ${bgColor}; border-color: ${borderColor}; color: ${textColor}; cursor: pointer;`;
+
+            html += '<button type="button" onclick="selectTime(\'' + slot + '\')" class="time-slot-btn" data-time="' + slot + '" style="' + btnStyle + '">';
+            html += '<div style="font-size: 1.1rem; font-weight: 600;">' + slot.replace('-', ':00-') + ':00</div>';
+            html += '<div style="font-size: 0.9rem;">' + currentCount + '/3</div>';
+
+            if (!isFull) {
+              html += '<div style="font-size: 0.8rem; color: #10b981;">선택 가능</div>';
+            } else {
+              html += '<div style="font-size: 0.8rem;">자리 없음<br>(선택 가능)</div>';
+            }
+
+            html += '</button>';
+          });
+
+          document.getElementById('new-enrollment-time-slots').innerHTML = html;
+        } else {
+          document.getElementById('new-enrollment-time-slots').innerHTML = '<div style="text-align: center; padding: 20px; color: #ef4444;">시간표를 불러오는데 실패했습니다.</div>';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('new-enrollment-time-slots').innerHTML = '<div style="text-align: center; padding: 20px; color: #ef4444;">시간표를 불러오는데 실패했습니다.</div>';
+      });
   }
 
   // 시간 선택
@@ -926,13 +972,14 @@
 
     // 선택된 시간 표시
     document.querySelectorAll('.time-slot-btn').forEach(btn => {
-      btn.style.background = 'white';
-      btn.style.borderColor = '#e2e8f0';
-      btn.style.color = '#374151';
+      // 원래 색상으로 복원 (data-time 속성 기반으로 복원은 복잡하므로, 선택된 것만 변경)
+      btn.style.opacity = '0.7';
+      btn.style.transform = 'scale(0.95)';
     });
-    document.querySelector('[data-time="' + timeSlot + '"]').style.background = '#667eea';
-    document.querySelector('[data-time="' + timeSlot + '"]').style.borderColor = '#667eea';
-    document.querySelector('[data-time="' + timeSlot + '"]').style.color = 'white';
+    const selectedBtn = document.querySelector('[data-time="' + timeSlot + '"]');
+    selectedBtn.style.opacity = '1';
+    selectedBtn.style.transform = 'scale(1.05)';
+    selectedBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
 
     showDurationOptions();
   };
