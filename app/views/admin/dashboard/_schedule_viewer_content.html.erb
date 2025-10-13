@@ -367,9 +367,9 @@
 
             // 보강일 경우 다른 배경색
             if (student.is_makeup) {
-              card.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-              card.style.color = 'white';
-              card.style.border = '2px solid #667eea';
+              card.style.background = '#d1f4e0';  // 연한 초록색
+              card.style.color = '#000';
+              card.style.border = '2px solid #7ed8a9';
             }
 
             const nameDiv = document.createElement('div');
@@ -381,17 +381,15 @@
               nameDiv.textContent = student.name;
             }
 
-            const usernameDiv = document.createElement('div');
-            usernameDiv.className = 'student-username';
-            usernameDiv.textContent = student.username;
-
-            // 보강일 경우 username도 흰색으로
-            if (student.is_makeup) {
-              usernameDiv.style.color = 'rgba(255, 255, 255, 0.9)';
-            }
-
             card.appendChild(nameDiv);
-            card.appendChild(usernameDiv);
+
+            // 보강이 아닐 때만 username 표시
+            if (!student.is_makeup) {
+              const usernameDiv = document.createElement('div');
+              usernameDiv.className = 'student-username';
+              usernameDiv.textContent = student.username;
+              card.appendChild(usernameDiv);
+            }
 
             cell.appendChild(card);
           });
