@@ -554,7 +554,8 @@
     const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
     days.forEach((day, index) => {
       const dayDate = new Date(weekStart);
-      dayDate.setDate(weekStart.getDate() + index);
+      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
+      dayDate.setDate(weekStart.getDate() + index + 1);
       const dateEl = document.getElementById(`date-${day}`);
       if (dateEl) {
         dateEl.textContent = `${dayDate.getMonth() + 1}/${dayDate.getDate()}`;
@@ -573,7 +574,8 @@
     const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
     days.forEach((day, index) => {
       const dayDate = new Date(weekStart);
-      dayDate.setDate(weekStart.getDate() + index);
+      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
+      dayDate.setDate(weekStart.getDate() + index + 1);
       const dayOfWeek = dayDate.getDay();
 
       const isHoliday = isTeacherHoliday(window.currentScheduleTeacher, dayOfWeek);
