@@ -634,13 +634,10 @@ class Admin::DashboardController < ApplicationController
 
       is_on_leave = enrollment.status == 'on_leave'
 
-      # 휴원 상태일 때: 계속 표시 (남은 수업이 있는 한)
+      # 휴원 상태일 때: 시간표에서 제거
       if is_on_leave
-        if enrollment.remaining_lessons <= 0
-          Rails.logger.info "SKIP(휴원 중 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
-          next
-        end
-        Rails.logger.info "표시됨(휴원중): #{user.name} / target=#{target_date} / remaining=#{enrollment.remaining_lessons}"
+        Rails.logger.info "SKIP(휴원중): #{user.name} / remaining=#{enrollment.remaining_lessons}"
+        next
       else
         # 활성 상태일 때: 첫수업일부터 수업 횟수만큼만 표시
         if enrollment.remaining_lessons <= 0
