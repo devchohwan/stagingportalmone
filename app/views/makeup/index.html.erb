@@ -268,7 +268,7 @@
     <% if logged_in? %>
       <div class="user-info-card">
         <p class="text-sm"><strong><%= current_user.name %></strong> (<%= current_user.username %>)</p>
-        <p class="text-xs text-gray-600">담당: <%= current_user.teacher %> | 전화: <%= current_user.phone || '미등록' %></p>
+        <p class="text-xs text-gray-600">담당: <%= current_user.primary_teacher %> | 전화: <%= current_user.phone || '미등록' %></p>
       </div>
 
       <div class="info-section">
