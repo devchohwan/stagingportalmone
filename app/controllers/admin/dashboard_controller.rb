@@ -1345,11 +1345,16 @@ class Admin::DashboardController < ApplicationController
           is_paid: true
         )
 
+        # day_of_week (숫자)를 day (문자열)로 변환
+        day_mapping = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }
+        day_string = day_mapping[enrollment['day_of_week']]
+
         # TeacherSchedule 등록 (중복 체크)
         existing_schedule = TeacherSchedule.find_by(
           teacher: enrollment['teacher'],
-          day_of_week: enrollment['day_of_week'],
-          time_slot: enrollment['time_slot']
+          day: day_string,
+          time_slot: enrollment['time_slot'],
+          user_id: user_id
         )
 
         if existing_schedule
@@ -1362,8 +1367,9 @@ class Admin::DashboardController < ApplicationController
           # 새 스케줄 생성
           TeacherSchedule.create!(
             teacher: enrollment['teacher'],
-            day_of_week: enrollment['day_of_week'],
+            day: day_string,
             time_slot: enrollment['time_slot'],
+            user_id: user_id,
             end_date: enrollment['end_date']
           )
         end
