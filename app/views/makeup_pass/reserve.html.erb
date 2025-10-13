@@ -1047,12 +1047,15 @@ function updateCalendarForType(type) {
     var isBetweenLessons = cell.hasAttribute('data-original-between');
 
     if (type === 'makeup') {
-      // 보강: 이번수업부터 다음수업 전날까지 (다음수업일 제외)
+      // 보강: 이번수업만 선택 가능 (중간 날짜와 다음수업일 제외)
       if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
+      // 중간 날짜(between-lessons)는 연노랑으로 표시하지만 클릭 불가
       if (isBetweenLessons) {
-        cell.classList.add('between-lessons');
+        cell.classList.remove('between-lessons');
+        cell.style.backgroundColor = '';
+        cell.style.borderColor = '';
       }
       // 다음수업일은 제외
       if (isFollowingLesson) {
@@ -1062,16 +1065,14 @@ function updateCalendarForType(type) {
       }
 
       // 스타일 복원
-      if (!isFollowingLesson) {
+      if (!isFollowingLesson && !isBetweenLessons) {
         cell.style.backgroundColor = '';
         cell.style.borderColor = '';
       }
 
-      // 연노랑 영역만 선택 가능 (다음수업일 제외)
-      var isInYellowZone = (cell.classList.contains('lesson-day') || cell.classList.contains('between-lessons')) && !isFollowingLesson;
-
+      // 이번수업만 선택 가능
       if (originalClickable) {
-        if (isInYellowZone) {
+        if (isNextLesson) {
           cell.setAttribute('data-clickable', 'true');
           cell.setAttribute('onclick', 'selectDate(this)');
           cell.style.cursor = 'pointer';
