@@ -904,7 +904,7 @@
   function showTimeSlots(dateStr) {
     const parts = dateStr.split('-');
     const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+    const dayOfWeek = date.getDay();
     const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const dayKey = dayKeys[dayOfWeek];
 
@@ -913,8 +913,18 @@
     // 로딩 표시
     document.getElementById('new-enrollment-time-slots').innerHTML = '<div style="text-align: center; padding: 20px; color: #9ca3af;">시간표 불러오는 중...</div>';
 
-    // 서버에서 해당 날짜/선생님의 시간표 정보 불러오기
-    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(selectedTeacher)}&date=${dateStr}`)
+    // 선택된 날짜가 속한 주의 week_offset 계산
+    const selectedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const today = new Date();
+    const todaySunday = new Date(today);
+    todaySunday.setDate(today.getDate() - today.getDay()); // 이번 주 일요일
+    const selectedSunday = new Date(selectedDate);
+    selectedSunday.setDate(selectedDate.getDate() - selectedDate.getDay()); // 선택된 날짜의 일요일
+
+    const weekOffset = Math.round((selectedSunday - todaySunday) / (7 * 24 * 60 * 60 * 1000));
+
+    // 휴원 복귀와 동일한 API 사용 (주 단위 시간표)
+    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(selectedTeacher)}&week_offset=${weekOffset}`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
@@ -928,28 +938,36 @@
             const isFull = currentCount >= 3;
 
             let btnStyle = 'padding: 20px; border-radius: 8px; text-align: center; border: 2px solid; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;';
-            let bgColor, borderColor, textColor;
+            let bgColor, borderColor, textColor, cursor;
 
             if (isFull) {
-              bgColor = '#fee2e2'; // 연붉은색 (꽉 참, 하지만 선택 가능)
+              bgColor = '#fee2e2'; // 연붉은색 (꽉 참 - 선택 불가)
               borderColor = '#fecaca';
               textColor = '#dc2626';
+              cursor = 'not-allowed';
             } else {
               bgColor = '#dbeafe'; // 연파랑 (선택 가능)
               borderColor = '#93c5fd';
               textColor = '#1e40af';
+              cursor = 'pointer';
             }
 
-            btnStyle += ` background: ${bgColor}; border-color: ${borderColor}; color: ${textColor}; cursor: pointer;`;
+            btnStyle += ` background: ${bgColor}; border-color: ${borderColor}; color: ${textColor}; cursor: ${cursor};`;
 
-            html += '<button type="button" onclick="selectTime(\'' + slot + '\')" class="time-slot-btn" data-time="' + slot + '" style="' + btnStyle + '">';
+            if (isFull) {
+              // 3명 이상이면 클릭 불가
+              html += '<button type="button" class="time-slot-btn" data-time="' + slot + '" style="' + btnStyle + '" disabled>';
+            } else {
+              html += '<button type="button" onclick="selectTime(\'' + slot + '\')" class="time-slot-btn" data-time="' + slot + '" style="' + btnStyle + '">';
+            }
+
             html += '<div style="font-size: 1.1rem; font-weight: 600;">' + slot.replace('-', ':00-') + ':00</div>';
             html += '<div style="font-size: 0.9rem;">' + currentCount + '/3</div>';
 
             if (!isFull) {
               html += '<div style="font-size: 0.8rem; color: #10b981;">선택 가능</div>';
             } else {
-              html += '<div style="font-size: 0.8rem;">자리 없음<br>(선택 가능)</div>';
+              html += '<div style="font-size: 0.8rem;">자리 없음</div>';
             }
 
             html += '</button>';
