@@ -845,6 +845,7 @@ class Admin::DashboardController < ApplicationController
           makeup_date: request.makeup_date&.strftime('%Y-%m-%d'),
           time_slot: request.time_slot,
           week_number: request.week_number,
+          content: request.content,
           status_korean: status_map[request.status] || request.status
         }
       }
