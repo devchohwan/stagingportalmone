@@ -1,1 +1,1 @@
-🔧 private 메서드 위치 수정 - 결제 API 메서드들을 public으로 이동
+🔧 User 쿼리 수정 - is_approved를 approved 스코프로 변경
