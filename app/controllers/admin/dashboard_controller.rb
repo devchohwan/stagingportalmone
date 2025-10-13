@@ -1555,6 +1555,125 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, error: e.message }, status: :unprocessable_entity
   end
 
+  # 학생 스케줄 이동
+  def move_student_schedule
+    user_id = params[:user_id]
+    from_day = params[:from_day]
+    from_time_slot = params[:from_time_slot]
+    to_day = params[:to_day]
+    to_time_slot = params[:to_time_slot]
+    teacher = params[:teacher]
+
+    ActiveRecord::Base.transaction do
+      # UserEnrollment 찾기
+      enrollment = UserEnrollment.find_by(
+        user_id: user_id,
+        teacher: teacher,
+        day: from_day,
+        time_slot: from_time_slot,
+        is_paid: true
+      )
+
+      unless enrollment
+        render json: { success: false, error: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
+        return
+      end
+
+      # first_lesson_date는 유지, end_date만 재계산
+      # end_date = first_lesson_date + (remaining_lessons - 1) weeks
+      new_end_date = if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
+        enrollment.first_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
+      else
+        enrollment.end_date
+      end
+
+      # UserEnrollment 업데이트
+      enrollment.update!(
+        day: to_day,
+        time_slot: to_time_slot,
+        end_date: new_end_date
+      )
+
+      # TeacherSchedule 업데이트
+      schedule = TeacherSchedule.find_by(
+        user_id: user_id,
+        teacher: teacher,
+        day: from_day,
+        time_slot: from_time_slot
+      )
+
+      if schedule
+        schedule.update!(
+          day: to_day,
+          time_slot: to_time_slot,
+          end_date: new_end_date
+        )
+      else
+        # 스케줄이 없으면 새로 생성
+        TeacherSchedule.create!(
+          user_id: user_id,
+          teacher: teacher,
+          day: to_day,
+          time_slot: to_time_slot,
+          end_date: new_end_date
+        )
+      end
+
+      Rails.logger.info "스케줄 이동: #{User.find(user_id).name} / #{from_day} #{from_time_slot} → #{to_day} #{to_time_slot}"
+    end
+
+    render json: { success: true }
+  rescue => e
+    Rails.logger.error "스케줄 이동 오류: #{e.message}"
+    render json: { success: false, error: e.message }, status: :internal_server_error
+  end
+
+  # 학생 스케줄 해제
+  def unschedule_student
+    user_id = params[:user_id]
+    day = params[:day]
+    time_slot = params[:time_slot]
+    teacher = params[:teacher]
+
+    ActiveRecord::Base.transaction do
+      # UserEnrollment 찾기
+      enrollment = UserEnrollment.find_by(
+        user_id: user_id,
+        teacher: teacher,
+        day: day,
+        time_slot: time_slot,
+        is_paid: true
+      )
+
+      unless enrollment
+        render json: { success: false, error: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
+        return
+      end
+
+      # TeacherSchedule 삭제
+      schedule = TeacherSchedule.find_by(
+        user_id: user_id,
+        teacher: teacher,
+        day: day,
+        time_slot: time_slot
+      )
+      schedule&.destroy
+
+      # UserEnrollment는 유지하되 day, time_slot만 null로 (결제 정보 유지)
+      enrollment.update!(
+        day: nil,
+        time_slot: nil
+      )
+
+      Rails.logger.info "스케줄 해제: #{User.find(user_id).name} / #{day} #{time_slot}"
+    end
+
+    render json: { success: true }
+  rescue => e
+    Rails.logger.error "스케줄 해제 오류: #{e.message}"
+    render json: { success: false, error: e.message }, status: :internal_server_error
+  end
+
   # 회원 상세 정보 조회 (시간표 관리용)
   def student_detail
     user = User.find(params[:id])

@@ -211,11 +211,59 @@
     border-radius: 6px;
     padding: 0.5rem;
     transition: all 0.2s;
+    cursor: move;
   }
 
   .schedule-manager-wrapper .student-card:hover {
     border-color: #667eea;
     box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  }
+
+  .schedule-manager-wrapper .student-card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+  }
+
+  /* 스케줄 해제 영역 */
+  .unschedule-zone {
+    border: 3px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    background: #f9fafb;
+    transition: all 0.3s;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .unschedule-zone.drag-over {
+    border-color: #ef4444;
+    background: #fee2e2;
+  }
+
+  .unschedule-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+  }
+
+  .unschedule-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 5px;
+  }
+
+  .unschedule-subtext {
+    font-size: 0.85rem;
+    color: #9ca3af;
+  }
+
+  .students-area.drag-over {
+    background: #dbeafe !important;
+    border: 2px dashed #3b82f6 !important;
   }
 
   /* 모달 - 완전 격리 */
@@ -454,6 +502,17 @@
       </div>
     </div>
   </div>
+
+  <!-- 스케줄 해제 영역 (드래그앤드롭) -->
+  <div class="schedule-manager-wrapper">
+    <div class="header-card" style="margin-top: 1.5rem;">
+      <div id="unschedule-dropzone" class="unschedule-zone">
+        <div class="unschedule-icon">🗑️</div>
+        <div class="unschedule-text">여기에 회원을 드롭하면 스케줄이 해제됩니다</div>
+        <div class="unschedule-subtext">결제 및 수업 정보는 유지됩니다</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 학생 추가 모달 -->
@@ -653,7 +712,9 @@
     const card = document.createElement('div');
     card.className = 'student-card';
     card.dataset.userId = student.id;
-    card.style.cursor = 'pointer';
+    card.dataset.currentDay = day;
+    card.dataset.currentTimeSlot = timeSlot;
+    card.draggable = true;
 
     // 휴원 상태에 따른 배경색 설정
     if (student.is_on_leave) {
@@ -669,6 +730,7 @@
     usernameDiv.style.color = '#111827';
     usernameDiv.style.fontWeight = '600';
     usernameDiv.style.textAlign = 'center';
+    usernameDiv.style.pointerEvents = 'none'; // 드래그 시 텍스트 선택 방지
 
     // 휴원 상태 표시
     if (student.is_on_leave) {
@@ -684,6 +746,10 @@
       e.stopPropagation();
       showStudentDetailModal(student.id);
     });
+
+    // 드래그 이벤트
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
 
     return card;
   };
@@ -995,16 +1061,214 @@
     document.getElementById('student-detail-modal').classList.remove('show');
   };
 
+  // 드래그 앤 드롭 핸들러
+  let draggedCard = null;
+
+  function handleDragStart(e) {
+    draggedCard = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+  }
+
+  function handleDragEnd(e) {
+    this.classList.remove('dragging');
+
+    // 모든 드롭 존에서 drag-over 클래스 제거
+    document.querySelectorAll('.students-area').forEach(area => {
+      area.classList.remove('drag-over');
+    });
+    document.getElementById('unschedule-dropzone').classList.remove('drag-over');
+  }
+
+  function handleDragOver(e) {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+  }
+
+  function handleDragEnter(e) {
+    this.classList.add('drag-over');
+  }
+
+  function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+  }
+
+  function handleDrop(e) {
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+
+    this.classList.remove('drag-over');
+
+    if (draggedCard) {
+      const userId = draggedCard.dataset.userId;
+      const currentDay = draggedCard.dataset.currentDay;
+      const currentTimeSlot = draggedCard.dataset.currentTimeSlot;
+      const newDay = this.dataset.day;
+      const newTimeSlot = this.dataset.time;
+
+      // 같은 위치에 드롭하면 무시
+      if (currentDay === newDay && currentTimeSlot === newTimeSlot) {
+        return false;
+      }
+
+      // 현재 학생 수 확인
+      const currentCount = window.scheduleData[newDay]?.[newTimeSlot]?.length || 0;
+      if (currentCount >= 3) {
+        alert('해당 시간대는 이미 가득 찼습니다.');
+        return false;
+      }
+
+      // 서버에 이동 요청
+      moveStudentSchedule(userId, currentDay, currentTimeSlot, newDay, newTimeSlot);
+    }
+
+    return false;
+  }
+
+  function handleUnscheduleDropZoneDragOver(e) {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+  }
+
+  function handleUnscheduleDropZoneDragEnter(e) {
+    document.getElementById('unschedule-dropzone').classList.add('drag-over');
+  }
+
+  function handleUnscheduleDropZoneDragLeave(e) {
+    document.getElementById('unschedule-dropzone').classList.remove('drag-over');
+  }
+
+  function handleUnscheduleDropZoneDrop(e) {
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+
+    document.getElementById('unschedule-dropzone').classList.remove('drag-over');
+
+    if (draggedCard) {
+      const userId = draggedCard.dataset.userId;
+      const currentDay = draggedCard.dataset.currentDay;
+      const currentTimeSlot = draggedCard.dataset.currentTimeSlot;
+
+      if (confirm('스케줄을 해제하시겠습니까? (결제 및 수업 정보는 유지됩니다)')) {
+        // 서버에 스케줄 해제 요청
+        unscheduleStudent(userId, currentDay, currentTimeSlot);
+      }
+    }
+
+    return false;
+  }
+
+  // 학생 스케줄 이동
+  function moveStudentSchedule(userId, fromDay, fromTimeSlot, toDay, toTimeSlot) {
+    showScheduleLoading(true);
+
+    fetch('/admin/move_student_schedule', {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        from_day: fromDay,
+        from_time_slot: fromTimeSlot,
+        to_day: toDay,
+        to_time_slot: toTimeSlot,
+        teacher: window.currentScheduleTeacher
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      showScheduleLoading(false);
+      if (data.success) {
+        alert('스케줄이 이동되었습니다.');
+        loadScheduleData();
+      } else {
+        alert('스케줄 이동 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    })
+    .catch(error => {
+      showScheduleLoading(false);
+      console.error('Error:', error);
+      alert('스케줄 이동 중 오류가 발생했습니다.');
+    });
+  }
+
+  // 학생 스케줄 해제
+  function unscheduleStudent(userId, day, timeSlot) {
+    showScheduleLoading(true);
+
+    fetch('/admin/unschedule_student', {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        day: day,
+        time_slot: timeSlot,
+        teacher: window.currentScheduleTeacher
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      showScheduleLoading(false);
+      if (data.success) {
+        alert('스케줄이 해제되었습니다.');
+        loadScheduleData();
+      } else {
+        alert('스케줄 해제 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    })
+    .catch(error => {
+      showScheduleLoading(false);
+      console.error('Error:', error);
+      alert('스케줄 해제 중 오류가 발생했습니다.');
+    });
+  }
+
+  // 드롭 존 이벤트 리스너 설정
+  function setupDropZones() {
+    // 모든 students-area에 드롭 이벤트 추가
+    document.querySelectorAll('.students-area').forEach(area => {
+      area.addEventListener('dragover', handleDragOver);
+      area.addEventListener('dragenter', handleDragEnter);
+      area.addEventListener('dragleave', handleDragLeave);
+      area.addEventListener('drop', handleDrop);
+    });
+
+    // 스케줄 해제 영역에 드롭 이벤트 추가
+    const unscheduleZone = document.getElementById('unschedule-dropzone');
+    if (unscheduleZone) {
+      unscheduleZone.addEventListener('dragover', handleUnscheduleDropZoneDragOver);
+      unscheduleZone.addEventListener('dragenter', handleUnscheduleDropZoneDragEnter);
+      unscheduleZone.addEventListener('dragleave', handleUnscheduleDropZoneDragLeave);
+      unscheduleZone.addEventListener('drop', handleUnscheduleDropZoneDrop);
+    }
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       updateScheduleWeekDisplay();
       loadScheduleData();
       setupEmptyContainerClicks();
+      setupDropZones();
     });
   } else {
     updateScheduleWeekDisplay();
     loadScheduleData();
     setupEmptyContainerClicks();
+    setupDropZones();
   }
 })();
 </script>
