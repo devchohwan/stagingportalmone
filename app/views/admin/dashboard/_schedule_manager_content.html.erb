@@ -472,6 +472,21 @@
   </div>
 </div>
 
+<!-- 회원 상세 정보 모달 -->
+<div id="student-detail-modal" class="schedule-modal-overlay">
+  <div class="schedule-modal-content" style="max-width: 800px;">
+    <div class="schedule-modal-header">
+      <h3 id="student-detail-title">👨‍🎓 회원 상세 정보</h3>
+      <button onclick="closeStudentDetailModal()" class="schedule-modal-close">&times;</button>
+    </div>
+    <div class="schedule-modal-body" style="max-height: 70vh; overflow-y: auto;">
+      <div id="student-detail-content">
+        <div style="text-align: center; padding: 20px; color: #9ca3af;">로딩 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 로딩 -->
 <div id="schedule-loading" class="schedule-loading-overlay">
   <div class="schedule-loading-content">
@@ -633,6 +648,7 @@
     const card = document.createElement('div');
     card.className = 'student-card';
     card.dataset.userId = student.id;
+    card.style.cursor = 'pointer';
 
     // 휴원 상태에 따른 배경색 설정
     if (student.is_on_leave) {
@@ -657,6 +673,12 @@
     }
 
     card.appendChild(usernameDiv);
+
+    // 클릭 이벤트 추가
+    card.addEventListener('click', function(e) {
+      e.stopPropagation();
+      showStudentDetailModal(student.id);
+    });
 
     return card;
   };
@@ -855,6 +877,117 @@
         }
       });
     });
+  };
+
+  // 회원 상세 정보 모달 표시
+  window.showStudentDetailModal = function(userId) {
+    const modal = document.getElementById('student-detail-modal');
+    modal.classList.add('show');
+
+    // 데이터 로드
+    fetch(`/admin/student_detail/${userId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderStudentDetail(data);
+        } else {
+          alert('회원 정보를 불러오는데 실패했습니다.');
+          closeStudentDetailModal();
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('회원 정보를 불러오는데 실패했습니다.');
+        closeStudentDetailModal();
+      });
+  };
+
+  // 회원 상세 정보 렌더링
+  function renderStudentDetail(data) {
+    const { user, makeup_pass_requests, payments, enrollments, remaining_lessons, remaining_passes } = data;
+
+    document.getElementById('student-detail-title').textContent = `👨‍🎓 ${user.name} (${user.username})`;
+
+    let html = '';
+
+    // 남은 수업/패스 횟수
+    html += '<div style="background: #f0f9ff; border: 2px solid #bae6fd; border-radius: 8px; padding: 15px; margin-bottom: 20px;">';
+    html += '<div style="display: flex; justify-content: space-around; text-align: center;">';
+    html += '<div><div style="font-size: 0.85rem; color: #0369a1; margin-bottom: 5px;">남은 수업</div>';
+    html += `<div style="font-size: 1.5rem; font-weight: 700; color: #0369a1;">${remaining_lessons}회</div></div>`;
+    html += '<div><div style="font-size: 0.85rem; color: #0369a1; margin-bottom: 5px;">남은 패스</div>';
+    html += `<div style="font-size: 1.5rem; font-weight: 700; color: #0369a1;">${remaining_passes}회</div></div>`;
+    html += '</div></div>';
+
+    // 수강 정보
+    html += '<div style="margin-bottom: 20px;"><h4 style="font-weight: 700; margin-bottom: 10px; color: #374151;">📚 수강 정보</h4>';
+    if (enrollments.length > 0) {
+      enrollments.forEach(enrollment => {
+        const statusColor = enrollment.status === 'active' ? '#10b981' : '#f59e0b';
+        const statusText = enrollment.status === 'active' ? '활성' : '휴원';
+        html += '<div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 8px;">';
+        html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">`;
+        html += `<span style="font-weight: 600;">${enrollment.teacher} - ${enrollment.subject}</span>`;
+        html += `<span style="padding: 3px 8px; background: ${statusColor}20; color: ${statusColor}; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${statusText}</span>`;
+        html += '</div>';
+        html += `<div style="font-size: 0.85rem; color: #6b7280;">${enrollment.day} ${enrollment.time_slot} | 남은 수업: ${enrollment.remaining_lessons}회</div>`;
+        html += `<div style="font-size: 0.75rem; color: #9ca3af; margin-top: 3px;">첫 수업: ${enrollment.first_lesson_date || '-'} | 종료: ${enrollment.end_date || '-'}</div>`;
+        html += '</div>';
+      });
+    } else {
+      html += '<div style="text-align: center; padding: 20px; color: #9ca3af;">수강 정보가 없습니다.</div>';
+    }
+    html += '</div>';
+
+    // 보강/패스 신청 내역
+    html += '<div style="margin-bottom: 20px;"><h4 style="font-weight: 700; margin-bottom: 10px; color: #374151;">🔄 보강/패스 신청 내역</h4>';
+    if (makeup_pass_requests.length > 0) {
+      makeup_pass_requests.forEach(req => {
+        const typeColor = req.request_type === 'makeup' ? '#3b82f6' : '#f59e0b';
+        const typeText = req.request_type === 'makeup' ? '보강' : '패스';
+        const statusColor = req.status === 'active' ? '#10b981' : (req.status === 'cancelled' ? '#ef4444' : '#9ca3af');
+        const statusText = req.status === 'active' ? '승인' : (req.status === 'cancelled' ? '취소' : req.status);
+
+        html += '<div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 8px;">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">';
+        html += `<span style="padding: 3px 8px; background: ${typeColor}20; color: ${typeColor}; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${typeText}</span>`;
+        html += `<span style="padding: 3px 8px; background: ${statusColor}20; color: ${statusColor}; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${statusText}</span>`;
+        html += '</div>';
+        html += `<div style="font-size: 0.85rem; color: #374151; margin-top: 5px;">신청일: ${req.request_date}</div>`;
+        if (req.request_type === 'makeup') {
+          html += `<div style="font-size: 0.85rem; color: #6b7280;">보강일: ${req.makeup_date || '-'} ${req.makeup_day || ''} ${req.makeup_time_slot || ''}</div>`;
+          html += `<div style="font-size: 0.85rem; color: #6b7280;">선생님: ${req.makeup_teacher || '-'}</div>`;
+        }
+        html += `<div style="font-size: 0.75rem; color: #9ca3af; margin-top: 3px;">${req.created_at}</div>`;
+        html += '</div>';
+      });
+    } else {
+      html += '<div style="text-align: center; padding: 20px; color: #9ca3af;">신청 내역이 없습니다.</div>';
+    }
+    html += '</div>';
+
+    // 결제 내역
+    html += '<div style="margin-bottom: 20px;"><h4 style="font-weight: 700; margin-bottom: 10px; color: #374151;">💳 결제 내역</h4>';
+    if (payments.length > 0) {
+      payments.forEach(payment => {
+        html += '<div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 8px;">';
+        html += `<div style="font-weight: 600; margin-bottom: 5px;">${payment.teacher} - ${payment.subject}</div>`;
+        html += `<div style="font-size: 0.85rem; color: #6b7280;">수업: ${payment.lessons}회 / 기간: ${payment.months}개월</div>`;
+        html += `<div style="font-size: 0.85rem; color: #6b7280;">결제일: ${payment.payment_date}</div>`;
+        html += `<div style="font-size: 0.85rem; color: #6b7280;">첫 수업: ${payment.first_lesson_date || '-'} ${payment.first_lesson_time || ''}</div>`;
+        html += '</div>';
+      });
+    } else {
+      html += '<div style="text-align: center; padding: 20px; color: #9ca3af;">결제 내역이 없습니다.</div>';
+    }
+    html += '</div>';
+
+    document.getElementById('student-detail-content').innerHTML = html;
+  }
+
+  // 회원 상세 정보 모달 닫기
+  window.closeStudentDetailModal = function() {
+    document.getElementById('student-detail-modal').classList.remove('show');
   };
 
   if (document.readyState === 'loading') {

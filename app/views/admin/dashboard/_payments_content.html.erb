@@ -553,13 +553,31 @@
 
 <!-- 시간표 선택 모달 (휴원 해제용) -->
 <div id="schedule-select-modal" class="payment-history-modal" onclick="closeScheduleSelectModal(event)" style="display: none;">
-  <div class="payment-history-content" style="max-width: 900px;" onclick="event.stopPropagation()">
+  <div class="payment-history-content" style="max-width: 1100px;" onclick="event.stopPropagation()">
     <div class="payment-history-header">
       <h3 class="payment-history-title">복귀할 시간대 선택</h3>
       <button class="payment-history-close" onclick="closeScheduleSelectModal()">&times;</button>
     </div>
     <div style="padding: 20px;">
-      <p style="margin-bottom: 15px; color: #6b7280;">원하시는 시간대를 선택해주세요. (빈 자리만 선택 가능)</p>
+      <!-- 선생님 선택 탭 -->
+      <div id="teacher-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb;"></div>
+
+      <!-- 캘린더 -->
+      <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <button onclick="changeScheduleMonth(-1)" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">◀ 이전</button>
+          <h4 id="schedule-calendar-month" style="margin: 0; font-size: 1.1rem; font-weight: 600;"></h4>
+          <button onclick="changeScheduleMonth(1)" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">다음 ▶</button>
+        </div>
+        <div id="schedule-calendar-content"></div>
+      </div>
+
+      <!-- 선택된 날짜 정보 -->
+      <div id="selected-date-info" style="margin-bottom: 15px; padding: 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; display: none;">
+        <p style="margin: 0; color: #0c4a6e; font-weight: 600;"></p>
+      </div>
+
+      <!-- 시간표 -->
       <div id="schedule-select-content"></div>
     </div>
   </div>
@@ -641,10 +659,18 @@
               </td>
               <td>
                 <% if enrollments.any? %>
+                  <% on_leave_subjects = enrollments.select { |e| e.status == 'on_leave' }.map(&:subject) %>
+
                   <button onclick="openEnrollmentModal(<%= user['id'] %>)"
                           style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
                     과목별 관리
                   </button>
+
+                  <% on_leave_subjects.each do |subject| %>
+                    <span style="display: inline-block; margin-left: 8px; padding: 4px 8px; background: #fef3c7; color: #f59e0b; border: 1px solid #fbbf24; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                      <%= subject %>
+                    </span>
+                  <% end %>
 
                   <!-- 모달용 데이터 저장 -->
                   <div id="enrollment-data-<%= user['id'] %>" style="display: none;">
@@ -1301,71 +1327,251 @@
   // 시간표 선택 모달 표시 (휴원 해제용)
   window.showScheduleSelectModal = function(enrollmentId, teacher) {
     window.currentEnrollmentId = enrollmentId;
-    window.currentTeacher = teacher;
 
-    // 시간표 현황 가져오기
-    fetch(`/admin/teacher_schedule_availability?teacher=${encodeURIComponent(teacher)}`)
+    window.scheduleModalData = {
+      currentTeacher: teacher,
+      teachers: <%= raw @teachers.to_json %>,
+      teacherHolidays: <%= raw @teacher_holidays.to_json %>,
+      selectedDate: null,
+      selectedWeekOffset: 0,
+      availabilityData: {},
+      scheduleData: {}
+    };
+
+    // 선생님 탭 렌더링
+    renderTeacherTabs();
+
+    // 캘린더 렌더링 (현재 주)
+    loadScheduleAndRenderCalendar(0);
+
+    document.getElementById('schedule-select-modal').style.display = 'flex';
+  };
+
+  // 선생님 탭 렌더링
+  function renderTeacherTabs() {
+    const tabsContainer = document.getElementById('teacher-tabs');
+    const teachers = window.scheduleModalData.teachers;
+    const currentTeacher = window.scheduleModalData.currentTeacher;
+
+    let html = '';
+    teachers.forEach(teacher => {
+      const isActive = teacher === currentTeacher;
+      const style = isActive
+        ? 'padding: 12px 24px; background: #667eea; color: white; border: none; border-bottom: 3px solid #667eea; cursor: pointer; font-weight: 600; font-size: 0.95rem;'
+        : 'padding: 12px 24px; background: transparent; color: #6b7280; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 500; font-size: 0.95rem;';
+
+      html += `<button onclick="switchTeacher('${teacher}')" style="${style}">${teacher}</button>`;
+    });
+
+    tabsContainer.innerHTML = html;
+  }
+
+  // 선생님 전환
+  window.switchTeacher = function(teacher) {
+    window.scheduleModalData.currentTeacher = teacher;
+    window.scheduleModalData.selectedDate = null;
+
+    renderTeacherTabs();
+    document.getElementById('selected-date-info').style.display = 'none';
+    document.getElementById('schedule-select-content').innerHTML = '<p style="text-align: center; color: #9ca3af;">날짜를 선택해주세요.</p>';
+
+    // 현재 주의 시간표 다시 불러오기
+    loadScheduleAndRenderCalendar(window.scheduleModalData.selectedWeekOffset);
+  };
+
+  // 시간표 불러오고 캘린더 렌더링
+  function loadScheduleAndRenderCalendar(weekOffset) {
+    const teacher = window.scheduleModalData.currentTeacher;
+
+    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(teacher)}&week_offset=${weekOffset}`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          renderScheduleSelectModal(data.availability, data.holidays);
-          document.getElementById('schedule-select-modal').style.display = 'flex';
+          window.scheduleModalData.scheduleData = data.schedules;
+          window.scheduleModalData.selectedWeekOffset = weekOffset;
+          renderScheduleCalendar(data.week_start, data.week_end);
         } else {
           alert('시간표를 불러오는데 실패했습니다.');
         }
       })
       .catch(error => {
-        console.error('Error:', error);
+        console.log('Error:', error);
         alert('시간표를 불러오는데 실패했습니다.');
       });
-  };
+  }
 
-  // 시간표 선택 모달 렌더링
-  function renderScheduleSelectModal(availability, holidays) {
-    const modalContent = document.getElementById('schedule-select-content');
-    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+  // 캘린더 렌더링 (주 단위)
+  function renderScheduleCalendar(weekStart, weekEnd) {
+    const startDate = new Date(weekStart + 'T00:00:00');
+    const endDate = new Date(weekEnd + 'T00:00:00');
+
+    const year = startDate.getFullYear();
+    const month = startDate.getMonth() + 1;
+
+    document.getElementById('schedule-calendar-month').textContent = `${year}년 ${month}월 (${weekStart} ~ ${weekEnd})`;
+
+    const scheduleData = window.scheduleModalData.scheduleData;
+    const teacherHolidays = window.scheduleModalData.teacherHolidays[window.scheduleModalData.currentTeacher] || [];
+    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
 
     let html = '<table style="width: 100%; border-collapse: collapse;">';
-    html += '<thead><tr><th style="border: 1px solid #e5e7eb; padding: 0.5rem;">시간</th>';
-    days.forEach((day, idx) => {
-      html += `<th style="border: 1px solid #e5e7eb; padding: 0.5rem;">${dayNames[idx]}</th>`;
+    html += '<thead><tr>';
+    ['일', '월', '화', '수', '목', '금', '토'].forEach(day => {
+      html += `<th style="padding: 8px; text-align: center; font-weight: 600; color: #6b7280;">${day}</th>`;
     });
-    html += '</tr></thead><tbody>';
+    html += '</tr></thead><tbody><tr>';
+
+    // 7일간의 날짜 렌더링
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+
+      const dateStr = currentDate.getFullYear() + '-' +
+                      String(currentDate.getMonth() + 1).padStart(2, '0') + '-' +
+                      String(currentDate.getDate()).padStart(2, '0');
+
+      const dayOfWeek = currentDate.getDay();
+      const dayKey = dayKeys[dayOfWeek];
+      const isHoliday = teacherHolidays.includes(dayOfWeek);
+
+      let isFull = false;
+      if (!isHoliday && scheduleData[dayKey]) {
+        isFull = true;
+        for (const timeSlot of timeSlots) {
+          const students = scheduleData[dayKey][timeSlot] || [];
+          if (students.length < 3) {
+            isFull = false;
+            break;
+          }
+        }
+      }
+
+      let style = 'padding: 20px; text-align: center; cursor: pointer; border: 1px solid #e5e7eb; vertical-align: top;';
+      let bgColor = 'white';
+
+      if (isHoliday) {
+        bgColor = '#fef3c7'; // 연노랑 (휴무일)
+        style += ' cursor: not-allowed;';
+      } else if (isFull) {
+        bgColor = '#fee2e2'; // 연붉은색 (꽉 참)
+        style += ' cursor: not-allowed;';
+      } else {
+        bgColor = 'white';
+      }
+
+      style += ` background: ${bgColor};`;
+
+      const onclick = (isHoliday || isFull) ? '' : `onclick="selectScheduleDate('${dateStr}')"`;
+      const onmouseover = (isHoliday || isFull) ? '' : `onmouseover="this.style.background='#dbeafe'"`;
+      const onmouseout = (isHoliday || isFull) ? '' : `onmouseout="this.style.background='${bgColor}'"`;
+
+      html += `<td style="${style}" ${onclick} ${onmouseover} ${onmouseout}>`;
+      html += `<div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 5px;">${currentDate.getDate()}</div>`;
+
+      if (isHoliday) {
+        html += '<div style="font-size: 0.8rem; color: #f59e0b;">휴무</div>';
+      } else if (isFull) {
+        html += '<div style="font-size: 0.8rem; color: #dc2626;">예약 불가</div>';
+      }
+
+      html += '</td>';
+    }
+
+    html += '</tr></tbody></table>';
+    document.getElementById('schedule-calendar-content').innerHTML = html;
+  }
+
+  // 주 변경
+  window.changeScheduleMonth = function(delta) {
+    const newWeekOffset = window.scheduleModalData.selectedWeekOffset + delta;
+    loadScheduleAndRenderCalendar(newWeekOffset);
+  };
+
+  // 날짜 선택
+  window.selectScheduleDate = function(dateStr) {
+    window.scheduleModalData.selectedDate = dateStr;
+
+    const date = new Date(dateStr + 'T00:00:00');
+    const dayOfWeek = date.getDay();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+    const selectedDay = dayKeys[dayOfWeek];
+
+    // 선택된 날짜 정보 표시
+    const infoDiv = document.getElementById('selected-date-info');
+    infoDiv.style.display = 'block';
+    infoDiv.querySelector('p').textContent = `선택된 날짜: ${dateStr} (${dayNames[dayOfWeek]})`;
+
+    // 해당 요일의 시간표 표시
+    const scheduleData = window.scheduleModalData.scheduleData;
+    const teacherHolidays = window.scheduleModalData.teacherHolidays[window.scheduleModalData.currentTeacher] || [];
+    const isHoliday = teacherHolidays.includes(dayOfWeek);
+
+    renderScheduleForDay(selectedDay, scheduleData[selectedDay] || {}, isHoliday);
+  };
+
+  // 특정 요일의 시간표 렌더링
+  function renderScheduleForDay(day, daySchedule, isHoliday) {
+    const modalContent = document.getElementById('schedule-select-content');
+    const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
+
+    let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">';
 
     timeSlots.forEach(timeSlot => {
-      html += '<tr>';
-      html += `<td style="border: 1px solid #e5e7eb; padding: 0.5rem; text-align: center; font-weight: 600;">${timeSlot.replace('-', ':00-')}:00</td>`;
+      const students = daySchedule[timeSlot] || [];
+      const currentCount = students.length;
+      const isFull = currentCount >= 3;
 
-      days.forEach((day, idx) => {
-        const slot = availability[day][timeSlot];
-        const isHoliday = holidays.includes(idx === 6 ? 0 : idx + 1); // 배열 인덱스 조정
+      let cardStyle = 'padding: 20px; border-radius: 8px; text-align: center; border: 2px solid; transition: all 0.2s;';
+      let onclick = '';
 
-        let style = 'border: 1px solid #e5e7eb; padding: 0.5rem; text-align: center; cursor: pointer;';
-        let onclick = '';
-        let text = `${slot.current}/3`;
+      if (isHoliday) {
+        cardStyle += ' background: #fef3c7; color: #f59e0b; border-color: #fbbf24; cursor: not-allowed;';
+      } else if (isFull) {
+        cardStyle += ' background: #fee2e2; color: #dc2626; border-color: #fecaca; cursor: not-allowed;';
+      } else {
+        cardStyle += ' background: #dbeafe; color: #1e40af; border-color: #93c5fd; cursor: pointer;';
+        onclick = `onclick="selectScheduleSlot('${day}', '${timeSlot}')"`;
+      }
 
-        if (isHoliday || !slot.available) {
-          style += ' background: #f3f4f6; color: #9ca3af; cursor: not-allowed;';
-          if (isHoliday) text = '휴무';
+      html += `<div style="${cardStyle}" ${onclick}>`;
+      html += `<div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">${timeSlot.replace('-', ':00-')}:00</div>`;
+
+      if (isHoliday) {
+        html += '<div style="font-size: 0.9rem;">휴무</div>';
+      } else {
+        html += `<div style="font-size: 0.9rem;">${currentCount}/3</div>`;
+        if (!isFull) {
+          html += '<div style="font-size: 0.8rem; margin-top: 4px; color: #10b981;">선택 가능</div>';
         } else {
-          style += ' background: #dbeafe; color: #1e40af;';
-          onclick = `onclick="selectScheduleSlot('${day}', '${timeSlot}')"`;
+          html += '<div style="font-size: 0.8rem; margin-top: 4px;">자리 없음</div>';
         }
+      }
 
-        html += `<td style="${style}" ${onclick}>${text}</td>`;
-      });
-      html += '</tr>';
+      html += '</div>';
     });
 
-    html += '</tbody></table>';
+    html += '</div>';
     modalContent.innerHTML = html;
   }
 
   // 시간대 선택
   window.selectScheduleSlot = function(day, timeSlot) {
-    if (!confirm(`${day} ${timeSlot} 시간대로 복귀하시겠습니까?`)) return;
+    const modalData = window.scheduleModalData;
+    const selectedDate = modalData.selectedDate;
+    const selectedTeacher = modalData.currentTeacher;
+
+    if (!selectedDate) {
+      alert('날짜를 먼저 선택해주세요.');
+      return;
+    }
+
+    const dayNames = { sun: '일', mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토' };
+    const confirmMessage = `${selectedTeacher} 선생님\n${selectedDate} (${dayNames[day]})\n${timeSlot.replace('-', ':00-')}:00\n\n위 시간대로 복귀하시겠습니까?`;
+
+    if (!confirm(confirmMessage)) return;
 
     fetch(`/admin/user_enrollments/${window.currentEnrollmentId}/toggle_status`, {
       method: 'PATCH',
@@ -1376,7 +1582,9 @@
       body: JSON.stringify({
         status: 'active',
         day: day,
-        time_slot: timeSlot
+        time_slot: timeSlot,
+        teacher: selectedTeacher,
+        first_lesson_date: selectedDate
       })
     })
     .then(response => response.json())

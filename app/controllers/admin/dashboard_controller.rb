@@ -8,18 +8,22 @@ class Admin::DashboardController < ApplicationController
     @approved_users = User.approved.count
     @on_hold_users = User.on_hold.count
     @total_pending_users = @pending_users
-    
+
     # 연습실 예약 현황 (Practice)
     @practice_todays_reservations = Reservation.today.count
     @practice_active_reservations = Reservation.active.count
-    
+
     # 보충수업 예약 현황 (Makeup)
     @makeup_todays_reservations = MakeupReservation.today.count
     @makeup_active_reservations = MakeupReservation.active.count
-    
+
     # 전체 예약 현황 (연습실 + 보충수업)
     @total_todays_reservations = @practice_todays_reservations + @makeup_todays_reservations
     @total_active_reservations = @practice_active_reservations + @makeup_active_reservations
+
+    # 결제 관리를 위한 선생님 및 휴무일 정보
+    @teachers = User::TEACHERS - ['온라인']
+    @teacher_holidays = Teacher::HOLIDAYS
   end
   
   # 통합 회원 관리 페이지
@@ -759,7 +763,7 @@ class Admin::DashboardController < ApplicationController
       }
     end
 
-    render json: { success: true, schedules: schedule_data }
+    render json: { success: true, schedules: schedule_data, week_start: target_week_start.strftime('%Y-%m-%d'), week_end: target_week_end.strftime('%Y-%m-%d') }
   rescue => e
     Rails.logger.error "스케줄 불러오기 오류: #{e.message}"
     render json: { success: false, message: '스케줄을 불러오는 중 오류가 발생했습니다.' }, status: :internal_server_error
@@ -1301,6 +1305,7 @@ class Admin::DashboardController < ApplicationController
     end
     @page = 1
     @total_pages = 1
+    @teachers = User::TEACHERS - ['온라인']
     @teacher_holidays = Teacher::HOLIDAYS
     render partial: 'admin/dashboard/payments_content', layout: false
   end
@@ -1492,10 +1497,12 @@ class Admin::DashboardController < ApplicationController
       if old_status == 'on_leave' && new_status == 'active'
         new_day = params[:day]
         new_time_slot = params[:time_slot]
+        new_teacher = params[:teacher] || enrollment.teacher
+        new_first_lesson_date = params[:first_lesson_date].present? ? Date.parse(params[:first_lesson_date]) : nil
 
         # 남은 수업 횟수만큼 주 단위로 end_date 계산
         weeks_remaining = enrollment.remaining_lessons
-        new_end_date = Date.current + weeks_remaining.weeks
+        new_end_date = new_first_lesson_date ? new_first_lesson_date + (weeks_remaining - 1).weeks : Date.current + weeks_remaining.weeks
 
         # 기존 TeacherSchedule 찾기
         old_schedule = TeacherSchedule.find_by(
@@ -1508,14 +1515,17 @@ class Admin::DashboardController < ApplicationController
         # UserEnrollment 업데이트
         enrollment.update!(
           status: new_status,
+          teacher: new_teacher,
           day: new_day,
           time_slot: new_time_slot,
+          first_lesson_date: new_first_lesson_date || enrollment.first_lesson_date,
           end_date: new_end_date
         )
 
         # TeacherSchedule 업데이트
         if old_schedule
           old_schedule.update!(
+            teacher: new_teacher,
             day: new_day,
             time_slot: new_time_slot,
             end_date: new_end_date
@@ -1524,14 +1534,14 @@ class Admin::DashboardController < ApplicationController
           # 기존 스케줄이 없으면 새로 생성
           TeacherSchedule.create!(
             user_id: enrollment.user_id,
-            teacher: enrollment.teacher,
+            teacher: new_teacher,
             day: new_day,
             time_slot: new_time_slot,
             end_date: new_end_date
           )
         end
 
-        Rails.logger.info "휴원 해제: #{enrollment.user.name} / #{new_day} #{new_time_slot} / 남은수업=#{weeks_remaining}회"
+        Rails.logger.info "휴원 해제: #{enrollment.user.name} / #{new_teacher} / #{new_day} #{new_time_slot} / 첫수업=#{new_first_lesson_date} / 남은수업=#{weeks_remaining}회"
       else
         # 휴원 처리
         enrollment.update!(status: new_status)
@@ -1543,6 +1553,87 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, error: '수강 등록을 찾을 수 없습니다.' }, status: :not_found
   rescue => e
     render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
+
+  # 회원 상세 정보 조회 (시간표 관리용)
+  def student_detail
+    user = User.find(params[:id])
+
+    # 보강/패스 신청 내역
+    makeup_pass_requests = MakeupPassRequest.where(user_id: user.id)
+                                            .order(created_at: :desc)
+                                            .limit(10)
+                                            .map do |req|
+      {
+        id: req.id,
+        request_type: req.request_type,
+        request_date: req.request_date,
+        makeup_date: req.makeup_date,
+        makeup_day: req.makeup_day,
+        makeup_time_slot: req.makeup_time_slot,
+        makeup_teacher: req.makeup_teacher,
+        status: req.status,
+        created_at: req.created_at.strftime('%Y-%m-%d %H:%M')
+      }
+    end
+
+    # 결제 내역
+    payments = Payment.where(user_id: user.id)
+                      .order(payment_date: :desc)
+                      .limit(10)
+                      .map do |payment|
+      {
+        id: payment.id,
+        teacher: payment.teacher,
+        subject: payment.subject,
+        lessons: payment.lessons,
+        months: payment.months,
+        payment_date: payment.payment_date.strftime('%Y-%m-%d'),
+        first_lesson_date: payment.first_lesson_date&.strftime('%Y-%m-%d'),
+        first_lesson_time: payment.first_lesson_time
+      }
+    end
+
+    # 수강 등록 정보 (스케줄)
+    enrollments = UserEnrollment.where(user_id: user.id, is_paid: true)
+                                .order(created_at: :desc)
+                                .map do |enrollment|
+      {
+        id: enrollment.id,
+        teacher: enrollment.teacher,
+        subject: enrollment.subject,
+        day: enrollment.day_korean,
+        time_slot: enrollment.time_slot,
+        remaining_lessons: enrollment.remaining_lessons,
+        first_lesson_date: enrollment.first_lesson_date&.strftime('%Y-%m-%d'),
+        end_date: enrollment.end_date&.strftime('%Y-%m-%d'),
+        status: enrollment.status
+      }
+    end
+
+    # 남은 수업/패스 횟수
+    total_remaining_lessons = UserEnrollment.where(user_id: user.id, is_paid: true).sum(:remaining_lessons)
+    remaining_passes = user.remaining_passes || 0
+
+    render json: {
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        teacher: user.teacher
+      },
+      makeup_pass_requests: makeup_pass_requests,
+      payments: payments,
+      enrollments: enrollments,
+      remaining_lessons: total_remaining_lessons,
+      remaining_passes: remaining_passes
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { success: false, error: '회원을 찾을 수 없습니다.' }, status: :not_found
+  rescue => e
+    Rails.logger.error "회원 상세 정보 조회 오류: #{e.message}"
+    render json: { success: false, error: e.message }, status: :internal_server_error
   end
 
   private
