@@ -742,6 +742,7 @@
     card.dataset.userId = student.id;
     card.dataset.currentDay = day;
     card.dataset.currentTimeSlot = timeSlot;
+    card.dataset.teacher = window.currentScheduleTeacher;
     card.draggable = true;
 
     // 휴원 상태에 따른 배경색 설정
@@ -1140,6 +1141,7 @@
       const userId = draggedCard.dataset.userId;
       const currentDay = draggedCard.dataset.currentDay;
       const currentTimeSlot = draggedCard.dataset.currentTimeSlot;
+      const fromTeacher = draggedCard.dataset.teacher;
       const newDay = this.dataset.day;
       const newTimeSlot = this.dataset.time;
 
@@ -1160,7 +1162,7 @@
         scheduleUnscheduledStudent(userId, newDay, newTimeSlot);
       } else {
         // 스케줄 간 이동
-        moveStudentSchedule(userId, currentDay, currentTimeSlot, newDay, newTimeSlot);
+        moveStudentSchedule(userId, fromTeacher, currentDay, currentTimeSlot, newDay, newTimeSlot);
       }
     }
 
@@ -1245,7 +1247,7 @@
   }
 
   // 학생 스케줄 이동
-  function moveStudentSchedule(userId, fromDay, fromTimeSlot, toDay, toTimeSlot) {
+  function moveStudentSchedule(userId, fromTeacher, fromDay, fromTimeSlot, toDay, toTimeSlot) {
     showScheduleLoading(true);
 
     fetch('/admin/move_student_schedule', {
@@ -1256,11 +1258,12 @@
       },
       body: JSON.stringify({
         user_id: userId,
+        from_teacher: fromTeacher,
         from_day: fromDay,
         from_time_slot: fromTimeSlot,
         to_day: toDay,
         to_time_slot: toTimeSlot,
-        teacher: window.currentScheduleTeacher
+        to_teacher: window.currentScheduleTeacher
       })
     })
     .then(response => response.json())

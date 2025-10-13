@@ -1558,17 +1558,18 @@ class Admin::DashboardController < ApplicationController
   # 학생 스케줄 이동
   def move_student_schedule
     user_id = params[:user_id]
+    from_teacher = params[:from_teacher]
     from_day = params[:from_day]
     from_time_slot = params[:from_time_slot]
+    to_teacher = params[:to_teacher]
     to_day = params[:to_day]
     to_time_slot = params[:to_time_slot]
-    teacher = params[:teacher]
 
     ActiveRecord::Base.transaction do
-      # UserEnrollment 찾기
+      # UserEnrollment 찾기 (from_teacher로 찾기)
       enrollment = UserEnrollment.find_by(
         user_id: user_id,
-        teacher: teacher,
+        teacher: from_teacher,
         day: from_day,
         time_slot: from_time_slot,
         is_paid: true
@@ -1580,46 +1581,39 @@ class Admin::DashboardController < ApplicationController
       end
 
       # first_lesson_date는 유지, end_date만 재계산
-      # end_date = first_lesson_date + (remaining_lessons - 1) weeks
       new_end_date = if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
         enrollment.first_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
       else
         enrollment.end_date
       end
 
-      # UserEnrollment 업데이트
+      # 기존 TeacherSchedule 삭제
+      old_schedule = TeacherSchedule.find_by(
+        user_id: user_id,
+        teacher: from_teacher,
+        day: from_day,
+        time_slot: from_time_slot
+      )
+      old_schedule&.destroy
+
+      # UserEnrollment 업데이트 (선생님도 변경 가능)
       enrollment.update!(
+        teacher: to_teacher,
         day: to_day,
         time_slot: to_time_slot,
         end_date: new_end_date
       )
 
-      # TeacherSchedule 업데이트
-      schedule = TeacherSchedule.find_by(
+      # 새로운 TeacherSchedule 생성
+      TeacherSchedule.create!(
         user_id: user_id,
-        teacher: teacher,
-        day: from_day,
-        time_slot: from_time_slot
+        teacher: to_teacher,
+        day: to_day,
+        time_slot: to_time_slot,
+        end_date: new_end_date
       )
 
-      if schedule
-        schedule.update!(
-          day: to_day,
-          time_slot: to_time_slot,
-          end_date: new_end_date
-        )
-      else
-        # 스케줄이 없으면 새로 생성
-        TeacherSchedule.create!(
-          user_id: user_id,
-          teacher: teacher,
-          day: to_day,
-          time_slot: to_time_slot,
-          end_date: new_end_date
-        )
-      end
-
-      Rails.logger.info "스케줄 이동: #{User.find(user_id).name} / #{from_day} #{from_time_slot} → #{to_day} #{to_time_slot}"
+      Rails.logger.info "스케줄 이동: #{User.find(user_id).name} / #{from_teacher} #{from_day} #{from_time_slot} → #{to_teacher} #{to_day} #{to_time_slot}"
     end
 
     render json: { success: true }
