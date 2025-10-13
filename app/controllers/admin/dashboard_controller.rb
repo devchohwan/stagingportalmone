@@ -766,8 +766,7 @@ class Admin::DashboardController < ApplicationController
       makeup_requests = MakeupPassRequest.includes(:user).where(
         request_type: 'makeup',
         teacher: teacher,
-        makeup_date: target_week_start..target_week_end,
-        status: 'active'
+        makeup_date: target_week_start..target_week_end
       )
 
       makeup_requests.each do |req|
