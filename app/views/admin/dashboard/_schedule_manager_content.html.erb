@@ -266,9 +266,18 @@
   .unscheduled-students-area {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     min-height: 50px;
     padding: 5px;
+  }
+
+  /* 세로 레이아웃일 때 */
+  .unscheduled-students-area[style*="flex-direction: column"] {
+    gap: 6px;
+  }
+
+  .unscheduled-students-area[style*="flex-direction: column"] .student-card {
+    width: 100%;
   }
 
   .unscheduled-students-area:empty::after {
@@ -483,56 +492,58 @@
       </div>
     </div>
 
-    <!-- 시간표 테이블 -->
-    <div class="table-container">
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th class="time-cell" style="position: sticky; left: 0; z-index: 20;">시간</th>
-              <% ['월', '화', '수', '목', '금', '토', '일'].each_with_index do |day_name, index| %>
-                <th>
-                  <%= day_name %>
-                  <div id="date-<%= ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][index] %>" style="font-size: 0.75rem; font-weight: 400; opacity: 0.9; margin-top: 0.25rem;"></div>
-                </th>
-              <% end %>
-            </tr>
-          </thead>
-          <tbody>
-            <% ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'].each do |time_slot| %>
+    <!-- 시간표와 미배치 회원 영역을 나란히 배치 -->
+    <div style="display: flex; gap: 1rem;">
+      <!-- 시간표 테이블 -->
+      <div class="table-container" style="flex: 1;">
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
               <tr>
-                <td class="time-cell"><%= time_slot.split('-').join(':00-') + ':00' %></td>
-                <% ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].each do |day| %>
-                  <td>
-                    <div id="cell-<%= day %>-<%= time_slot %>" class="schedule-cell">
-                      <div class="cell-header">
-                        <button onclick="showAddStudentModal('<%= day %>', '<%= time_slot %>')" class="add-btn" title="학생 추가">+</button>
-                      </div>
-                      <div class="students-area empty" data-day="<%= day %>" data-time="<%= time_slot %>">
-                        클릭하여 추가
-                      </div>
-                    </div>
-                  </td>
+                <th class="time-cell" style="position: sticky; left: 0; z-index: 20;">시간</th>
+                <% ['월', '화', '수', '목', '금', '토', '일'].each_with_index do |day_name, index| %>
+                  <th>
+                    <%= day_name %>
+                    <div id="date-<%= ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][index] %>" style="font-size: 0.75rem; font-weight: 400; opacity: 0.9; margin-top: 0.25rem;"></div>
+                  </th>
                 <% end %>
               </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- 스케줄 해제 영역 (드래그앤드롭) -->
-  <div class="schedule-manager-wrapper">
-    <div class="header-card" style="margin-top: 1.5rem;">
-      <div style="margin-bottom: 10px; font-weight: 600; color: #374151;">📋 미배치 회원</div>
-      <div id="unschedule-dropzone" class="unschedule-zone">
-        <div class="unschedule-header">
-          <div class="unschedule-icon">📦</div>
-          <div class="unschedule-text">여기에 회원을 드롭하면 스케줄이 해제됩니다</div>
-          <div class="unschedule-subtext">다시 드래그하여 시간표에 배치할 수 있습니다</div>
+            </thead>
+            <tbody>
+              <% ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'].each do |time_slot| %>
+                <tr>
+                  <td class="time-cell"><%= time_slot.split('-').join(':00-') + ':00' %></td>
+                  <% ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].each do |day| %>
+                    <td>
+                      <div id="cell-<%= day %>-<%= time_slot %>" class="schedule-cell">
+                        <div class="cell-header">
+                          <button onclick="showAddStudentModal('<%= day %>', '<%= time_slot %>')" class="add-btn" title="학생 추가">+</button>
+                        </div>
+                        <div class="students-area empty" data-day="<%= day %>" data-time="<%= time_slot %>">
+                          클릭하여 추가
+                        </div>
+                      </div>
+                    </td>
+                  <% end %>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
         </div>
-        <div id="unscheduled-students" class="unscheduled-students-area"></div>
+      </div>
+
+      <!-- 미배치 회원 영역 (세로) -->
+      <div style="width: 200px; flex-shrink: 0;">
+        <div class="header-card" style="margin: 0; height: 100%;">
+          <div style="margin-bottom: 10px; font-weight: 600; color: #374151; font-size: 0.9rem;">📋 미배치 회원</div>
+          <div id="unschedule-dropzone" class="unschedule-zone" style="height: calc(100% - 40px); min-height: 600px;">
+            <div class="unschedule-header" style="padding-bottom: 8px; margin-bottom: 8px;">
+              <div class="unschedule-icon" style="font-size: 1.5rem; margin-bottom: 5px;">📦</div>
+              <div class="unschedule-text" style="font-size: 0.75rem;">드롭하면 해제</div>
+            </div>
+            <div id="unscheduled-students" class="unscheduled-students-area" style="flex-direction: column; align-items: stretch;"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
