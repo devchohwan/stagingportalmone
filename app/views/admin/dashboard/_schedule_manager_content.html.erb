@@ -481,10 +481,10 @@
             <thead>
               <tr>
                 <th class="time-cell" style="position: sticky; left: 0; z-index: 20;">시간</th>
-                <% ['월', '화', '수', '목', '금', '토', '일'].each_with_index do |day_name, index| %>
+                <% ['일', '월', '화', '수', '목', '금', '토'].each_with_index do |day_name, index| %>
                   <th>
                     <%= day_name %>
-                    <div id="date-<%= ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][index] %>" style="font-size: 0.75rem; font-weight: 400; opacity: 0.9; margin-top: 0.25rem;"></div>
+                    <div id="date-<%= ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][index] %>" style="font-size: 0.75rem; font-weight: 400; opacity: 0.9; margin-top: 0.25rem;"></div>
                   </th>
                 <% end %>
               </tr>
@@ -493,7 +493,7 @@
               <% ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'].each do |time_slot| %>
                 <tr>
                   <td class="time-cell"><%= time_slot.split('-').join(':00-') + ':00' %></td>
-                  <% ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].each do |day| %>
+                  <% ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].each do |day| %>
                     <td>
                       <div id="cell-<%= day %>-<%= time_slot %>" class="schedule-cell">
                         <div class="cell-header">
@@ -624,11 +624,11 @@
       dateRangeEl.textContent = `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
     }
 
-    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     days.forEach((day, index) => {
       const dayDate = new Date(weekStart);
-      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
-      dayDate.setDate(weekStart.getDate() + index + 1);
+      // weekStart는 일요일이므로, sun은 +0, mon은 +1, ... sat은 +6
+      dayDate.setDate(weekStart.getDate() + index);
       const dateEl = document.getElementById(`date-${day}`);
       if (dateEl) {
         dateEl.textContent = `${dayDate.getMonth() + 1}/${dayDate.getDate()}`;
@@ -644,11 +644,11 @@
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay() + (window.currentScheduleWeek * 7));
 
-    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     days.forEach((day, index) => {
       const dayDate = new Date(weekStart);
-      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
-      dayDate.setDate(weekStart.getDate() + index + 1);
+      // weekStart는 일요일이므로, sun은 +0, mon은 +1, ... sat은 +6
+      dayDate.setDate(weekStart.getDate() + index);
       const dayOfWeek = dayDate.getDay();
 
       const isHoliday = isTeacherHoliday(window.currentScheduleTeacher, dayOfWeek);
