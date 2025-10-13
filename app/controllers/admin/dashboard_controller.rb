@@ -1869,7 +1869,7 @@ class Admin::DashboardController < ApplicationController
       'name' => user.name,
       'email' => user.email,
       'phone' => user.respond_to?(:phone) ? user.phone : nil,
-      'teacher' => user.teacher,
+      'teacher' => user.primary_teacher,  # UserEnrollment 기반 담당 선생님
       'status' => user.status,
       'created_at' => user.created_at.to_s,
       'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,

@@ -43,6 +43,19 @@ class User < ApplicationRecord
   def display_name
     "#{name} (#{username})"
   end
+
+  # 담당 선생님 목록 (UserEnrollment 기반)
+  def teachers
+    user_enrollments.where(is_paid: true)
+                    .where('remaining_lessons > 0')
+                    .pluck(:teacher)
+                    .uniq
+  end
+
+  # 주 담당 선생님 (첫 번째 활성 수강)
+  def primary_teacher
+    teachers.first || self[:teacher] || '미배정'
+  end
   
   # 현재 달의 페널티 정보 가져오기 (practice 시스템과 동일)
   def current_month_penalty(system_type = 'practice')

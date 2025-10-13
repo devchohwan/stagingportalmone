@@ -271,7 +271,7 @@
   </div>
 
   <div class="services-grid">
-    <% if @user.teacher == '온라인' %>
+    <% if @user.primary_teacher == '온라인' %>
       <div class="service-card" onclick="alert('연습실은 오프라인 수강생 전용입니다😌');" style="cursor: pointer;">
         <div class="service-icon practice-icon">
           📅
