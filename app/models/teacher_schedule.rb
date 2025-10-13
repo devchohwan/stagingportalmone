@@ -85,7 +85,7 @@ class TeacherSchedule < ApplicationRecord
     # 이 날짜/시간/선생님으로 보강 온 학생 수 추가
     makeup_in_count = MakeupPassRequest
       .where(status: 'active', request_type: 'makeup')
-      .where(makeup_date: date, time_slot: time_slot, makeup_teacher: teacher)
+      .where(makeup_date: date, time_slot: time_slot, teacher: teacher)
       .count
 
     active_students + makeup_in_count
