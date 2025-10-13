@@ -449,13 +449,13 @@
             cell.appendChild(card);
           });
 
-          // 실제 출석 인원수 계산 (결석, 보강 이동, 패스, 보강 취소 제외)
+          // 실제 출석 인원수 계산 (결석, 보강 이동, 패스 제외)
+          // 보강으로 온 학생(is_makeup)은 포함
           const activeStudents = students.filter(student =>
-            !student.is_absent &&
-            !student.is_makeup_away &&
             !student.is_pass &&
+            !student.is_makeup_away &&
             !student.is_on_leave &&
-            !student.is_cancelled_makeup
+            !student.is_absent
           ).length;
 
           // 인원수 표시
