@@ -1,1 +1,1 @@
-✨ User 모델에 teacher_schedules 연관관계 추가 (dependent: :destroy)
+🐛 next_lesson_date 오늘 날짜 포함하도록 수정 (> → >=)

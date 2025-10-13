@@ -116,10 +116,10 @@ class User < ApplicationRecord
     today = Date.current
     target_wday = korean_day_to_wday(schedule[:day])
 
-    # 오늘부터 다음 주 같은 요일까지 체크
+    # 오늘부터 다음 주 같은 요일까지 체크 (오늘 포함)
     (0..13).each do |offset|
       date = today + offset.days
-      return date if date.wday == target_wday && date > today
+      return date if date.wday == target_wday && date >= today
     end
 
     nil
