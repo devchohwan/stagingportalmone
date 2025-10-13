@@ -761,6 +761,9 @@ class Admin::DashboardController < ApplicationController
             teacher: user.teacher,
             schedule_id: schedule.id,
             is_absent: true,
+            is_cancelled_makeup: true,
+            cancelled_makeup_request_id: cancelled_makeup_request.id,
+            original_date: target_date.to_s,
             is_on_leave: is_on_leave
           }
         else
