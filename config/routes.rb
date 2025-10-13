@@ -107,6 +107,7 @@ Rails.application.routes.draw do
     delete 'user_enrollments/:id', to: 'dashboard#delete_user_enrollment'
     patch 'user_enrollments/:id/toggle_status', to: 'dashboard#toggle_enrollment_status'
     get 'teacher_available_slots', to: 'dashboard#teacher_available_slots'
+    get 'teacher_schedule_availability', to: 'dashboard#get_teacher_schedule_availability'
 
     # 수강생 검색 API
     get 'search_students', to: 'dashboard#search_students'

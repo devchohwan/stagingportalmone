@@ -551,6 +551,20 @@
   </div>
 </div>
 
+<!-- 시간표 선택 모달 (휴원 해제용) -->
+<div id="schedule-select-modal" class="payment-history-modal" onclick="closeScheduleSelectModal(event)" style="display: none;">
+  <div class="payment-history-content" style="max-width: 900px;" onclick="event.stopPropagation()">
+    <div class="payment-history-header">
+      <h3 class="payment-history-title">복귀할 시간대 선택</h3>
+      <button class="payment-history-close" onclick="closeScheduleSelectModal()">&times;</button>
+    </div>
+    <div style="padding: 20px;">
+      <p style="margin-bottom: 15px; color: #6b7280;">원하시는 시간대를 선택해주세요. (빈 자리만 선택 가능)</p>
+      <div id="schedule-select-content"></div>
+    </div>
+  </div>
+</div>
+
 <!-- 결제일 회원 목록 모달 -->
 <div id="payment-date-modal" class="payment-history-modal" onclick="closePaymentDateModal(event)">
   <div class="payment-history-content" style="max-width: 700px;" onclick="event.stopPropagation()">
@@ -1234,7 +1248,7 @@
       html += '<div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0;">';
       html += '<div style="font-weight: 600; margin-bottom: 8px;">' + subject + ' - ' + teacher + '</div>';
       html += '<div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 10px;">' + day + ' ' + time + '</div>';
-      html += '<button onclick="toggleEnrollmentStatus(' + id + ', \'' + status + '\')" style="padding: 8px 16px; background: ' + (status === 'on_leave' ? '#f59e0b' : '#10b981') + '; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">';
+      html += '<button onclick="toggleEnrollmentStatus(' + id + ', \'' + status + '\', \'' + teacher + '\')" style="padding: 8px 16px; background: ' + (status === 'on_leave' ? '#f59e0b' : '#10b981') + '; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">';
       html += (status === 'on_leave' ? '휴원 해제' : '휴원 처리') + '</button>';
       html += '</div>';
     });
@@ -1251,31 +1265,139 @@
   };
 
   // 과목별 휴원 상태 토글
-  window.toggleEnrollmentStatus = function(enrollmentId, currentStatus) {
+  window.toggleEnrollmentStatus = function(enrollmentId, currentStatus, teacher) {
     const newStatus = currentStatus === 'on_leave' ? 'active' : 'on_leave';
 
-    fetch(`/admin/user_enrollments/${enrollmentId}/toggle_status`, {
+    // 휴원 해제 시 시간표 선택 모달 표시
+    if (currentStatus === 'on_leave') {
+      window.showScheduleSelectModal(enrollmentId, teacher);
+    } else {
+      // 휴원 처리 (그냥 상태만 변경)
+      fetch(`/admin/user_enrollments/${enrollmentId}/toggle_status`, {
+        method: 'PATCH',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('휴원 처리되었습니다.');
+          closeEnrollmentManageModal();
+          window.loadPaymentsTab();
+        } else {
+          alert('상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('상태 변경 중 오류가 발생했습니다.');
+      });
+    }
+  };
+
+  // 시간표 선택 모달 표시 (휴원 해제용)
+  window.showScheduleSelectModal = function(enrollmentId, teacher) {
+    window.currentEnrollmentId = enrollmentId;
+    window.currentTeacher = teacher;
+
+    // 시간표 현황 가져오기
+    fetch(`/admin/teacher_schedule_availability?teacher=${encodeURIComponent(teacher)}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderScheduleSelectModal(data.availability, data.holidays);
+          document.getElementById('schedule-select-modal').style.display = 'flex';
+        } else {
+          alert('시간표를 불러오는데 실패했습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('시간표를 불러오는데 실패했습니다.');
+      });
+  };
+
+  // 시간표 선택 모달 렌더링
+  function renderScheduleSelectModal(availability, holidays) {
+    const modalContent = document.getElementById('schedule-select-content');
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+    const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
+
+    let html = '<table style="width: 100%; border-collapse: collapse;">';
+    html += '<thead><tr><th style="border: 1px solid #e5e7eb; padding: 0.5rem;">시간</th>';
+    days.forEach((day, idx) => {
+      html += `<th style="border: 1px solid #e5e7eb; padding: 0.5rem;">${dayNames[idx]}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    timeSlots.forEach(timeSlot => {
+      html += '<tr>';
+      html += `<td style="border: 1px solid #e5e7eb; padding: 0.5rem; text-align: center; font-weight: 600;">${timeSlot.replace('-', ':00-')}:00</td>`;
+
+      days.forEach((day, idx) => {
+        const slot = availability[day][timeSlot];
+        const isHoliday = holidays.includes(idx === 6 ? 0 : idx + 1); // 배열 인덱스 조정
+
+        let style = 'border: 1px solid #e5e7eb; padding: 0.5rem; text-align: center; cursor: pointer;';
+        let onclick = '';
+        let text = `${slot.current}/3`;
+
+        if (isHoliday || !slot.available) {
+          style += ' background: #f3f4f6; color: #9ca3af; cursor: not-allowed;';
+          if (isHoliday) text = '휴무';
+        } else {
+          style += ' background: #dbeafe; color: #1e40af;';
+          onclick = `onclick="selectScheduleSlot('${day}', '${timeSlot}')"`;
+        }
+
+        html += `<td style="${style}" ${onclick}>${text}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    modalContent.innerHTML = html;
+  }
+
+  // 시간대 선택
+  window.selectScheduleSlot = function(day, timeSlot) {
+    if (!confirm(`${day} ${timeSlot} 시간대로 복귀하시겠습니까?`)) return;
+
+    fetch(`/admin/user_enrollments/${window.currentEnrollmentId}/toggle_status`, {
       method: 'PATCH',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ status: newStatus })
+      body: JSON.stringify({
+        status: 'active',
+        day: day,
+        time_slot: timeSlot
+      })
     })
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        alert('상태가 변경되었습니다.');
+        alert('복귀 처리되었습니다.');
+        document.getElementById('schedule-select-modal').style.display = 'none';
         closeEnrollmentManageModal();
-        window.loadPaymentsTab(); // 목록 새로고침
+        window.loadPaymentsTab();
       } else {
-        alert('상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
+        alert('복귀 처리 실패: ' + (data.error || '알 수 없는 오류'));
       }
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('상태 변경 중 오류가 발생했습니다.');
+      alert('복귀 처리 중 오류가 발생했습니다.');
     });
+  };
+
+  window.closeScheduleSelectModal = function() {
+    document.getElementById('schedule-select-modal').style.display = 'none';
   };
 
   console.log('결제관리 JavaScript 로드 완료');

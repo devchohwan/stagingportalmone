@@ -1440,22 +1440,102 @@ class Admin::DashboardController < ApplicationController
     render json: { error: '회원을 찾을 수 없습니다.' }, status: :not_found
   end
 
+  # 선생님별 시간표 현황 조회 (휴원 해제용)
+  def get_teacher_schedule_availability
+    teacher = params[:teacher]
+
+    # 요일별, 시간대별 현재 인원 계산
+    days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+    time_slots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22']
+
+    availability = {}
+    days.each do |day|
+      availability[day] = {}
+      time_slots.each do |time_slot|
+        # 현재 이 시간대에 등록된 활성 회원 수
+        count = UserEnrollment.where(
+          teacher: teacher,
+          day: day,
+          time_slot: time_slot,
+          status: 'active',
+          is_paid: true
+        ).where('remaining_lessons > 0').count
+
+        availability[day][time_slot] = {
+          current: count,
+          max: 3,
+          available: count < 3
+        }
+      end
+    end
+
+    # 선생님 휴무일
+    teacher_holidays = Teacher::HOLIDAYS[teacher] || []
+
+    render json: {
+      success: true,
+      availability: availability,
+      holidays: teacher_holidays
+    }
+  rescue => e
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
+
   # 수강 등록 상태 토글
   def toggle_enrollment_status
     enrollment = UserEnrollment.find(params[:id])
     old_status = enrollment.status
     new_status = params[:status]
 
-    # 휴원 해제 시 (on_leave -> active) end_date 재계산
-    if old_status == 'on_leave' && new_status == 'active'
-      # 남은 수업 횟수만큼 주 단위로 end_date 계산
-      weeks_remaining = enrollment.remaining_lessons
-      new_end_date = Date.current + weeks_remaining.weeks
+    ActiveRecord::Base.transaction do
+      # 휴원 해제 시 (on_leave -> active) end_date 재계산 및 시간표 이동
+      if old_status == 'on_leave' && new_status == 'active'
+        new_day = params[:day]
+        new_time_slot = params[:time_slot]
 
-      enrollment.update!(status: new_status, end_date: new_end_date)
-      Rails.logger.info "휴원 해제: #{enrollment.user.name} / 남은수업=#{weeks_remaining}회 / 새 종료일=#{new_end_date}"
-    else
-      enrollment.update!(status: new_status)
+        # 남은 수업 횟수만큼 주 단위로 end_date 계산
+        weeks_remaining = enrollment.remaining_lessons
+        new_end_date = Date.current + weeks_remaining.weeks
+
+        # 기존 TeacherSchedule 찾기
+        old_schedule = TeacherSchedule.find_by(
+          user_id: enrollment.user_id,
+          teacher: enrollment.teacher,
+          day: enrollment.day,
+          time_slot: enrollment.time_slot
+        )
+
+        # UserEnrollment 업데이트
+        enrollment.update!(
+          status: new_status,
+          day: new_day,
+          time_slot: new_time_slot,
+          end_date: new_end_date
+        )
+
+        # TeacherSchedule 업데이트
+        if old_schedule
+          old_schedule.update!(
+            day: new_day,
+            time_slot: new_time_slot,
+            end_date: new_end_date
+          )
+        else
+          # 기존 스케줄이 없으면 새로 생성
+          TeacherSchedule.create!(
+            user_id: enrollment.user_id,
+            teacher: enrollment.teacher,
+            day: new_day,
+            time_slot: new_time_slot,
+            end_date: new_end_date
+          )
+        end
+
+        Rails.logger.info "휴원 해제: #{enrollment.user.name} / #{new_day} #{new_time_slot} / 남은수업=#{weeks_remaining}회"
+      else
+        # 휴원 처리
+        enrollment.update!(status: new_status)
+      end
     end
 
     render json: { success: true }
