@@ -654,6 +654,11 @@ class Admin::DashboardController < ApplicationController
           # 총 결제 수업 횟수 = Payment의 lessons 합계
           total_paid_lessons = Payment.where(user_id: user.id, teacher: teacher, subject: enrollment.subject).sum(:lessons)
 
+          # Payment가 없으면 remaining_lessons를 기준으로 계산
+          if total_paid_lessons == 0
+            total_paid_lessons = enrollment.remaining_lessons
+          end
+
           # 마지막 수업일 = 첫수업일 + (총 수업 횟수 - 1) * 7일
           last_lesson_date = enrollment.first_lesson_date + ((total_paid_lessons - 1) * 7).days
 

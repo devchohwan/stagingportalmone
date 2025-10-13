@@ -1,1 +1,1 @@
-🔧 모든 메인 화면 담당 선생님 통합 - primary_teacher로 일관성 확보
+🐛 결제 정보 없는 회원 스케줄 표시 수정 - remaining_lessons 기준 계산
