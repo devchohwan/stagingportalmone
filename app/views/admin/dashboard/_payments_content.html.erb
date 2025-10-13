@@ -1254,7 +1254,7 @@
   window.toggleEnrollmentStatus = function(enrollmentId, currentStatus) {
     const newStatus = currentStatus === 'on_leave' ? 'active' : 'on_leave';
 
-    fetch(`/admin/toggle_enrollment_status/${enrollmentId}`, {
+    fetch(`/admin/user_enrollments/${enrollmentId}/toggle_status`, {
       method: 'PATCH',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
