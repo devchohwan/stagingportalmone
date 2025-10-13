@@ -511,36 +511,66 @@ function holdUser(userId, system) {
 
 function rejectUser(userId, system) {
   if(confirm('이 사용자를 거부/삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-    const endpoint = system === 'makeup' ? 
-      `/admin/makeup/users/${userId}/reject` : 
+    const endpoint = system === 'makeup' ?
+      `/admin/makeup/users/${userId}/reject` :
       `/admin/practice/users/${userId}/reject`;
-      
+
+    console.log('Rejecting user:', userId, 'System:', system, 'Endpoint:', endpoint);
+
     fetch(endpoint, {
       method: 'PATCH',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
         'Content-Type': 'application/json'
       }
-    }).then(() => {
+    })
+    .then(response => {
+      console.log('Reject response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response;
+    })
+    .then(() => {
+      alert('회원이 거부/삭제되었습니다.');
       window.location.reload();
+    })
+    .catch(error => {
+      console.error('Reject error:', error);
+      alert('거부/삭제 중 오류가 발생했습니다: ' + error.message);
     });
   }
 }
 
 function deleteUser(userId, system) {
   if(confirm('정말 삭제하시겠습니까?')) {
-    const endpoint = system === 'makeup' ? 
-      `/admin/makeup/users/${userId}/reject` : 
+    const endpoint = system === 'makeup' ?
+      `/admin/makeup/users/${userId}/reject` :
       `/admin/practice/users/${userId}/reject`;
-      
+
+    console.log('Deleting user:', userId, 'System:', system, 'Endpoint:', endpoint);
+
     fetch(endpoint, {
       method: 'PATCH',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
         'Content-Type': 'application/json'
       }
-    }).then(() => {
+    })
+    .then(response => {
+      console.log('Delete response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response;
+    })
+    .then(() => {
+      alert('회원이 삭제되었습니다.');
       window.location.reload();
+    })
+    .catch(error => {
+      console.error('Delete error:', error);
+      alert('삭제 중 오류가 발생했습니다: ' + error.message);
     });
   }
 }
