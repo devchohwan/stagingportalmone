@@ -2,16 +2,17 @@ class User < ApplicationRecord
   # Devise의 encrypted_password를 사용하기 위해 has_secure_password 제거
   
   # 담당 선생님 목록 상수
-  TEACHERS = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인'].freeze
+  TEACHERS = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '온라인'].freeze
   
   # penalties 테이블과 연결 (practice 시스템의 페널티 데이터)
   has_many :penalties, dependent: :destroy
   has_many :reservations, dependent: :destroy
-  has_many :makeup_lessons, dependent: :destroy
   has_many :makeup_reservations, dependent: :destroy
-  has_many :makeup_quotas, dependent: :destroy
+  has_many :makeup_pass_requests, dependent: :destroy
   has_many :pitch_reservations, dependent: :destroy
   has_many :pitch_penalties, dependent: :destroy
+  has_many :payments, dependent: :destroy
+  has_many :user_enrollments, dependent: :destroy
   
   # makeup system에서는 MakeupUser를 통해 연결
   
@@ -19,7 +20,7 @@ class User < ApplicationRecord
   validates :name, presence: true
   validates :phone, format: { with: /\A(010|011|016|017|018|019)\d{7,8}\z/, message: "올바른 휴대폰 번호를 입력해주세요" }, allow_blank: true
   
-  enum :status, { pending: 'pending', active: 'active', approved: 'approved', on_hold: 'on_hold', rejected: 'rejected' }, default: 'pending'
+  enum :status, { pending: 'pending', active: 'active', approved: 'approved', on_hold: 'on_hold', rejected: 'rejected', on_leave: 'on_leave' }, default: 'pending'
   
   scope :admins, -> { where(is_admin: true) }
   scope :regular_users, -> { where(is_admin: false) }
@@ -66,14 +67,100 @@ class User < ApplicationRecord
   def pitch_penalty
     PitchPenalty.for_user_this_month(self)
   end
-  
+
+  # 정규 수업일시 가져오기 (스케줄 관리에서 설정된 정보)
+  def regular_lesson_schedule
+    return nil unless teacher.present?
+
+    schedule = TeacherSchedule.where(teacher: teacher, user_id: id).first
+    return nil unless schedule
+
+    {
+      day: schedule.day,
+      time_slot: schedule.time_slot,
+      day_korean: day_to_korean(schedule.day),
+      time_display: schedule.time_slot.split('-').first
+    }
+  end
+
+  # 이번 수업일 계산 (오늘 기준 다음에 오는 수업일)
+  def next_lesson_date
+    schedule = regular_lesson_schedule
+    return nil unless schedule
+
+    today = Date.current
+    target_wday = korean_day_to_wday(schedule[:day])
+
+    # 오늘부터 다음 주 같은 요일까지 체크
+    (0..13).each do |offset|
+      date = today + offset.days
+      return date if date.wday == target_wday && date > today
+    end
+
+    nil
+  end
+
+  # 다음 수업일 계산 (이번 수업일의 다음 주)
+  def following_lesson_date
+    next_date = next_lesson_date
+    return nil unless next_date
+
+    next_date + 7.days
+  end
+
+  # 다음 수업일시 (날짜 + 시간)
+  def next_lesson_datetime
+    schedule = regular_lesson_schedule
+    return nil unless schedule
+
+    lesson_date = next_lesson_date
+    return nil unless lesson_date
+
+    # time_slot 형식: "13-14", "14-15" 등
+    start_hour = schedule[:time_slot].split('-').first.to_i
+
+    # DateTime으로 변환 (한국 시간대)
+    Time.zone.local(lesson_date.year, lesson_date.month, lesson_date.day, start_hour, 0, 0)
+  end
+
+  # 다음 수업 전까지 취소한 이력이 있는지 확인
+  def has_cancelled_makeup_before_next_lesson?
+    return false unless next_lesson_date
+
+    # 가장 최근에 취소된 보강이 있는지 확인
+    last_cancelled = makeup_pass_requests
+      .where(status: 'cancelled', request_type: 'makeup')
+      .order(updated_at: :desc)
+      .first
+
+    return false unless last_cancelled
+
+    # 취소 이후 다음 수업일이 아직 지나지 않았으면 제한
+    last_cancelled.updated_at > (next_lesson_date - 7.days) && Date.current < next_lesson_date
+  end
+
+  # 패스 만료 체크 및 자동 초기화
+  def check_passes_expiration!
+    if passes_expire_date.present? && Date.current > passes_expire_date
+      self.remaining_passes = 0
+      self.passes_expire_date = nil
+      save!
+    end
+  end
+
+  # 남은 패스 횟수 (만료 체크 포함)
+  def current_remaining_passes
+    check_passes_expiration! if passes_expire_date.present? && Date.current > passes_expire_date
+    remaining_passes || 0
+  end
+
   # 비밀번호 업데이트 메서드
   def password=(new_password)
     return if new_password.blank?
-    
+
     # BCrypt로 해시화
     hashed = ::BCrypt::Password.create(new_password)
-    
+
     # Production DB uses encrypted_password, development might use password_digest
     if self.attributes.key?('encrypted_password')
       self[:encrypted_password] = hashed
@@ -89,13 +176,39 @@ class User < ApplicationRecord
   def authenticate(password)
     # Production DB uses encrypted_password, development uses password_digest
     password_field = self.attributes.key?('encrypted_password') ? self[:encrypted_password] : self[:password_digest]
-    
+
     return false unless password_field.present?
-    
+
     # BCrypt to verify passwords
     bcrypt_password = ::BCrypt::Password.new(password_field)
     bcrypt_password == password
   rescue BCrypt::Errors::InvalidHash
     false
+  end
+
+  private
+
+  def day_to_korean(day)
+    {
+      'mon' => '월',
+      'tue' => '화',
+      'wed' => '수',
+      'thu' => '목',
+      'fri' => '금',
+      'sat' => '토',
+      'sun' => '일'
+    }[day] || day
+  end
+
+  def korean_day_to_wday(day)
+    {
+      'mon' => 1,
+      'tue' => 2,
+      'wed' => 3,
+      'thu' => 4,
+      'fri' => 5,
+      'sat' => 6,
+      'sun' => 0
+    }[day] || 0
   end
 end

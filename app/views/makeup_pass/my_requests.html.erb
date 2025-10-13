@@ -1,0 +1,271 @@
+<style>
+  .my-requests-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .my-requests-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .my-requests-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+
+  .content-wrapper {
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .request-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+  }
+
+  .request-card:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .request-type-badge {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .request-type-makeup {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .request-type-pass {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .request-status {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .status-active {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .status-completed {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .status-cancelled {
+    background: #e5e7eb;
+    color: #4b5563;
+  }
+
+  .status-no-show {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .request-body {
+    color: #4a5568;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .request-info {
+    margin-bottom: 8px;
+  }
+
+  .request-info-label {
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: #718096;
+    text-decoration: none;
+    margin-top: 30px;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+  }
+
+  .back-link:hover {
+    color: #2d3748;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #718096;
+  }
+
+  .empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+  }
+
+  .empty-state-text {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-block;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(52, 211, 153, 0.3);
+  }
+
+  .btn-change {
+    background: #3b82f6;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+
+  .btn-change:hover {
+    background: #2563eb;
+  }
+
+  .btn-cancel {
+    background: #ef4444;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-cancel:hover {
+    background: #dc2626;
+  }
+</style>
+
+<div class="my-requests-container">
+  <div class="my-requests-header">
+    <h1 class="my-requests-title">내 신청 내역</h1>
+  </div>
+
+  <div class="content-wrapper">
+    <% if @requests.any? %>
+      <% @requests.each do |request| %>
+        <div class="request-card">
+          <div class="request-header">
+            <span class="request-type-badge <%= request.makeup? ? 'request-type-makeup' : 'request-type-pass' %>">
+              <%= request.makeup? ? '📚 보강' : '✋ 패스' %>
+            </span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="request-status status-<%= request.status %>">
+                <% case request.status %>
+                <% when 'active' %>
+                  🔵 예약됨
+                <% when 'completed' %>
+                  ✅ 완료
+                <% when 'cancelled' %>
+                  ❌ 취소됨
+                <% when 'no_show' %>
+                  ⚠️ 노쇼
+                <% end %>
+              </span>
+              <% if request.status == 'active' && request.makeup? %>
+                <div style="display: flex; gap: 8px;">
+                  <%= link_to '변경', change_makeup_pass_request_path(request), class: 'btn-change' %>
+                  <%= button_to '취소', cancel_makeup_pass_request_path(request), method: :patch, class: 'btn-cancel', data: { turbo_confirm: "보강을 취소하시겠습니까?\n\n보강을 취소하시면 수업횟수가 차감되어 결석처리되며, 다음 수업일 전까지 보강을 신청하실 수 없습니다." } %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="request-body">
+            <div class="request-info">
+              <span class="request-info-label">날짜:</span>
+              <%= request.formatted_date %>
+            </div>
+
+            <% if request.makeup? %>
+              <div class="request-info">
+                <span class="request-info-label">시간:</span>
+                <%= request.formatted_time %>
+              </div>
+              <div class="request-info">
+                <span class="request-info-label">담당:</span>
+                <%= request.teacher %>
+              </div>
+            <% end %>
+
+            <div class="request-info">
+              <span class="request-info-label">주차:</span>
+              <%= request.week_number %>주차
+            </div>
+
+            <div class="request-info" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+              <span class="request-info-label">신청 내용:</span>
+              <div style="margin-top: 8px; white-space: pre-wrap;"><%= request.content %></div>
+            </div>
+
+            <div class="request-info" style="margin-top: 10px; font-size: 0.85rem; color: #718096;">
+              신청일: <%= request.created_at.strftime('%Y년 %m월 %d일 %H:%M') %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="empty-state">
+        <div class="empty-state-icon">📝</div>
+        <div class="empty-state-text">아직 신청 내역이 없습니다.</div>
+        <%= link_to "보강/패스 신청하기", makeup_pass_reserve_path, class: "btn-primary" %>
+      </div>
+    <% end %>
+
+    <%= link_to "← 뒤로가기", makeup_pass_path, class: "back-link" %>
+  </div>
+</div>

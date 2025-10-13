@@ -1,0 +1,412 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto py-8 px-4">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">시간표 관리</h2>
+      <a href="<%= admin_root_path %>" class="text-blue-600 hover:text-blue-800">← 대시보드로</a>
+    </div>
+
+    <!-- Debug info -->
+    <div class="bg-yellow-100 p-4 mb-4 rounded">
+      <p>Teachers: <%= @teachers.inspect %></p>
+      <p>Selected: <%= @selected_teacher %></p>
+    </div>
+
+    <!-- 선생님 선택 & 학생 검색 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div class="flex items-center gap-4 flex-1">
+          <label class="text-sm font-medium">선생님:</label>
+          <select id="teacher-select" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <% @teachers.each do |teacher| %>
+              <option value="<%= teacher %>" <%= 'selected' if teacher == @selected_teacher %>><%= teacher %></option>
+            <% end %>
+          </select>
+
+          <div class="flex-1 max-w-md">
+            <div class="relative">
+              <input type="text"
+                     id="student-search"
+                     placeholder="학생 이름 또는 아이디 검색..."
+                     class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <div id="search-results" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                <!-- 검색 결과가 여기에 표시됩니다 -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button id="save-schedule" class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium">
+          저장
+        </button>
+      </div>
+
+      <div class="text-sm text-gray-600">
+        <p>• 학생을 검색하여 시간표에 추가할 수 있습니다.</p>
+        <p>• 학생 카드의 [×] 버튼을 클릭하여 제거할 수 있습니다.</p>
+        <p>• 각 시간대는 최대 3명까지 배치할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <!-- 시간표 테이블 -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse" id="schedule-table">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="border border-gray-300 px-4 py-3 text-center w-24">시간</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">월</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">화</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">수</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">목</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">금</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">토</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">일</th>
+            </tr>
+          </thead>
+          <tbody id="schedule-body">
+            <!-- 시간대별 행 -->
+            <% ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'].each do |time_slot| %>
+              <tr>
+                <td class="border border-gray-300 px-4 py-3 text-center font-medium bg-gray-50">
+                  <%= time_slot.split('-').join(':00-') + ':00' %>
+                </td>
+                <% ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].each do |day| %>
+                  <td class="border border-gray-300 px-2 py-2 align-top drop-zone"
+                      data-day="<%= day %>"
+                      data-time="<%= time_slot %>"
+                      ondrop="drop(event)"
+                      ondragover="allowDrop(event)">
+                    <div class="space-y-1 min-h-[80px]" id="cell-<%= day %>-<%= time_slot %>">
+                      <!-- 학생 카드가 여기에 동적으로 추가됩니다 -->
+                    </div>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 로딩 인디케이터 -->
+    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p class="mt-4 text-gray-700">처리 중...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentTeacher = '<%= @selected_teacher %>';
+let scheduleData = {}; // { day: { time_slot: [user_ids] } }
+let searchTimeout = null;
+
+// 페이지 로드 시 시간표 불러오기
+document.addEventListener('DOMContentLoaded', function() {
+  // 선생님 변경
+  const teacherSelect = document.getElementById('teacher-select');
+  if (teacherSelect) {
+    teacherSelect.addEventListener('change', function() {
+      currentTeacher = this.value;
+      loadSchedule();
+    });
+  }
+
+  // 시간표 저장 버튼
+  const saveScheduleBtn = document.getElementById('save-schedule');
+  if (saveScheduleBtn) {
+    saveScheduleBtn.addEventListener('click', saveScheduleHandler);
+  }
+
+  loadSchedule();
+  setupSearchInput();
+});
+
+// 검색 입력 설정
+function setupSearchInput() {
+  const searchInput = document.getElementById('student-search');
+  const searchResults = document.getElementById('search-results');
+  
+  if (!searchInput || !searchResults) return;
+
+  searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+
+    if (query.length < 2) {
+      searchResults.classList.add('hidden');
+      return;
+    }
+
+    searchTimeout = setTimeout(() => searchStudents(query), 300);
+  });
+
+  // 검색 결과 외부 클릭 시 닫기
+  document.addEventListener('click', function(e) {
+    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+      searchResults.classList.add('hidden');
+    }
+  });
+}
+
+async function searchStudents(query) {
+  const searchResults = document.getElementById('search-results');
+  if (!searchResults) return;
+  
+  try {
+    const response = await fetch(`/admin/search_students?search=${encodeURIComponent(query)}&teacher=${encodeURIComponent(currentTeacher)}`);
+    const data = await response.json();
+
+    searchResults.innerHTML = '';
+
+    if (data.students && data.students.length > 0) {
+      data.students.forEach(student => {
+        const item = document.createElement('div');
+        item.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200';
+        item.innerHTML = `
+          <div class="font-medium">${student.name}</div>
+          <div class="text-xs text-gray-600">${student.username} - ${student.teacher}</div>
+        `;
+        item.onclick = () => selectStudent(student);
+        searchResults.appendChild(item);
+      });
+      searchResults.classList.remove('hidden');
+    } else {
+      searchResults.innerHTML = '<div class="px-4 py-2 text-gray-500">검색 결과가 없습니다.</div>';
+      searchResults.classList.remove('hidden');
+    }
+  } catch (error) {
+    console.error('Error searching students:', error);
+  }
+}
+
+// 학생 선택 (검색 결과에서)
+function selectStudent(student) {
+  window.selectedStudent = student;
+
+  const searchInput = document.getElementById('student-search');
+  const searchResults = document.getElementById('search-results');
+  
+  if (searchInput) searchInput.value = '';
+  if (searchResults) searchResults.classList.add('hidden');
+
+  alert(`${student.name}님을 선택했습니다. 원하는 시간대 셀을 클릭하여 추가하세요.`);
+
+  // 셀 클릭 이벤트 활성화
+  enableCellClick();
+}
+
+// 셀 클릭으로 학생 추가
+function enableCellClick() {
+  const cells = document.querySelectorAll('.drop-zone');
+
+  cells.forEach(cell => {
+    cell.style.cursor = 'pointer';
+    cell.style.backgroundColor = '#e0f2fe';
+
+    const clickHandler = function() {
+      if (window.selectedStudent) {
+        const day = this.dataset.day;
+        const timeSlot = this.dataset.time;
+
+        addStudentToCell(day, timeSlot, window.selectedStudent);
+
+        // 초기화
+        window.selectedStudent = null;
+        cells.forEach(c => {
+          c.style.cursor = 'default';
+          c.style.backgroundColor = '';
+          c.removeEventListener('click', c.clickHandler);
+        });
+      }
+    };
+
+    cell.clickHandler = clickHandler;
+    cell.addEventListener('click', clickHandler);
+  });
+}
+
+// 셀에 학생 추가
+function addStudentToCell(day, timeSlot, student) {
+  // 현재 셀의 학생 수 확인
+  if (!scheduleData[day]) scheduleData[day] = {};
+  if (!scheduleData[day][timeSlot]) scheduleData[day][timeSlot] = [];
+
+  if (scheduleData[day][timeSlot].length >= 3) {
+    alert('이 시간대는 이미 3명으로 가득 찼습니다.');
+    return;
+  }
+
+  // 중복 확인
+  if (scheduleData[day][timeSlot].includes(student.id)) {
+    alert('이미 추가된 학생입니다.');
+    return;
+  }
+
+  // 추가
+  scheduleData[day][timeSlot].push(student.id);
+
+  // UI 업데이트
+  const cell = document.getElementById(`cell-${day}-${timeSlot}`);
+  const card = createStudentCard(student, day, timeSlot);
+  cell.appendChild(card);
+
+  console.log('학생 추가:', student.name, day, timeSlot);
+}
+
+// 시간표 불러오기
+async function loadSchedule() {
+  showLoading(true);
+  scheduleData = {};
+
+  try {
+    const response = await fetch(`/admin/load_schedule?teacher=${encodeURIComponent(currentTeacher)}&week_offset=0`);
+    const data = await response.json();
+
+    if (data.success) {
+      renderSchedule(data.schedules);
+    } else {
+      alert('시간표를 불러오는데 실패했습니다: ' + data.message);
+    }
+  } catch (error) {
+    console.error('Error loading schedule:', error);
+    alert('시간표를 불러오는데 실패했습니다.');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// 시간표 렌더링
+function renderSchedule(schedules) {
+  // 모든 셀 초기화
+  const cells = document.querySelectorAll('[id^="cell-"]');
+  cells.forEach(cell => cell.innerHTML = '');
+
+  // 스케줄 데이터로 채우기
+  for (const [day, timeSlots] of Object.entries(schedules)) {
+    if (!scheduleData[day]) scheduleData[day] = {};
+
+    for (const [timeSlot, students] of Object.entries(timeSlots)) {
+      if (!scheduleData[day][timeSlot]) scheduleData[day][timeSlot] = [];
+
+      const cellId = `cell-${day}-${timeSlot}`;
+      const cell = document.getElementById(cellId);
+
+      if (cell) {
+        students.forEach(student => {
+          // 보강/패스 상태가 아닌 정규 학생만 추가
+          if (!student.is_pass && !student.is_makeup_away && !student.is_makeup && !student.is_absent) {
+            scheduleData[day][timeSlot].push(student.id);
+            const card = createStudentCard(student, day, timeSlot);
+            cell.appendChild(card);
+          }
+        });
+      }
+    }
+  }
+}
+
+// 학생 카드 생성
+function createStudentCard(student, day, timeSlot) {
+  const card = document.createElement('div');
+  card.className = 'p-2 rounded text-xs bg-white border border-gray-300 hover:shadow-md transition-shadow relative';
+  card.dataset.userId = student.id;
+
+  card.innerHTML = `
+    <button class="absolute top-1 right-1 text-red-600 hover:text-red-800 font-bold" onclick="removeStudent(${student.id}, '${day}', '${timeSlot}')">
+      ×
+    </button>
+    <div class="font-medium">${student.name}</div>
+    <div class="text-gray-600">${student.username}</div>
+    <div class="text-gray-500 text-xs">${student.teacher || currentTeacher}</div>
+  `;
+
+  return card;
+}
+
+// 학생 제거
+function removeStudent(userId, day, timeSlot) {
+  if (!confirm('이 학생을 시간표에서 제거하시겠습니까?')) {
+    return;
+  }
+
+  // 데이터에서 제거
+  if (scheduleData[day] && scheduleData[day][timeSlot]) {
+    scheduleData[day][timeSlot] = scheduleData[day][timeSlot].filter(id => id !== userId);
+  }
+
+  // UI에서 제거
+  const cell = document.getElementById(`cell-${day}-${timeSlot}`);
+  const cards = cell.querySelectorAll(`[data-user-id="${userId}"]`);
+  cards.forEach(card => card.remove());
+}
+
+// 시간표 저장 핸들러
+async function saveScheduleHandler() {
+  if (!confirm('현재 시간표를 저장하시겠습니까?\n기존 시간표는 모두 삭제됩니다.')) {
+    return;
+  }
+
+  showLoading(true);
+
+  try {
+    const response = await fetch('/admin/save_schedule', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        teacher: currentTeacher,
+        schedules: scheduleData
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert('시간표가 저장되었습니다.');
+      loadSchedule(); // 다시 불러오기
+    } else {
+      alert('저장에 실패했습니다: ' + data.message);
+    }
+  } catch (error) {
+    console.error('Error saving schedule:', error);
+    alert('저장에 실패했습니다.');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// 드래그 앤 드롭 지원 (추가 기능)
+function allowDrop(ev) {
+  ev.preventDefault();
+}
+
+function drop(ev) {
+  ev.preventDefault();
+  // 추후 드래그 앤 드롭 구현 시 사용
+}
+
+function showLoading(show) {
+  const loading = document.getElementById('loading');
+  if (!loading) return;
+  if (show) {
+    loading.classList.remove('hidden');
+  } else {
+    loading.classList.add('hidden');
+  }
+}
+</script>
+
+<style>
+.drop-zone {
+  transition: background-color 0.2s;
+}
+
+.drop-zone:hover {
+  background-color: #f3f4f6;
+}
+</style>

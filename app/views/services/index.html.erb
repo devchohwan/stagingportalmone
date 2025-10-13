@@ -85,7 +85,11 @@
   .pitch-icon {
     background: linear-gradient(135deg, #8b5cf6, #ec4899);
   }
-  
+
+  .makeup-pass-icon {
+    background: linear-gradient(135deg, #34d399, #10b981);
+  }
+
   .service-title {
     font-size: 1.5rem;
     font-weight: 600;
@@ -291,6 +295,14 @@
       </div>
       <h3 class="service-title">보충수업 관리</h3>
       <p class="service-description">보충수업 일정을 확인하고 관리합니다</p>
+    <% end %>
+
+    <%= link_to makeup_pass_path, class: "service-card" do %>
+      <div class="service-icon makeup-pass-icon">
+        ✅
+      </div>
+      <h3 class="service-title">보강 / 패스 신청</h3>
+      <p class="service-description">수업 보강 및 패스를 신청하고 관리합니다</p>
     <% end %>
 
     <div class="service-card" onclick="alert('곧 오픈예정입니다! 많이 기대해주세요😊');" style="cursor: pointer;">

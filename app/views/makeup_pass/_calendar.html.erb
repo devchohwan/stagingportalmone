@@ -1,0 +1,93 @@
+<%
+  start_date = date.beginning_of_month
+  end_date = date.end_of_month
+  weeks = (start_date.beginning_of_week(:sunday)..end_date.end_of_week(:sunday)).to_a.each_slice(7)
+  today = Date.current
+  user_teacher = current_user&.teacher || ''
+  next_lesson = current_user&.next_lesson_date
+  following_lesson = current_user&.following_lesson_date
+%>
+
+<div class="calendar" data-month="<%= date.strftime('%Y-%m') %>">
+  <div class="calendar-header">
+    <button class="calendar-nav-btn" onclick="navigateMakeupPassMonth('prev')">←</button>
+    <h3 class="calendar-month-title"><%= date.strftime('%Y년 %m월') %></h3>
+    <button class="calendar-nav-btn" onclick="navigateMakeupPassMonth('next')">→</button>
+  </div>
+  
+  <div class="calendar-grid">
+    <% %w[일 월 화 수 목 금 토].each do |day| %>
+      <div class="calendar-weekday"><%= day %></div>
+    <% end %>
+    
+    <% weeks.each do |week| %>
+      <% week.each do |day| %>
+        <%
+          is_today = day == today
+          is_past = day < today
+          is_same_day = day == today  # 당일인지 체크
+          is_current_month = day.month == date.month
+          is_monday = day.wday == 1  # 월요일 체크
+          is_tuesday = day.wday == 2  # 화요일 체크
+          is_wednesday = day.wday == 3  # 수요일 체크
+          is_thursday = day.wday == 4  # 목요일 체크
+          is_friday = day.wday == 5  # 금요일 체크
+          is_saturday = day.wday == 6  # 토요일 체크
+          is_sunday = day.wday == 0  # 일요일 체크
+
+          # 이번/다음 수업일 체크
+          is_next_lesson = next_lesson && day == next_lesson
+          is_following_lesson = following_lesson && day == following_lesson
+
+          # 이번 수업일과 다음 수업일 사이 기간 체크
+          is_between_lessons = false
+          if next_lesson && following_lesson && day > next_lesson && day < following_lesson
+            is_between_lessons = true
+          end
+
+          # 2025년 10월 2-10일 비활성화
+          blocked_dates = (Date.new(2025, 10, 2)..Date.new(2025, 10, 10)).to_a
+          is_blocked = blocked_dates.include?(day)
+
+          css_classes = []
+          css_classes << "calendar-day-cell"
+          css_classes << "not-current-month" unless is_current_month
+          css_classes << "past-day" if is_past && !is_today
+          css_classes << "today" if is_today
+          css_classes << "same-day-disabled" if is_same_day  # 당일 예약 불가 스타일
+          css_classes << "monday-closed" if is_monday
+          css_classes << "blocked-day" if is_blocked
+          css_classes << "lesson-day" if is_next_lesson || is_following_lesson
+          css_classes << "between-lessons" if is_between_lessons && !is_monday && !is_blocked
+
+          # 클릭 가능한지 확인 (당일 예약 불가, 월요일 휴무만 체크)
+          is_clickable = is_current_month && !is_past && !is_monday && !is_same_day && !is_blocked
+        %>
+        
+        <div class="<%= css_classes.join(' ') %>" 
+             data-date="<%= day.strftime('%Y-%m-%d') %>"
+             <% if is_clickable %>
+               data-clickable="true"
+               onclick="selectDate(this)"
+             <% end %>>
+          <div class="day-number"><%= day.day %></div>
+          <div class="day-label">
+            <% if is_next_lesson && is_current_month %>
+              이번수업
+            <% elsif is_following_lesson && is_current_month %>
+              다음수업
+            <% elsif is_today %>
+              예약불가
+            <% elsif is_blocked && is_current_month %>
+              예약불가
+            <% elsif is_monday && is_current_month %>
+              휴무
+            <% else %>
+              &nbsp;
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

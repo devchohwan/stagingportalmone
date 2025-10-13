@@ -1,0 +1,379 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto py-8 px-4">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">시간표 뷰어</h2>
+      <a href="<%= admin_root_path %>" class="text-blue-600 hover:text-blue-800">← 대시보드로</a>
+    </div>
+
+    <!-- Debug info -->
+    <div class="bg-yellow-100 p-4 mb-4 rounded">
+      <p>Teachers: <%= @teachers.inspect %></p>
+      <p>Selected: <%= @selected_teacher %></p>
+    </div>
+
+    <!-- 선생님 & 주차 선택 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <label class="text-sm font-medium">선생님:</label>
+          <select id="teacher-select" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <% @teachers.each do |teacher| %>
+              <option value="<%= teacher %>" <%= 'selected' if teacher == @selected_teacher %>><%= teacher %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <button id="prev-week" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">← 이전 주</button>
+          <span id="current-week" class="text-lg font-semibold">2025년 10월 13일 주</span>
+          <button id="next-week" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">다음 주 →</button>
+        </div>
+
+        <button id="refresh-schedule" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+          새로고침
+        </button>
+      </div>
+    </div>
+
+    <!-- 범례 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex flex-wrap gap-4 text-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-white border border-gray-300"></div>
+          <span>정상 출석</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-gray-300"></div>
+          <span>패스</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-gray-300 border-2 border-blue-500"></div>
+          <span>보강 이동</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-blue-100 border border-blue-400"></div>
+          <span>보강 온</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-red-100 border border-red-400"></div>
+          <span>결석</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-orange-100 border-2 border-orange-500"></div>
+          <span>휴원</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시간표 테이블 -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse" id="schedule-table">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="border border-gray-300 px-4 py-3 text-center w-24">시간</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">월</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">화</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">수</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">목</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">금</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">토</th>
+              <th class="border border-gray-300 px-4 py-3 text-center">일</th>
+            </tr>
+          </thead>
+          <tbody id="schedule-body">
+            <!-- 시간대별 행 -->
+            <% ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'].each do |time_slot| %>
+              <tr>
+                <td class="border border-gray-300 px-4 py-3 text-center font-medium bg-gray-50">
+                  <%= time_slot.split('-').join(':00-') + ':00' %>
+                </td>
+                <% ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].each do |day| %>
+                  <td class="border border-gray-300 px-2 py-2 align-top" data-day="<%= day %>" data-time="<%= time_slot %>">
+                    <div class="space-y-1 min-h-[80px]" id="cell-<%= day %>-<%= time_slot %>">
+                      <!-- 학생 카드가 여기에 동적으로 추가됩니다 -->
+                    </div>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 로딩 인디케이터 -->
+    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p class="mt-4 text-gray-700">불러오는 중...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 학생 상세정보 모달 -->
+<div id="student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold" id="modal-title">학생 정보</h3>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div id="modal-content" class="text-sm space-y-2">
+        <!-- 동적으로 내용이 채워집니다 -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentWeekOffset = 0;
+let currentTeacher = '<%= @selected_teacher %>';
+let lastCheckTimestamp = Math.floor(Date.now() / 1000);
+
+// 페이지 로드 시 시간표 불러오기
+document.addEventListener('DOMContentLoaded', function() {
+  // 선생님 변경
+  const teacherSelect = document.getElementById('teacher-select');
+  if (teacherSelect) {
+    teacherSelect.addEventListener('change', function() {
+      currentTeacher = this.value;
+      loadSchedule();
+    });
+  }
+
+  // 주차 이동
+  const prevWeekBtn = document.getElementById('prev-week');
+  if (prevWeekBtn) {
+    prevWeekBtn.addEventListener('click', function() {
+      currentWeekOffset--;
+      loadSchedule();
+    });
+  }
+
+  const nextWeekBtn = document.getElementById('next-week');
+  if (nextWeekBtn) {
+    nextWeekBtn.addEventListener('click', function() {
+      currentWeekOffset++;
+      loadSchedule();
+    });
+  }
+
+  // 새로고침
+  const refreshBtn = document.getElementById('refresh-schedule');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      loadSchedule();
+    });
+  }
+
+  loadSchedule();
+  startAutoRefresh();
+});
+
+// 시간표 불러오기
+async function loadSchedule() {
+  showLoading(true);
+
+  try {
+    const response = await fetch(`/admin/load_schedule?teacher=${encodeURIComponent(currentTeacher)}&week_offset=${currentWeekOffset}`);
+    const data = await response.json();
+
+    if (data.success) {
+      renderSchedule(data.schedules);
+      updateWeekDisplay();
+    } else {
+      alert('시간표를 불러오는데 실패했습니다: ' + data.message);
+    }
+  } catch (error) {
+    console.error('Error loading schedule:', error);
+    alert('시간표를 불러오는데 실패했습니다.');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// 시간표 렌더링
+function renderSchedule(schedules) {
+  // 모든 셀 초기화
+  const cells = document.querySelectorAll('[id^="cell-"]');
+  cells.forEach(cell => cell.innerHTML = '');
+
+  // 스케줄 데이터로 채우기
+  for (const [day, timeSlots] of Object.entries(schedules)) {
+    for (const [timeSlot, students] of Object.entries(timeSlots)) {
+      const cellId = `cell-${day}-${timeSlot}`;
+      const cell = document.getElementById(cellId);
+
+      if (cell) {
+        students.forEach(student => {
+          const card = createStudentCard(student);
+          cell.appendChild(card);
+        });
+
+        // 인원 표시 추가
+        const countDiv = document.createElement('div');
+        countDiv.className = 'text-xs text-gray-500 text-center mt-1';
+        countDiv.textContent = `${students.length}/3명`;
+        cell.appendChild(countDiv);
+      }
+    }
+  }
+}
+
+// 학생 카드 생성
+function createStudentCard(student) {
+  const card = document.createElement('div');
+  card.className = 'p-2 rounded text-xs cursor-pointer hover:shadow-md transition-shadow';
+
+  // 상태별 스타일링
+  if (student.is_pass) {
+    card.className += ' bg-gray-300 text-gray-700';
+  } else if (student.is_makeup_away) {
+    card.className += ' bg-gray-300 border-2 border-blue-500 text-gray-700';
+  } else if (student.is_makeup) {
+    card.className += ' bg-blue-100 border border-blue-400 text-blue-900';
+  } else if (student.is_absent) {
+    card.className += ' bg-red-100 border border-red-400 text-red-900';
+  } else if (student.is_on_leave) {
+    card.className += ' bg-orange-100 border-2 border-orange-500';
+  } else {
+    card.className += ' bg-white border border-gray-300';
+  }
+
+  // 카드 내용
+  let content = `<div class="font-medium">${student.name}</div>`;
+  content += `<div class="text-gray-600">${student.username}</div>`;
+
+  if (student.is_pass) {
+    content += `<div class="text-gray-600 mt-1">패스</div>`;
+  } else if (student.is_makeup_away) {
+    content += `<div class="text-blue-600 mt-1">→ ${student.moved_to_teacher}</div>`;
+  } else if (student.is_makeup) {
+    content += `<div class="text-blue-600 mt-1">보강: ${student.original_teacher}</div>`;
+    content += `<div class="text-gray-500">${student.week_number}주차</div>`;
+  } else if (student.is_absent) {
+    content += `<div class="text-red-600 mt-1">결석</div>`;
+  } else if (student.is_on_leave) {
+    content += `<div class="text-orange-600 mt-1">휴원</div>`;
+  }
+
+  card.innerHTML = content;
+
+  // 보강/패스 신청 정보가 있으면 모달 열기
+  if (student.makeup_request_id) {
+    card.onclick = () => showStudentInfo(student.makeup_request_id);
+  }
+
+  return card;
+}
+
+function updateWeekDisplay() {
+  const currentWeek = document.getElementById('current-week');
+  if (!currentWeek) return;
+  
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay() + (currentWeekOffset * 7));
+
+  const year = weekStart.getFullYear();
+  const month = weekStart.getMonth() + 1;
+  const day = weekStart.getDate();
+
+  currentWeek.textContent = `${year}년 ${month}월 ${day}일 주`;
+}
+
+// 학생 상세정보 표시
+async function showStudentInfo(requestId) {
+  try {
+    const response = await fetch(`/admin/makeup_request_info/${requestId}`);
+    const data = await response.json();
+
+    if (data.success) {
+      document.getElementById('modal-title').textContent = `${data.user_name} (${data.user_teacher})`;
+
+      let content = `
+        <p><strong>신청 유형:</strong> ${data.request_type === 'makeup' ? '보강' : '패스'}</p>
+        <p><strong>원래 날짜:</strong> ${data.original_date}</p>
+      `;
+
+      if (data.request_type === 'makeup') {
+        content += `
+          <p><strong>보강 날짜:</strong> ${data.makeup_date}</p>
+          <p><strong>시간:</strong> ${data.time_slot}</p>
+          <p><strong>선생님:</strong> ${data.teacher}</p>
+          <p><strong>주차:</strong> ${data.week_number}주차</p>
+        `;
+      }
+
+      content += `
+        <p><strong>신청 사유:</strong> ${data.content || '없음'}</p>
+        <p class="text-gray-500"><strong>신청일:</strong> ${data.created_at}</p>
+      `;
+
+      const modalContent = document.getElementById('modal-content');
+      const modal = document.getElementById('student-modal');
+      if (!modalContent || !modal) return;
+      modalContent.innerHTML = content;
+      modal.classList.remove('hidden');
+    }
+  } catch (error) {
+    console.error('Error loading student info:', error);
+    alert('학생 정보를 불러오는데 실패했습니다.');
+  }
+}
+
+function closeModal() {
+  const modal = document.getElementById('student-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+}
+
+function showLoading(show) {
+  const loading = document.getElementById('loading');
+  if (!loading) return;
+  if (show) {
+    loading.classList.remove('hidden');
+  } else {
+    loading.classList.add('hidden');
+  }
+}
+
+// 자동 새로고침 (30초마다 변경사항 체크)
+function startAutoRefresh() {
+  setInterval(async () => {
+    try {
+      const response = await fetch(`/admin/schedule_changes?since=${lastCheckTimestamp}`);
+      const data = await response.json();
+
+      if (data.changed) {
+        console.log('스케줄이 변경되었습니다. 새로고침합니다.');
+        loadSchedule();
+      }
+
+      lastCheckTimestamp = data.timestamp;
+    } catch (error) {
+      console.error('Error checking schedule changes:', error);
+    }
+  }, 30000); // 30초
+}
+</script>
+
+<style>
+.btn-approve {
+  @apply px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700;
+}
+
+.btn-hold {
+  @apply px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700;
+}
+
+.btn-reject {
+  @apply px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700;
+}
+</style>

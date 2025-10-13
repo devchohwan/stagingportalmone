@@ -1,0 +1,1221 @@
+<style>
+  .reserve-container {
+    min-height: 100vh;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .reserve-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .reserve-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+  
+  .content-wrapper {
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .step-section {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    padding: 25px;
+  }
+  
+  .step-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+  }
+  
+  .calendar-container {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 0;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    display: block;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(52, 211, 153, 0.3);
+  }
+  
+  .confirmation-card {
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.05), rgba(16, 185, 129, 0.05));
+    border: 2px solid rgba(52, 211, 153, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .confirmation-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+  
+  .confirmation-text {
+    color: #4a5568;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  
+  .back-link {
+    color: #718096;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+    text-align: center;
+    display: block;
+    margin-top: 30px;
+  }
+  
+  .back-link:hover {
+    color: #2d3748;
+    text-decoration: none;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  /* Calendar specific styles */
+  .calendar {
+    width: 100%;
+  }
+  
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .calendar-nav-btn {
+    color: #718096;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+  
+  .calendar-nav-btn:hover {
+    color: #2d3748;
+    background-color: #f7fafc;
+  }
+  
+  .calendar-month-title {
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+  
+  .calendar-weekday {
+    font-weight: 600;
+    color: #718096;
+    font-size: 0.75rem;
+    padding: 8px 0;
+  }
+  
+  .calendar-day-cell {
+    padding: 12px;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    min-height: 65px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .calendar-day-cell:hover:not(.past-day):not(.monday-closed):not(.blocked-day):not(.same-day-disabled) {
+    background-color: #f7fafc;
+    border-color: #34d399;
+  }
+
+  .calendar-day-cell.selected {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: white;
+    border-color: #34d399;
+  }
+  
+  .calendar-day-cell.not-current-month {
+    opacity: 0.3;
+  }
+  
+  .calendar-day-cell.past-day,
+  .calendar-day-cell.monday-closed,
+  .calendar-day-cell.blocked-day,
+  .calendar-day-cell.same-day-disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    background-color: #f9fafb;
+  }
+  
+  .calendar-day-cell.today {
+    color: #059669;
+    font-weight: bold;
+  }
+  
+  .calendar-day-cell.monday-closed {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+  }
+
+  .calendar-day-cell.lesson-day {
+    background-color: #fef3c7;
+    border-color: #fbbf24;
+  }
+
+  .calendar-day-cell.lesson-day .day-label {
+    color: #92400e;
+    font-weight: 600;
+  }
+
+  .calendar-day-cell.between-lessons {
+    background-color: #fef3c7;
+    border-color: #fbbf24;
+  }
+
+  .day-number {
+    font-size: 0.9rem;
+  }
+  
+  .day-label {
+    font-size: 0.65rem;
+    margin-top: 2px;
+    height: 14px;  /* 고정 높이 확보 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+  
+  .today .day-label {
+    color: #059669;
+  }
+  
+  .monday-closed .day-label {
+    color: #9ca3af;
+  }
+  
+  /* Type selection styles */
+  .type-selection-container {
+    display: flex;
+    gap: 15px;
+    flex-direction: row;
+  }
+
+  .type-btn {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .type-btn:hover:not(.selected) {
+    border-color: #34d399;
+    background-color: #f7fafc;
+    transform: translateY(-2px);
+  }
+
+  .type-btn.selected {
+    background-color: rgba(52, 211, 153, 0.1);
+    border-color: #34d399;
+    border-width: 3px;
+  }
+
+  .type-icon {
+    font-size: 2.5rem;
+    margin-bottom: 5px;
+  }
+
+  .type-name {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #2d3748;
+  }
+
+  .type-description {
+    font-size: 0.9rem;
+    color: #718096;
+  }
+
+  /* Time slot styles */
+  .time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .time-slot-btn {
+    padding: 15px;
+    font-size: 0.9rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .time-slot-time {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.95rem;
+  }
+
+  .time-slot-btn:hover:not(.disabled):not(.selected) {
+    background-color: #f7fafc;
+    border-color: #34d399;
+    transform: translateY(-2px);
+  }
+
+  .time-slot-btn.selected {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    border-color: #34d399;
+  }
+
+  .time-slot-btn.selected .time-slot-time {
+    color: white;
+  }
+
+  .time-slot-btn.disabled,
+  .time-slot-btn:disabled {
+    background-color: #f9fafb;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Teacher selection styles */
+  .teachers-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .teacher-btn {
+    padding: 15px;
+    font-size: 0.9rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .teacher-name {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 1rem;
+  }
+
+  .teacher-info {
+    font-size: 0.8rem;
+    color: #718096;
+  }
+
+  .teacher-btn:hover:not(.selected) {
+    background-color: #f7fafc;
+    border-color: #34d399;
+    transform: translateY(-2px);
+  }
+
+  .teacher-btn.selected {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    border-color: #34d399;
+  }
+
+  .teacher-btn.selected .teacher-name,
+  .teacher-btn.selected .teacher-info {
+    color: white;
+  }
+  
+  /* Room selection styles */
+  .rooms-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .room-btn {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .room-btn:hover:not(.unavailable):not(.selected) {
+    border-color: #34d399;
+    background-color: #f7fafc;
+  }
+
+  .room-btn.selected {
+    background-color: rgba(52, 211, 153, 0.1);
+    border-color: #34d399;
+  }
+  
+  .room-btn.unavailable {
+    cursor: not-allowed;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    opacity: 0.75;
+  }
+  
+  .room-name {
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .room-btn.unavailable .room-name {
+    color: #9ca3af;
+  }
+  
+  .room-info {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .room-btn.pending {
+    cursor: not-allowed;
+    background-color: #fffbeb;
+    border-color: #fbbf24;
+    opacity: 0.8;
+  }
+  
+  .status-pending {
+    font-size: 0.75rem;
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  .status-available {
+    font-size: 0.75rem;
+    background-color: #dcfce7;
+    color: #166534;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  .status-unavailable {
+    font-size: 0.75rem;
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  @media (max-width: 480px) {
+    .reserve-title {
+      font-size: 1.2rem;
+      white-space: nowrap;
+    }
+    
+    .reserve-container {
+      padding: 20px 15px;
+    }
+    
+    .content-wrapper {
+      max-width: 100%;
+    }
+    
+    .step-title {
+      font-size: 1rem;
+    }
+    
+    .calendar-grid {
+      gap: 2px;
+    }
+    
+    .calendar-day-cell {
+      padding: 8px 2px;
+      font-size: 12px;
+      min-height: 55px;
+    }
+    
+    .day-number {
+      font-size: 0.75rem;
+    }
+    
+    .day-label {
+      font-size: 0.55rem;
+      height: 12px;
+    }
+    
+    .calendar-weekday {
+      font-size: 0.7rem;
+      padding: 6px 0;
+    }
+    
+    .time-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    
+    .time-slot-btn {
+      padding: 8px 12px;
+      font-size: 0.75rem;
+    }
+    
+    .room-btn {
+      padding: 12px;
+      font-size: 0.85rem;
+    }
+    
+    .confirmation-text {
+      font-size: 0.8rem;
+    }
+    
+    .btn-primary {
+      font-size: 14px;
+      padding: 12px 16px;
+    }
+    
+    .back-link {
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+<div class="reserve-container">
+  <div class="reserve-header">
+    <h1 class="reserve-title">보강 / 패스 변경하기</h1>
+  </div>
+
+  <div class="content-wrapper">
+    <% if flash[:alert] %>
+      <script>
+        alert('이미 예약하셨습니다. 예약한 시간을 먼저 사용해주세요');
+      </script>
+    <% end %>
+
+    <div>
+      <!-- Step 1: 보강/패스 선택 -->
+      <div class="step-section" data-reservation-target="typeSection">
+        <h3 class="step-title">1. 보강 / 패스 선택</h3>
+        <div class="type-selection-container">
+          <button type="button" class="type-btn" data-type="makeup" onclick="selectType(this, 'makeup')">
+            <div class="type-icon">📚</div>
+            <div class="type-name">보강</div>
+            <div class="type-description">다른 시간을 선택합니다</div>
+          </button>
+          <button type="button" class="type-btn" data-type="pass" onclick="selectType(this, 'pass')">
+            <div class="type-icon">✋</div>
+            <div class="type-name">패스</div>
+            <div class="type-description">수업을 건너뜁니다</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: 날짜 선택 -->
+      <div class="step-section hidden" data-reservation-target="dateSection">
+        <h3 class="step-title">2. 날짜 선택</h3>
+        <div id="calendar-container" class="calendar-container">
+          <%= render partial: 'calendar', locals: { date: @date, selected_date: nil } %>
+        </div>
+      </div>
+
+      <!-- Step 3: 시간 선택 (보강일 때만) -->
+      <div class="step-section hidden" data-reservation-target="timeSection">
+        <h3 class="step-title">3. 시간 선택</h3>
+        <div id="time-slots-container" class="time-slots-grid">
+          <!-- 시간대가 여기에 동적으로 추가됩니다 -->
+        </div>
+      </div>
+
+      <!-- Step 4: 선생님 선택 (보강일 때만) -->
+      <div class="step-section hidden" data-reservation-target="teacherSection">
+        <h3 class="step-title">4. 선생님 선택</h3>
+        <div id="teachers-container" class="teachers-grid">
+          <!-- 선생님이 여기에 동적으로 추가됩니다 -->
+        </div>
+      </div>
+
+      <!-- Step 5: 신청 정보 입력 -->
+      <div class="step-section hidden" data-reservation-target="contentSection">
+        <h3 class="step-title"><span id="content-step-number">5</span>. 신청 정보</h3>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">주차</label>
+          <input type="number"
+                 id="week-number"
+                 placeholder="몇 주차인지 입력해주세요 (예: 1, 2, 3...)"
+                 style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;"
+                 min="1" max="20"
+                 oninput="updateConfirmationIfReady()">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">신청 내용</label>
+          <textarea id="lesson-content"
+                    placeholder="보강/패스 신청 내용을 적어주세요😊"
+                    style="width: 100%; min-height: 120px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"
+                    oninput="updateConfirmationIfReady()"></textarea>
+        </div>
+      </div>
+      
+      <!-- 신청 확인 -->
+      <div class="hidden" data-reservation-target="confirmSection">
+        <%= form_with url: update_makeup_pass_request_path(@request), method: :patch, local: true, data: { reservation_target: "form", turbo: false } do |f| %>
+          <%= hidden_field_tag "makeup_pass_request[date]", nil, id: "hidden-date" %>
+          <%= hidden_field_tag "makeup_pass_request[type]", nil, id: "hidden-type" %>
+          <%= hidden_field_tag "makeup_pass_request[time_slot]", nil, id: "hidden-time-slot" %>
+          <%= hidden_field_tag "makeup_pass_request[teacher]", nil, id: "hidden-teacher" %>
+          <%= hidden_field_tag "makeup_pass_request[content]", nil, data: { reservation_target: "lessonContent" } %>
+          <%= hidden_field_tag "makeup_pass_request[week_number]", nil, data: { reservation_target: "weekNumber" } %>
+
+          <div class="confirmation-card">
+            <h3 class="confirmation-title">신청 정보 확인</h3>
+            <div class="confirmation-text" data-reservation-target="summary"></div>
+          </div>
+
+          <button type="button" class="btn-primary" id="reservation-submit-btn" onclick="window.confirmMakeupPassRequest()">변경하기</button>
+        <% end %>
+      </div>
+    </div>
+
+    <%= link_to "← 뒤로가기", makeup_pass_path, class: "back-link" %>
+  </div>
+</div>
+
+<script>
+// 보강/패스 신청 JavaScript - 전역 스코프로 수정
+if (typeof window.selectedDate === 'undefined') {
+  window.selectedDate = null;
+  window.selectedType = null;
+  window.selectedTimeSlot = null;
+  window.selectedTeacher = null;
+}
+var selectedDate = window.selectedDate;
+var selectedType = window.selectedType;
+var selectedTimeSlot = window.selectedTimeSlot;
+var selectedTeacher = window.selectedTeacher;
+var hasCancelledMakeup = <%= @has_cancelled_makeup ? 'true' : 'false' %>;
+<% if @next_lesson_datetime %>
+var nextLessonDatetime = '<%= @next_lesson_datetime.strftime('%y.%m.%d %H:%M') %>';
+<% else %>
+var nextLessonDatetime = null;
+<% end %>
+
+function selectType(element, type) {
+  selectedType = type;
+  console.log('타입 선택:', type);
+
+  // 보강 취소 이력이 있고 보강을 선택한 경우
+  if (hasCancelledMakeup && type === 'makeup') {
+    var message = '보강을 취소하신 이력이 있어 ';
+    if (nextLessonDatetime) {
+      message += '다음 정규 수업일(' + nextLessonDatetime + ') 전까지 ';
+    } else {
+      message += '다음 정규 수업일 전까지 ';
+    }
+    message += '보강 신청이 제한됩니다.\n패스는 신청 가능합니다.';
+    alert(message);
+    element.classList.remove('selected');
+    selectedType = null;
+    return;
+  }
+
+  // 시각적 선택 업데이트
+  var typeButtons = document.querySelectorAll('.type-btn');
+  for (var i = 0; i < typeButtons.length; i++) {
+    typeButtons[i].classList.remove('selected');
+  }
+  element.classList.add('selected');
+
+  // 날짜 선택 섹션 표시
+  var dateSection = document.querySelector('[data-reservation-target="dateSection"]');
+  if (dateSection) {
+    dateSection.classList.remove('hidden');
+    console.log('날짜 선택 섹션 표시');
+  }
+  hideSection('contentSection');
+  hideSection('confirmSection');
+
+  // 타입에 따라 캘린더 스타일 업데이트
+  updateCalendarForType(type);
+}
+
+function selectDate(element) {
+  selectedDate = element.getAttribute('data-date');
+  console.log('날짜 선택:', selectedDate);
+
+  // 시각적 선택 업데이트
+  var dateElements = document.querySelectorAll('[data-date]');
+  for (var i = 0; i < dateElements.length; i++) {
+    dateElements[i].classList.remove('selected');
+  }
+  element.classList.add('selected');
+
+  if (selectedType === 'makeup') {
+    // 보강: 시간 선택 섹션 표시
+    loadTimeSlots(selectedDate);
+    var timeSection = document.querySelector('[data-reservation-target="timeSection"]');
+    if (timeSection) {
+      timeSection.classList.remove('hidden');
+      console.log('시간 선택 섹션 표시');
+    }
+    hideSection('teacherSection');
+    hideSection('contentSection');
+    hideSection('confirmSection');
+
+    // Step 번호 업데이트
+    var stepNumber = document.getElementById('content-step-number');
+    if (stepNumber) stepNumber.textContent = '5';
+  } else {
+    // 패스: 바로 신청 정보 입력 섹션 표시
+    hideSection('timeSection');
+    hideSection('teacherSection');
+    var contentSection = document.querySelector('[data-reservation-target="contentSection"]');
+    if (contentSection) {
+      contentSection.classList.remove('hidden');
+      console.log('신청 정보 입력 섹션 표시');
+    }
+    hideSection('confirmSection');
+
+    // Step 번호 업데이트
+    var stepNumber = document.getElementById('content-step-number');
+    if (stepNumber) stepNumber.textContent = '3';
+  }
+}
+
+function loadTimeSlots(date) {
+  console.log('시간대 로딩:', date);
+
+  fetch('/makeup_pass/available_time_slots?date=' + date, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.json(); })
+    .then(function(slots) {
+      console.log('사용 가능한 시간대:', slots);
+      renderTimeSlots(slots);
+    })
+    .catch(function(error) {
+      console.error('시간대 로드 오류:', error);
+      alert('시간대를 불러오는데 실패했습니다.');
+    });
+}
+
+function renderTimeSlots(slots) {
+  var container = document.getElementById('time-slots-container');
+  container.innerHTML = '';
+
+  if (slots.length === 0) {
+    container.innerHTML = '<div style="text-align: center; color: #718096; padding: 20px;">예약 가능한 시간대가 없습니다.</div>';
+    return;
+  }
+
+  slots.forEach(function(slot) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'time-slot-btn';
+    btn.setAttribute('data-time-slot', slot.time_slot);
+    btn.onclick = function() { selectTimeSlot(this, slot.time_slot); };
+
+    btn.innerHTML = '<div class="time-slot-time">' + slot.display_time + '</div>';
+
+    container.appendChild(btn);
+  });
+}
+
+function selectTimeSlot(element, timeSlot) {
+  selectedTimeSlot = timeSlot;
+  console.log('시간 선택:', timeSlot);
+
+  // 시각적 선택 업데이트
+  var timeButtons = document.querySelectorAll('.time-slot-btn');
+  for (var i = 0; i < timeButtons.length; i++) {
+    timeButtons[i].classList.remove('selected');
+  }
+  element.classList.add('selected');
+
+  // 선생님 선택 섹션 표시
+  loadTeachers(selectedDate, selectedTimeSlot);
+  var teacherSection = document.querySelector('[data-reservation-target="teacherSection"]');
+  if (teacherSection) {
+    teacherSection.classList.remove('hidden');
+    console.log('선생님 선택 섹션 표시');
+  }
+  hideSection('contentSection');
+  hideSection('confirmSection');
+}
+
+function loadTeachers(date, timeSlot) {
+  console.log('선생님 로딩:', date, timeSlot);
+
+  fetch('/makeup_pass/available_teachers?date=' + date + '&time_slot=' + timeSlot, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.json(); })
+    .then(function(teachers) {
+      console.log('사용 가능한 선생님:', teachers);
+      renderTeachers(teachers);
+    })
+    .catch(function(error) {
+      console.error('선생님 로드 오류:', error);
+      alert('선생님 목록을 불러오는데 실패했습니다.');
+    });
+}
+
+function renderTeachers(teachers) {
+  var container = document.getElementById('teachers-container');
+  container.innerHTML = '';
+
+  if (teachers.length === 0) {
+    container.innerHTML = '<div style="text-align: center; color: #718096; padding: 20px;">예약 가능한 선생님이 없습니다.</div>';
+    return;
+  }
+
+  teachers.forEach(function(teacher) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'teacher-btn';
+    btn.setAttribute('data-teacher', teacher.teacher);
+    btn.onclick = function() { selectTeacher(this, teacher.teacher); };
+
+    btn.innerHTML =
+      '<div class="teacher-name">' + teacher.teacher + '</div>' +
+      '<div class="teacher-info">남은 자리: ' + teacher.available_slots + '개</div>';
+
+    container.appendChild(btn);
+  });
+}
+
+function selectTeacher(element, teacher) {
+  selectedTeacher = teacher;
+  console.log('선생님 선택:', teacher);
+
+  // 시각적 선택 업데이트
+  var teacherButtons = document.querySelectorAll('.teacher-btn');
+  for (var i = 0; i < teacherButtons.length; i++) {
+    teacherButtons[i].classList.remove('selected');
+  }
+  element.classList.add('selected');
+
+  // 신청 정보 입력 섹션 표시
+  var contentSection = document.querySelector('[data-reservation-target="contentSection"]');
+  if (contentSection) {
+    contentSection.classList.remove('hidden');
+    console.log('신청 정보 입력 섹션 표시');
+  }
+  hideSection('confirmSection');
+}
+
+
+function updateConfirmationIfReady() {
+  var weekNumber = document.getElementById('week-number').value;
+  var lessonContent = document.getElementById('lesson-content').value.trim();
+  
+  // 주차와 내용이 모두 입력되면 자동으로 확인 섹션 표시
+  if (weekNumber && lessonContent) {
+    showConfirmation();
+  } else {
+    // 하나라도 비어있으면 확인 섹션 숨김
+    hideSection('confirmSection');
+  }
+}
+
+function showConfirmation() {
+  // lesson content와 week number 가져오기
+  var lessonContent = document.getElementById('lesson-content').value;
+  var weekNumber = document.getElementById('week-number').value;
+
+  // 폼 필드 설정
+  var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
+  var weekNumberField = document.querySelector('[data-reservation-target="weekNumber"]');
+
+  if (lessonContentField) lessonContentField.value = lessonContent;
+  if (weekNumberField) weekNumberField.value = weekNumber;
+
+  console.log('Form values set:', {
+    date: selectedDate,
+    type: selectedType,
+    lessonContent: lessonContentField.value,
+    weekNumber: weekNumberField.value
+  });
+
+  // 요약 정보 업데이트
+  var dateObj = new Date(selectedDate);
+  var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  var weekday = weekdays[dateObj.getDay()];
+  var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
+  var typeText = selectedType === 'makeup' ? '보강' : '패스';
+
+  var summaryElement = document.querySelector('[data-reservation-target="summary"]');
+  if (summaryElement) {
+    var contentPreview = lessonContent.length > 50 ? lessonContent.substring(0, 50) + '...' : lessonContent;
+
+    var summaryHTML = '<div>날짜: ' + formattedDate + '</div>' +
+                      '<div>유형: ' + typeText + '</div>';
+
+    // 보강일 경우 시간과 선생님 정보 추가
+    if (selectedType === 'makeup' && selectedTimeSlot && selectedTeacher) {
+      var timeDisplay = selectedTimeSlot.split('-').join(':00-') + ':00';
+      summaryHTML += '<div>시간: ' + timeDisplay + '</div>' +
+                     '<div>담당: ' + selectedTeacher + '</div>';
+    }
+
+    summaryHTML += '<div>주차: ' + weekNumber + '주차</div>' +
+                   '<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;">신청 내용: ' + contentPreview + '</div>';
+
+    summaryElement.innerHTML = summaryHTML;
+  }
+
+  var confirmSection = document.querySelector('[data-reservation-target="confirmSection"]');
+  if (confirmSection) {
+    confirmSection.classList.remove('hidden');
+    console.log('예약 확인 섹션 표시');
+  }
+}
+
+function hideSection(target) {
+  var section = document.querySelector('[data-reservation-target="' + target + '"]');
+  if (section) {
+    section.classList.add('hidden');
+  }
+}
+
+function updateCalendarForType(type) {
+  var allDayCells = document.querySelectorAll('.calendar-day-cell');
+
+  for (var i = 0; i < allDayCells.length; i++) {
+    var cell = allDayCells[i];
+    var dayLabel = cell.querySelector('.day-label');
+
+    // 원래 상태 정보를 data 속성에서 가져오기
+    var originalClickable = cell.hasAttribute('data-original-clickable');
+    var isNextLesson = dayLabel && dayLabel.textContent.trim() === '이번수업';
+    var isFollowingLesson = dayLabel && dayLabel.textContent.trim() === '다음수업';
+
+    // 첫 실행 시 원래 클릭 가능 상태 저장
+    if (!cell.hasAttribute('data-original-clickable') && !cell.hasAttribute('data-original-not-clickable')) {
+      if (cell.getAttribute('data-clickable') === 'true') {
+        cell.setAttribute('data-original-clickable', 'true');
+      } else {
+        cell.setAttribute('data-original-not-clickable', 'true');
+      }
+    }
+
+    // between-lessons 원래 상태 저장
+    if (!cell.hasAttribute('data-original-between')) {
+      if (cell.classList.contains('between-lessons')) {
+        cell.setAttribute('data-original-between', 'true');
+      }
+    }
+
+    var isBetweenLessons = cell.hasAttribute('data-original-between');
+
+    if (type === 'makeup') {
+      // 보강: 모든 연노랑 복원
+      if (isNextLesson || isFollowingLesson) {
+        cell.classList.add('lesson-day');
+      }
+      if (isBetweenLessons) {
+        cell.classList.add('between-lessons');
+      }
+
+      // 스타일 복원
+      cell.style.backgroundColor = '';
+      cell.style.borderColor = '';
+
+      // 연노랑 영역만 선택 가능
+      var isInYellowZone = cell.classList.contains('lesson-day') || cell.classList.contains('between-lessons');
+
+      if (originalClickable) {
+        if (isInYellowZone) {
+          cell.setAttribute('data-clickable', 'true');
+          cell.setAttribute('onclick', 'selectDate(this)');
+          cell.style.cursor = 'pointer';
+          cell.style.opacity = '';
+        } else {
+          cell.removeAttribute('data-clickable');
+          cell.removeAttribute('onclick');
+          cell.style.cursor = 'not-allowed';
+          cell.style.opacity = '0.4';
+        }
+      }
+    } else if (type === 'pass') {
+      // 패스: 다음수업과 between-lessons 연노랑 제거
+      if (isBetweenLessons) {
+        cell.classList.remove('between-lessons');
+        cell.style.backgroundColor = '';
+        cell.style.borderColor = '';
+      }
+
+      if (isFollowingLesson) {
+        cell.classList.remove('lesson-day');
+        cell.style.backgroundColor = '';
+        cell.style.borderColor = '';
+      }
+
+      // 이번수업은 유지
+      if (isNextLesson) {
+        cell.classList.add('lesson-day');
+      }
+
+      // 이번수업만 클릭 가능
+      if (originalClickable) {
+        if (isNextLesson) {
+          cell.setAttribute('data-clickable', 'true');
+          cell.setAttribute('onclick', 'selectDate(this)');
+          cell.style.cursor = 'pointer';
+          cell.style.opacity = '';
+        } else {
+          cell.removeAttribute('data-clickable');
+          cell.removeAttribute('onclick');
+          cell.style.cursor = 'not-allowed';
+          cell.style.opacity = '0.4';
+        }
+      }
+    }
+  }
+}
+
+window.confirmMakeupPassRequest = function() {
+  try {
+    if (!selectedDate || !selectedType) {
+      alert('신청 정보가 불완전합니다.');
+      return false;
+    }
+
+    // 보강일 경우 시간과 선생님 필수
+    if (selectedType === 'makeup' && (!selectedTimeSlot || !selectedTeacher)) {
+      alert('시간과 선생님을 선택해주세요.');
+      return false;
+    }
+
+    var dateObj = new Date(selectedDate);
+    var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    var weekday = weekdays[dateObj.getDay()];
+    var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
+
+    var lessonContent = document.getElementById('lesson-content').value.trim();
+    var weekNumber = document.getElementById('week-number').value;
+
+    // 주차와 내용 확인
+    if (!weekNumber || !lessonContent) {
+      alert('주차와 신청 내용을 입력해주세요.');
+      return false;
+    }
+
+    // 폼 제출 전 필수 필드 최종 검증
+    var form = document.querySelector('[data-reservation-target="form"]');
+    var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
+    var weekNumberField = document.querySelector('[data-reservation-target="weekNumber"]');
+
+    // 필드 존재 확인
+    if (!form || !lessonContentField || !weekNumberField) {
+      console.error('Form validation failed: Missing form elements');
+      alert('신청 폼 오류가 발생했습니다.\n페이지를 새로고침 후 다시 시도해주세요.');
+      return false;
+    }
+
+    // 값 설정
+    lessonContentField.value = lessonContent;
+    weekNumberField.value = weekNumber;
+
+    // hidden field에 값 설정
+    var dateField = document.getElementById('hidden-date');
+    var typeField = document.getElementById('hidden-type');
+    var timeSlotField = document.getElementById('hidden-time-slot');
+    var teacherField = document.getElementById('hidden-teacher');
+
+    if (dateField) dateField.value = selectedDate;
+    if (typeField) typeField.value = selectedType;
+    if (timeSlotField) timeSlotField.value = selectedTimeSlot || '';
+    if (teacherField) teacherField.value = selectedTeacher || '';
+
+    console.log('Pre-submit validation:', {
+      date: selectedDate,
+      type: selectedType,
+      timeSlot: selectedTimeSlot,
+      teacher: selectedTeacher,
+      lessonContent: lessonContent,
+      weekNumber: weekNumber
+    });
+
+    var typeText = selectedType === 'makeup' ? '보강' : '패스';
+    var confirmMessage = '신청을 진행하시겠습니까?\n\n날짜: ' + formattedDate + '\n유형: ' + typeText;
+
+    if (selectedType === 'makeup') {
+      var timeDisplay = selectedTimeSlot.split('-').join(':00-') + ':00';
+      confirmMessage += '\n시간: ' + timeDisplay + '\n담당: ' + selectedTeacher;
+    }
+
+    confirmMessage += '\n주차: ' + weekNumber + '주차\n내용: ' + (lessonContent.length > 30 ? lessonContent.substring(0, 30) + '...' : lessonContent);
+
+    if (confirm(confirmMessage)) {
+      var submitBtn = document.getElementById('reservation-submit-btn');
+
+      if (submitBtn) {
+        if (submitBtn.disabled) {
+          alert('이미 신청 요청이 처리 중입니다.');
+          return false;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '신청 중...';
+      }
+
+      console.log('Submitting form with values:', {
+        date: selectedDate,
+        type: selectedType,
+        lessonContent: lessonContentField.value,
+        weekNumber: weekNumberField.value
+      });
+
+      if (form.requestSubmit) {
+        var hiddenSubmit = document.createElement('input');
+        hiddenSubmit.type = 'submit';
+        hiddenSubmit.style.display = 'none';
+        form.appendChild(hiddenSubmit);
+        hiddenSubmit.click();
+        form.removeChild(hiddenSubmit);
+      } else {
+        form.submit();
+      }
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error in confirmMakeupReservation:', error);
+    alert('신청 처리 중 오류가 발생했습니다.\n페이지를 새로고침 후 다시 시도해주세요.\n\n오류: ' + error.message);
+    return false;
+  }
+};
+
+window.showPendingMessage = function() {
+  alert('⏳ 승인 대기중인 자리입니다.\n\n' +
+        '관리자 승인 후 확정되므로\n' +
+        '다른 좌석을 선택해주세요.');
+};
+
+// 달력 네비게이션 함수
+function navigateMakeupPassMonth(direction) {
+  var currentCalendar = document.querySelector('.calendar');
+  var currentMonth = currentCalendar.getAttribute('data-month');
+  var [year, month] = currentMonth.split('-').map(Number);
+  
+  if (direction === 'prev') {
+    month--;
+    if (month < 1) {
+      month = 12;
+      year--;
+    }
+  } else {
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+  
+  // 두 자리 숫자로 포맷
+  var formattedMonth = month < 10 ? '0' + month : month.toString();
+  var newDate = year + '-' + formattedMonth + '-01';
+  
+  // 새 달력 로드
+  fetch('/makeup_pass/reserve?date=' + newDate, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      // 서버에서 partial을 직접 반환하므로 그대로 사용
+      document.getElementById('calendar-container').innerHTML = html;
+      
+      // 다른 섹션들 숨기기
+      hideSection('dateSection');
+      hideSection('contentSection');
+      hideSection('confirmSection');
+
+      // 선택 초기화
+      selectedDate = null;
+      selectedType = null;
+    })
+    .catch(function(error) {
+      console.error('달력 로드 오류:', error);
+    });
+}
+
+// 전역 함수로 등록
+window.navigateMakeupPassMonth = navigateMakeupPassMonth;
+
+console.log('보강/패스 신청 JavaScript 로드 완료');
+</script>

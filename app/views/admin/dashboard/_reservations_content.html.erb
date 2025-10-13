@@ -47,7 +47,7 @@
   
   .service-btn.active {
     background: #ffffff;
-    color: #f093fb;
+    color: #667eea;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
@@ -267,7 +267,7 @@
     <h2 class="reservations-title">📅 예약 관리</h2>
     
     <div class="service-nav">
-      <button onclick="loadReservationsTab('practice')" class="service-btn <%= service_type != 'makeup' && service_type != 'pitch' ? 'active' : '' %>">
+      <button onclick="loadReservationsTab('practice')" class="service-btn <%= service_type != 'makeup' && service_type != 'pitch' && service_type != 'makeup_pass' ? 'active' : '' %>">
         🎹 연습실 예약
       </button>
       <button onclick="loadReservationsTab('makeup')" class="service-btn <%= service_type == 'makeup' ? 'active' : '' %>">
@@ -275,6 +275,9 @@
       </button>
       <button onclick="loadReservationsTab('pitch')" class="service-btn <%= service_type == 'pitch' ? 'active' : '' %>">
         🎵 음정수업 예약
+      </button>
+      <button onclick="loadReservationsTab('makeup_pass')" class="service-btn <%= service_type == 'makeup_pass' ? 'active' : '' %>">
+        🎓 보강/패스 예약
       </button>
     </div>
     
@@ -299,6 +302,11 @@
           <option value="approved">수업 대기</option>
           <option value="completed">완료</option>
           <option value="rejected">거절됨</option>
+          <option value="cancelled">취소</option>
+          <option value="no_show">노쇼</option>
+        <% elsif service_type == 'makeup_pass' %>
+          <option value="active">진행 중</option>
+          <option value="completed">완료</option>
           <option value="cancelled">취소</option>
           <option value="no_show">노쇼</option>
         <% else %>
@@ -333,7 +341,7 @@
           <tr>
             <th>이름</th>
             <th>아이디</th>
-            <th><%= service_type == 'makeup' ? '담당' : (service_type == 'pitch' ? '좌석' : '연습실') %></th>
+            <th><%= service_type == 'makeup' ? '담당' : (service_type == 'pitch' ? '좌석' : (service_type == 'makeup_pass' ? '구분/선생님' : '연습실')) %></th>
             <th>날짜</th>
             <th>시간</th>
             <th>상태</th>
@@ -344,11 +352,11 @@
         <tbody>
           <% reservations.each do |reservation| %>
             <% next unless reservation.user %>
-            <tr class="reservation-row" 
+            <tr class="reservation-row"
                 data-name="<%= reservation.user.name %>"
                 data-username="<%= reservation.user.username %>"
                 data-status="<%= reservation.status %>"
-                data-date="<%= reservation.start_time&.strftime('%Y-%m-%d') || '' %>"
+                data-date="<%= service_type == 'makeup_pass' ? (reservation.request_type == 'makeup' && reservation.makeup_date ? reservation.makeup_date.strftime('%Y-%m-%d') : reservation.request_date.strftime('%Y-%m-%d')) : (reservation.start_time&.strftime('%Y-%m-%d') || '') %>"
                 data-reservation-id="<%= reservation.id %>">
               
               <td>
@@ -382,6 +390,13 @@
                   <div class="room-info">
                     <%= reservation.pitch_room.name %>
                   </div>
+                <% elsif service_type == 'makeup_pass' %>
+                  <div class="room-info">
+                    <%= reservation.request_type == 'makeup' ? '🎓 보강' : '📝 패스' %>
+                    <% if reservation.teacher.present? %>
+                      / <%= reservation.teacher %>
+                    <% end %>
+                  </div>
                 <% else %>
                   <div class="room-info">
                     <%= reservation.room.number %>번
@@ -391,9 +406,17 @@
                   </div>
                 <% end %>
               </td>
-              <td><%= reservation.start_time&.strftime('%Y-%m-%d') || 'N/A' %></td>
               <td>
-                <% if service_type == 'makeup' && reservation.start_time && [4, 5].include?(reservation.start_time.wday) %>
+                <% if service_type == 'makeup_pass' %>
+                  <%= reservation.request_type == 'makeup' && reservation.makeup_date ? reservation.makeup_date.strftime('%Y-%m-%d') : reservation.request_date.strftime('%Y-%m-%d') %>
+                <% else %>
+                  <%= reservation.start_time&.strftime('%Y-%m-%d') || 'N/A' %>
+                <% end %>
+              </td>
+              <td>
+                <% if service_type == 'makeup_pass' %>
+                  <%= reservation.formatted_time || '-' %>
+                <% elsif service_type == 'makeup' && reservation.start_time && [4, 5].include?(reservation.start_time.wday) %>
                   <%= reservation.start_time.strftime('%H:%M') %> - <%= (reservation.start_time + 50.minutes).strftime('%H:%M') %>
                 <% else %>
                   <%= reservation.start_time&.strftime('%H:%M') || 'N/A' %> - <%= reservation.end_time&.strftime('%H:%M') || 'N/A' %>
@@ -444,6 +467,21 @@
                   <% else %>
                     <span class="status-badge status-cancelled"><%= status_text %></span>
                   <% end %>
+                <% elsif service_type == 'makeup_pass' %>
+                  <% status_map = { 'active' => '진행 중', 'completed' => '완료', 'cancelled' => '취소', 'no_show' => '노쇼' } %>
+                  <% status_text = status_map[reservation.status] || reservation.status %>
+                  <% case reservation.status %>
+                  <% when 'active' %>
+                    <span class="status-badge status-active"><%= status_text %></span>
+                  <% when 'completed' %>
+                    <span class="status-badge status-completed"><%= status_text %></span>
+                  <% when 'cancelled' %>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
+                  <% when 'no_show' %>
+                    <span class="status-badge status-no-show"><%= status_text %></span>
+                  <% else %>
+                    <span class="status-badge status-cancelled"><%= status_text %></span>
+                  <% end %>
                 <% else %>
                   <% status_text = reservation.status_display %>
                   <% case reservation.status %>
@@ -474,8 +512,10 @@
                           (service_type == 'pitch' ?
                             [['승인 대기', 'pending'], ['수업 대기', 'approved'], ['완료', 'completed'],
                              ['거절됨', 'rejected'], ['취소', 'cancelled'], ['노쇼', 'no_show']] :
-                            [['대기', 'pending'], ['이용 전', 'active'], ['완료', 'completed'],
-                             ['취소', 'cancelled'], ['노쇼', 'no_show']]),
+                            (service_type == 'makeup_pass' ?
+                              [['진행 중', 'active'], ['완료', 'completed'], ['취소', 'cancelled'], ['노쇼', 'no_show']] :
+                              [['대기', 'pending'], ['이용 전', 'active'], ['완료', 'completed'],
+                               ['취소', 'cancelled'], ['노쇼', 'no_show']])),
                         reservation.status
                       ),
                       onchange: "updateReservationStatusSmooth(#{reservation.id}, this.value, '#{service_type}', this)",
@@ -608,7 +648,7 @@
         if (statusBadge) {
           const statusTexts = {
             'pending': '승인 대기',
-            'active': service === 'makeup' ? '수업 대기' : '이용 전',
+            'active': service === 'makeup' ? '수업 대기' : (service === 'makeup_pass' ? '진행 중' : '이용 전'),
             'approved': '수업 대기',
             'completed': '완료',
             'cancelled': '취소',

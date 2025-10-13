@@ -115,10 +115,6 @@ class Reservation < ApplicationRecord
       errors.add(:start_time, '과거 시간은 예약할 수 없습니다')
     end
     
-    # 월요일 체크
-    if start_time && start_time.wday == 1
-      errors.add(:start_time, '월요일은 휴무일입니다')
-    end
   end
   
   def user_not_blocked

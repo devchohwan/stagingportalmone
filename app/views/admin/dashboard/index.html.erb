@@ -465,6 +465,15 @@
         <a href="javascript:void(0)" class="nav-tab" data-tab="reservations">
           📅 예약 관리
         </a>
+        <a href="javascript:void(0)" class="nav-tab" data-tab="schedule-manager">
+          ✏️ 시간표 관리
+        </a>
+        <a href="javascript:void(0)" class="nav-tab" data-tab="schedule-viewer">
+          📺 시간표 뷰어
+        </a>
+        <a href="javascript:void(0)" class="nav-tab" data-tab="payments">
+          💳 결제관리
+        </a>
       </div>
     </div>
 
@@ -595,6 +604,36 @@
         <div class="text-center py-8">
           <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
           <p class="text-gray-500 mt-2">예약 목록을 불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시간표 관리 탭 -->
+    <div id="schedule-manager-tab" class="tab-content hidden">
+      <div id="schedule-manager-content-area">
+        <div class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
+          <p class="text-gray-500 mt-2">시간표를 불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시간표 뷰어 탭 -->
+    <div id="schedule-viewer-tab" class="tab-content hidden">
+      <div id="schedule-viewer-content-area">
+        <div class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
+          <p class="text-gray-500 mt-2">시간표를 불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결제관리 탭 -->
+    <div id="payments-tab" class="tab-content hidden">
+      <div id="payments-content-area">
+        <div class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
+          <p class="text-gray-500 mt-2">결제 정보를 불러오는 중...</p>
         </div>
       </div>
     </div>
@@ -796,21 +835,32 @@
       }
     };
     
-    // 탭 전환 함수
     window.switchToTab = function(tab, subtab) {
       // 네비게이션 탭 업데이트
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      const targetNavTab = document.querySelector(`[data-tab="${tab}"]`);
+      if (targetNavTab) {
+        targetNavTab.classList.add('active');
+      }
       
       // 콘텐츠 탭 업데이트
       document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-      document.getElementById(`${tab}-tab`).classList.remove('hidden');
+      const targetTab = document.getElementById(`${tab}-tab`);
+      if (targetTab) {
+        targetTab.classList.remove('hidden');
+      }
       
       // 해당 탭의 콘텐츠 로드
       if (tab === 'users') {
         loadUsersTab(subtab || 'approved');
       } else if (tab === 'reservations') {
         loadReservationsTab(subtab || 'practice');
+      } else if (tab === 'schedule-viewer') {
+        loadScheduleViewerTab();
+      } else if (tab === 'schedule-manager') {
+        loadScheduleManagerTab();
+      } else if (tab === 'payments') {
+        loadPaymentsTab();
       }
     };
     
@@ -989,6 +1039,96 @@
         .catch(error => {
           console.error('Error loading reservations:', error);
           contentArea.innerHTML = '<div class="text-center py-8 text-red-600">예약 목록을 불러오는데 실패했습니다.</div>';
+        });
+    };
+    
+    // 시간표 뷰어 탭 로드
+    window.loadScheduleViewerTab = function() {
+      const contentArea = document.getElementById('schedule-viewer-content-area');
+      if (!contentArea) return;
+      
+      contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div><p class="text-gray-500 mt-2">시간표를 불러오는 중...</p></div>';
+      
+      fetch('/admin/schedule_viewer_content')
+        .then(response => response.text())
+        .then(html => {
+          contentArea.innerHTML = html;
+          // 스크립트 실행
+          const scripts = contentArea.querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            if (script.src) {
+              newScript.src = script.src;
+            } else {
+              newScript.textContent = script.textContent;
+            }
+            document.body.appendChild(newScript);
+            document.body.removeChild(newScript);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading schedule viewer:', error);
+          contentArea.innerHTML = '<div class="text-center py-8 text-red-600">시간표를 불러오는데 실패했습니다.</div>';
+        });
+    };
+    
+    // 결제관리 탭 로드
+    window.loadPaymentsTab = function() {
+      const contentArea = document.getElementById('payments-content-area');
+      if (!contentArea) return;
+
+      contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div><p class="text-gray-500 mt-2">결제 정보를 불러오는 중...</p></div>';
+
+      fetch('/admin/payments_content')
+        .then(response => response.text())
+        .then(html => {
+          contentArea.innerHTML = html;
+          // 스크립트 실행
+          const scripts = contentArea.querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            if (script.src) {
+              newScript.src = script.src;
+            } else {
+              newScript.textContent = script.textContent;
+            }
+            document.body.appendChild(newScript);
+            document.body.removeChild(newScript);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading payments:', error);
+          contentArea.innerHTML = '<div class="text-center py-8 text-red-600">결제 정보를 불러오는데 실패했습니다.</div>';
+        });
+    };
+
+    // 시간표 관리 탭 로드
+    window.loadScheduleManagerTab = function() {
+      const contentArea = document.getElementById('schedule-manager-content-area');
+      if (!contentArea) return;
+
+      contentArea.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div><p class="text-gray-500 mt-2">시간표를 불러오는 중...</p></div>';
+
+      fetch('/admin/schedule_manager_content')
+        .then(response => response.text())
+        .then(html => {
+          contentArea.innerHTML = html;
+          // 스크립트 실행
+          const scripts = contentArea.querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            if (script.src) {
+              newScript.src = script.src;
+            } else {
+              newScript.textContent = script.textContent;
+            }
+            document.body.appendChild(newScript);
+            document.body.removeChild(newScript);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading schedule manager:', error);
+          contentArea.innerHTML = '<div class="text-center py-8 text-red-600">시간표를 불러오는데 실패했습니다.</div>';
         });
     };
     
@@ -1470,9 +1610,10 @@
     const tabLink = e.target.closest('.nav-tab');
     if (!tabLink) return;
     
-    e.preventDefault();
-    
     const tabName = tabLink.getAttribute('data-tab');
+    if (!tabName) return;
+    
+    e.preventDefault();
     
     // 네비게이션 탭 업데이트
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -1480,28 +1621,45 @@
     
     // 콘텐츠 탭 업데이트
     document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-    document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+    const targetTab = document.getElementById(`${tabName}-tab`);
+    if (targetTab) {
+      targetTab.classList.remove('hidden');
+    }
     
     // 해당 탭의 콘텐츠 로드
     if (tabName === 'users') {
       loadUsersTab();
     } else if (tabName === 'reservations') {
       loadReservationsTab();
+    } else if (tabName === 'schedule-viewer') {
+      loadScheduleViewerTab();
+    } else if (tabName === 'schedule-manager') {
+      loadScheduleManagerTab();
+    } else if (tabName === 'payments') {
+      loadPaymentsTab();
     }
   });
   
-  // 보충수업 내용 모달 함수들을 전역으로 정의 (AJAX 로드 전에도 사용 가능하도록)
   window.showLessonContent = function(reservationId) {
     fetch('/admin/reservations/' + reservationId + '/lesson_content')
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          document.getElementById('modal-user-name').textContent = data.user_name;
-          document.getElementById('modal-date').textContent = data.date;
-          document.getElementById('modal-time').textContent = data.time;
-          document.getElementById('modal-week-number').textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
-          document.getElementById('modal-lesson-content').textContent = data.lesson_content || '내용이 없습니다.';
-          document.getElementById('lesson-content-modal').classList.add('show');
+          const modalElements = {
+            userName: document.getElementById('modal-user-name'),
+            date: document.getElementById('modal-date'),
+            time: document.getElementById('modal-time'),
+            weekNumber: document.getElementById('modal-week-number'),
+            lessonContent: document.getElementById('modal-lesson-content'),
+            modal: document.getElementById('lesson-content-modal')
+          };
+          
+          if (modalElements.userName) modalElements.userName.textContent = data.user_name;
+          if (modalElements.date) modalElements.date.textContent = data.date;
+          if (modalElements.time) modalElements.time.textContent = data.time;
+          if (modalElements.weekNumber) modalElements.weekNumber.textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
+          if (modalElements.lessonContent) modalElements.lessonContent.textContent = data.lesson_content || '내용이 없습니다.';
+          if (modalElements.modal) modalElements.modal.classList.add('show');
         } else {
           alert('예약 정보를 불러올 수 없습니다.');
         }
@@ -1512,22 +1670,28 @@
       });
   }
 
-  // 음정수업 메모 보기
   window.showPitchNotes = function(reservationId) {
     fetch('/admin/reservations/' + reservationId + '/lesson_content?service=pitch')
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          // 음정수업용 모달이 없으면 보충수업 모달 재사용
           var modal = document.getElementById('pitch-notes-modal');
           if (!modal) {
-            // 기존 lesson-content-modal 사용
-            document.getElementById('modal-user-name').textContent = data.user_name;
-            document.getElementById('modal-date').textContent = data.date;
-            document.getElementById('modal-time').textContent = data.time;
-            document.getElementById('modal-week-number').textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
-            document.getElementById('modal-lesson-content').textContent = data.notes || '메모가 없습니다.';
-            document.getElementById('lesson-content-modal').classList.add('show');
+            const modalElements = {
+              userName: document.getElementById('modal-user-name'),
+              date: document.getElementById('modal-date'),
+              time: document.getElementById('modal-time'),
+              weekNumber: document.getElementById('modal-week-number'),
+              lessonContent: document.getElementById('modal-lesson-content'),
+              modal: document.getElementById('lesson-content-modal')
+            };
+            
+            if (modalElements.userName) modalElements.userName.textContent = data.user_name;
+            if (modalElements.date) modalElements.date.textContent = data.date;
+            if (modalElements.time) modalElements.time.textContent = data.time;
+            if (modalElements.weekNumber) modalElements.weekNumber.textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
+            if (modalElements.lessonContent) modalElements.lessonContent.textContent = data.notes || '메모가 없습니다.';
+            if (modalElements.modal) modalElements.modal.classList.add('show');
           }
         } else {
           alert('예약 정보를 불러올 수 없습니다.');
@@ -1546,18 +1710,26 @@
     }
   }
 
-  // 보충수업 취소 사유 모달 함수들을 전역으로 정의
   window.showMakeupCancellationReason = function(reservationId) {
     fetch('/admin/reservations/' + reservationId + '/makeup_cancellation_reason')
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          document.getElementById('cancel-modal-user-name').textContent = data.user_name;
-          document.getElementById('cancel-modal-date').textContent = data.date;
-          document.getElementById('cancel-modal-time').textContent = data.time;
-          document.getElementById('cancel-modal-room').textContent = data.room;
-          document.getElementById('cancel-modal-reason').textContent = data.cancellation_reason || '사유가 입력되지 않았습니다.';
-          document.getElementById('cancellation-reason-modal').classList.add('show');
+          const modalElements = {
+            userName: document.getElementById('cancel-modal-user-name'),
+            date: document.getElementById('cancel-modal-date'),
+            time: document.getElementById('cancel-modal-time'),
+            room: document.getElementById('cancel-modal-room'),
+            reason: document.getElementById('cancel-modal-reason'),
+            modal: document.getElementById('cancellation-reason-modal')
+          };
+          
+          if (modalElements.userName) modalElements.userName.textContent = data.user_name;
+          if (modalElements.date) modalElements.date.textContent = data.date;
+          if (modalElements.time) modalElements.time.textContent = data.time;
+          if (modalElements.room) modalElements.room.textContent = data.room;
+          if (modalElements.reason) modalElements.reason.textContent = data.cancellation_reason || '사유가 입력되지 않았습니다.';
+          if (modalElements.modal) modalElements.modal.classList.add('show');
         } else {
           alert('예약 정보를 불러올 수 없습니다.');
         }

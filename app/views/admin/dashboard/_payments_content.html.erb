@@ -1,0 +1,700 @@
+<style>
+  .payments-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .payments-content {
+    padding: 25px;
+    overflow-x: auto;
+  }
+
+  .payments-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .payments-table-header {
+    background: #f8fafc;
+  }
+
+  .payments-table-header th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .payments-table-header th:first-child {
+    border-radius: 8px 0 0 0;
+  }
+
+  .payments-table-header th:last-child {
+    border-radius: 0 8px 0 0;
+  }
+
+  .payment-row {
+    transition: background-color 0.2s ease;
+  }
+
+  .payment-row:hover {
+    background: #f8fafc;
+  }
+
+  .payment-row td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+  }
+
+  .user-name-payment {
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  .payment-date {
+    color: #4a5568;
+  }
+
+  .payment-date.overdue {
+    color: #dc2626;
+    font-weight: 600;
+  }
+
+  .payment-date.none {
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  .pagination-container {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4a5568;
+    transition: all 0.3s ease;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .pagination-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+  }
+
+  .empty-state-payment {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+  }
+
+  .empty-state-icon-payment {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+
+  .empty-state-text-payment {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .remaining-lessons {
+    color: #2d3748;
+    font-weight: 600;
+  }
+
+  .payment-amount-input {
+    width: 100px;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+  }
+
+  .payment-amount-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .payment-buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  .payment-period-btn {
+    padding: 8px 14px;
+    border: 1px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .payment-period-btn:hover {
+    background: #667eea;
+    color: white;
+  }
+
+  .subject-select {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 90px;
+  }
+
+  .subject-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .confirm-payment-btn {
+    padding: 8px 16px;
+    border: 1px solid #10b981;
+    background: #10b981;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .confirm-payment-btn:hover {
+    background: #059669;
+    border-color: #059669;
+  }
+
+  .leave-status-btn {
+    padding: 8px 16px;
+    border: 1px solid #9ca3af;
+    background: white;
+    color: #4a5568;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .leave-status-btn:hover {
+    background: #f3f4f6;
+    border-color: #6b7280;
+  }
+
+  .leave-status-btn.on-leave {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #d97706;
+  }
+
+  .leave-status-btn.on-leave:hover {
+    background: #fde68a;
+    border-color: #d97706;
+  }
+
+  /* 320px 모바일 최적화 */
+  @media (max-width: 320px) {
+    .payments-container {
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .payments-content {
+      padding: 16px;
+      overflow-x: auto;
+    }
+
+    .payments-table {
+      min-width: 500px;
+      font-size: 0.8rem;
+    }
+
+    .payments-table-header th {
+      padding: 10px 8px;
+      font-size: 0.7rem;
+    }
+
+    .payment-row td {
+      padding: 10px 8px;
+      font-size: 0.8rem;
+    }
+
+    .user-name-payment {
+      font-size: 0.85rem;
+    }
+
+    .pagination-btn {
+      padding: 6px 12px;
+      font-size: 0.75rem;
+    }
+
+    .empty-state-payment {
+      padding: 40px 16px;
+    }
+
+    .empty-state-icon-payment {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    .empty-state-text-payment {
+      font-size: 0.95rem;
+    }
+
+    .payment-amount-input {
+      width: 80px;
+      padding: 6px 8px;
+      font-size: 0.75rem;
+    }
+
+    .payment-period-btn {
+      padding: 6px 10px;
+      font-size: 0.7rem;
+    }
+
+    .subject-select {
+      padding: 6px 8px;
+      font-size: 0.75rem;
+      min-width: 70px;
+    }
+
+    .confirm-payment-btn {
+      padding: 6px 12px;
+      font-size: 0.7rem;
+    }
+  }
+
+  /* 결제 히스토리 모달 */
+  .payment-history-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .payment-history-modal.active {
+    display: flex;
+  }
+
+  .payment-history-content {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .payment-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .payment-history-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #2d3748;
+  }
+
+  .payment-history-close {
+    font-size: 1.5rem;
+    color: #9ca3af;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .payment-history-close:hover {
+    color: #4a5568;
+  }
+
+  .payment-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .payment-history-item {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 15px;
+    border-left: 4px solid #667eea;
+  }
+
+  .payment-history-date {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 8px;
+  }
+
+  .payment-history-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.85rem;
+    color: #4a5568;
+  }
+
+  .payment-history-detail-row {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .payment-history-label {
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  .payment-history-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9ca3af;
+  }
+</style>
+
+<!-- 결제 관리 모달 -->
+<div id="payment-modal" class="payment-history-modal" onclick="closePaymentModal(event)" style="display: none;">
+  <div class="payment-history-content" style="max-width: 800px;" onclick="event.stopPropagation()">
+    <div class="payment-history-header">
+      <h3 class="payment-history-title" id="payment-modal-user-name"></h3>
+      <button class="payment-history-close" onclick="closePaymentModal()">&times;</button>
+    </div>
+
+    <!-- 수강 등록 목록 -->
+    <div id="enrollment-list" style="margin-bottom: 20px;"></div>
+
+    <!-- 새 과목 추가 버튼 -->
+    <button onclick="addNewEnrollment()" style="margin-bottom: 20px; padding: 10px 16px; border: 1px solid #667eea; background: white; color: #667eea; border-radius: 6px; cursor: pointer; font-weight: 600;">+ 새 과목 추가</button>
+
+    <!-- 결제 정보 섹션 -->
+    <div id="payment-section" style="border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; background: #f8fafc;"></div>
+  </div>
+</div>
+
+<!-- 새 과목 추가 모달 -->
+<div id="add-enrollment-modal" class="payment-history-modal" onclick="closeAddEnrollmentModal(event)" style="display: none;">
+  <div class="payment-history-content" style="max-width: 600px;" onclick="event.stopPropagation()">
+    <div class="payment-history-header">
+      <h3 class="payment-history-title">새 과목 추가</h3>
+      <button class="payment-history-close" onclick="closeAddEnrollmentModal()">&times;</button>
+    </div>
+
+    <div style="padding: 20px;">
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #2d3748;">담당 선생님</label>
+        <select id="new-enrollment-teacher" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.95rem;">
+          <option value="">선택하세요</option>
+          <option value="무성" data-subject="클린">무성 (클린)</option>
+          <option value="성균" data-subject="클린">성균 (클린)</option>
+          <option value="노네임" data-subject="클린">노네임 (클린)</option>
+          <option value="로한" data-subject="클린">로한 (클린)</option>
+          <option value="범석" data-subject="클린">범석 (클린)</option>
+          <option value="두박" data-subject="클린">두박 (클린)</option>
+          <option value="오또" data-subject="클린">오또 (클린)</option>
+          <option value="지명" data-subject="믹싱">지명 (믹싱)</option>
+          <option value="도현" data-subject="언클린">도현 (언클린)</option>
+          <option value="온라인" data-subject="클린">온라인 (클린)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #2d3748;">과목</label>
+        <input type="text" id="new-enrollment-subject" readonly style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; font-size: 0.95rem;" placeholder="선생님을 선택하면 자동으로 표시됩니다">
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #2d3748;">첫수업 날짜</label>
+        <div id="new-enrollment-calendar"></div>
+        <input type="hidden" id="new-enrollment-date">
+      </div>
+
+      <div id="new-enrollment-time-section" style="margin-bottom: 24px; display: none;">
+        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #2d3748;">첫수업 시간</label>
+        <div id="new-enrollment-time-slots" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px;"></div>
+        <input type="hidden" id="new-enrollment-time">
+      </div>
+
+      <div id="new-enrollment-duration-section" style="margin-bottom: 24px; display: none;">
+        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #2d3748;">수강 기간</label>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+          <button type="button" class="duration-btn" data-months="1" data-lessons="4" onclick="selectDuration(1, 4, this)" style="padding: 12px; border: 2px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
+            <div style="font-weight: 600;">1개월</div>
+            <div style="font-size: 0.8rem; color: #6b7280;">4회</div>
+          </button>
+          <button type="button" class="duration-btn" data-months="3" data-lessons="12" onclick="selectDuration(3, 12, this)" style="padding: 12px; border: 2px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
+            <div style="font-weight: 600;">3개월</div>
+            <div style="font-size: 0.8rem; color: #6b7280;">12회</div>
+          </button>
+          <button type="button" class="duration-btn" data-months="4" data-lessons="16" onclick="selectDuration(4, 16, this)" style="padding: 12px; border: 2px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
+            <div style="font-weight: 600;">4개월 (믹싱)</div>
+            <div style="font-size: 0.8rem; color: #6b7280;">16회</div>
+          </button>
+        </div>
+        <input type="hidden" id="new-enrollment-months">
+        <input type="hidden" id="new-enrollment-lessons">
+      </div>
+
+      <div id="new-enrollment-summary" style="margin-bottom: 24px; display: none; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="font-weight: 600; margin-bottom: 12px; color: #2d3748;">수강 정보 요약</div>
+        <div style="display: grid; gap: 8px; font-size: 0.9rem;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280;">담당 선생님</span>
+            <span id="summary-teacher" style="font-weight: 600;"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280;">과목</span>
+            <span id="summary-subject" style="font-weight: 600;"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280;">요일/시간</span>
+            <span id="summary-schedule" style="font-weight: 600;"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280;">첫수업 날짜</span>
+            <span id="summary-first-lesson" style="font-weight: 600;"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280;">종료일</span>
+            <span id="summary-end-date" style="font-weight: 600;"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280;">남은 수업</span>
+            <span id="summary-lessons" style="font-weight: 600; color: #667eea;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button onclick="closeAddEnrollmentModal()" style="flex: 1; padding: 12px; border: 1px solid #e2e8f0; background: white; color: #4a5568; border-radius: 6px; cursor: pointer; font-weight: 600;">취소</button>
+        <button onclick="saveNewEnrollment()" style="flex: 1; padding: 12px; border: none; background: #667eea; color: white; border-radius: 6px; cursor: pointer; font-weight: 600;">추가</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 결제 히스토리 모달 -->
+<div id="payment-history-modal" class="payment-history-modal" onclick="closePaymentHistoryModal(event)">
+  <div class="payment-history-content" onclick="event.stopPropagation()">
+    <div class="payment-history-header">
+      <h3 class="payment-history-title" id="payment-history-user-name"></h3>
+      <button class="payment-history-close" onclick="closePaymentHistoryModal()">&times;</button>
+    </div>
+    <div id="payment-history-list" class="payment-history-list"></div>
+  </div>
+</div>
+
+<!-- 과목별 휴원 관리 모달 -->
+<div id="enrollment-manage-modal" class="payment-history-modal" onclick="closeEnrollmentManageModal(event)">
+  <div class="payment-history-content" style="max-width: 500px;" onclick="event.stopPropagation()">
+    <div class="payment-history-header">
+      <h3 class="payment-history-title">과목별 휴원 관리</h3>
+      <button class="payment-history-close" onclick="closeEnrollmentManageModal()">&times;</button>
+    </div>
+    <div id="enrollment-manage-list" style="padding: 20px;"></div>
+  </div>
+</div>
+
+<!-- 결제일 회원 목록 모달 -->
+<div id="payment-date-modal" class="payment-history-modal" onclick="closePaymentDateModal(event)">
+  <div class="payment-history-content" style="max-width: 700px;" onclick="event.stopPropagation()">
+    <div class="payment-history-header">
+      <h3 class="payment-history-title" id="payment-date-modal-title"></h3>
+      <button class="payment-history-close" onclick="closePaymentDateModal()">&times;</button>
+    </div>
+    <div style="padding: 20px;">
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+          <input type="checkbox" id="select-all-payments" onclick="toggleAllPaymentCheckboxes()" style="width: 16px; height: 16px; cursor: pointer;">
+          <span style="font-weight: 600;">전체선택</span>
+        </label>
+        <button onclick="markSelectedAsPaid()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">선택항목 결제완료 처리</button>
+      </div>
+      <div id="payment-date-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="payments-container">
+  <div class="payments-content">
+    <% if @users.empty? %>
+      <div class="empty-state-payment">
+        <div class="empty-state-icon-payment">💳</div>
+        <div class="empty-state-text-payment">
+          <%= params[:search].present? ? '검색 결과가 없습니다.' : '회원이 없습니다.' %>
+        </div>
+      </div>
+    <% else %>
+      <table class="payments-table">
+        <thead class="payments-table-header">
+          <tr>
+            <th>이름</th>
+            <th>담당 선생님</th>
+            <th>상태</th>
+            <th>휴원</th>
+            <th>마지막 결제일</th>
+            <th>액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @users.each do |user| %>
+            <%
+              # 사용자의 결제 완료된 등록 과목만 가져오기
+              enrollments = UserEnrollment.where(user_id: user['id'], is_paid: true)
+              teachers = enrollments.map(&:teacher).uniq.join(', ')
+              teachers = user['teacher'] if teachers.blank?
+
+              # 상태 표시
+              status_text = case user['status']
+              when 'on_leave' then '휴원'
+              when 'active', 'approved' then '활성'
+              else '대기'
+              end
+
+              status_color = case user['status']
+              when 'on_leave' then '#f59e0b'
+              when 'active', 'approved' then '#10b981'
+              else '#9ca3af'
+              end
+            %>
+            <tr class="payment-row" data-user-id="<%= user['id'] %>">
+              <td>
+                <span class="user-name-payment" style="cursor: pointer; text-decoration: underline; color: #667eea; font-weight: 600;" onclick="openPaymentModal(<%= user['id'] %>)">
+                  <%= user['name'] %>
+                </span>
+              </td>
+              <td><%= teachers %></td>
+              <td>
+                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; background: <%= status_color %>20; color: <%= status_color %>;">
+                  <%= status_text %>
+                </span>
+              </td>
+              <td>
+                <% if enrollments.any? %>
+                  <button onclick="openEnrollmentModal(<%= user['id'] %>)"
+                          style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                    과목별 관리
+                  </button>
+
+                  <!-- 모달용 데이터 저장 -->
+                  <div id="enrollment-data-<%= user['id'] %>" style="display: none;">
+                    <% enrollments.each do |enrollment| %>
+                      <div class="enrollment-item"
+                           data-id="<%= enrollment.id %>"
+                           data-subject="<%= enrollment.subject %>"
+                           data-teacher="<%= enrollment.teacher %>"
+                           data-day="<%= enrollment.day_korean %>"
+                           data-time="<%= enrollment.time_slot %>"
+                           data-status="<%= enrollment.status %>">
+                      </div>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <span style="color: #9ca3af;">-</span>
+                <% end %>
+              </td>
+              <td>
+                <% if user['last_payment_date'].present? %>
+                  <% payment_date = user['last_payment_date'].is_a?(Date) ? user['last_payment_date'] : Date.parse(user['last_payment_date']) %>
+                  <% days_ago = (Date.current - payment_date).to_i %>
+                  <% is_overdue = days_ago > 30 %>
+                  <span class="payment-date <%= is_overdue ? 'overdue' : '' %>">
+                    <%= payment_date.strftime('%Y.%m.%d') %>
+                    <% if is_overdue %>
+                      <span style="font-size: 0.8rem; color: #ef4444;">(<%= days_ago %>일 전)</span>
+                    <% end %>
+                  </span>
+                <% else %>
+                  <span class="payment-date none">-</span>
+                <% end %>
+              </td>
+              <td>
+                <button onclick="showPaymentHistory(<%= user['id'] %>)" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
+                  결제 내역 보기
+                </button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <% if @total_pages > 1 %>
+        <div class="pagination-container">
+          <button class="pagination-btn" onclick="loadPaymentsTab(<%= [@page - 1, 1].max %>)" <%= 'disabled' if @page == 1 %>>
+            이전
+          </button>
+
+          <% start_page = [@page - 2, 1].max %>
+          <% end_page = [start_page + 4, @total_pages].min %>
+          <% start_page = [end_page - 4, 1].max if end_page - start_page < 4 %>
+
+          <% (start_page..end_page).each do |page_num| %>
+            <button class="pagination-btn <%= 'active' if page_num == @page %>" onclick="loadPaymentsTab(<%= page_num %>)">
+              <%= page_num %>
+            </button>
+          <% end %>
+
+          <button class="pagination-btn" onclick="loadPaymentsTab(<%= [@page + 1, @total_pages].min %>)" <%= 'disabled' if @page == @total_pages %>>
+            다음
+          </button>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

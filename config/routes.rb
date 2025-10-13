@@ -43,6 +43,20 @@ Rails.application.routes.draw do
   get "makeup/:id", to: "makeup#show", as: :makeup_lesson
   patch "makeup/:id/cancel", to: "makeup#cancel", as: :cancel_makeup_lesson
 
+  # 보강/패스 신청 페이지
+  get "makeup_pass", to: "makeup_pass#index"
+  get "makeup_pass/reserve", to: "makeup_pass#reserve"
+  post "makeup_pass/reserve", to: "makeup_pass#create_request"
+  get "makeup_pass/my_requests", to: "makeup_pass#my_requests"
+  get "makeup_pass/requests/:id/change", to: "makeup_pass#change_request", as: :change_makeup_pass_request
+  patch "makeup_pass/requests/:id/update", to: "makeup_pass#update_request", as: :update_makeup_pass_request
+  patch "makeup_pass/requests/:id/cancel", to: "makeup_pass#cancel_request", as: :cancel_makeup_pass_request
+
+  # 보강/패스 관련 partial views
+  get "makeup_pass/calendar", to: "makeup_pass#calendar"
+  get "makeup_pass/available_time_slots", to: "makeup_pass#available_time_slots"
+  get "makeup_pass/available_teachers", to: "makeup_pass#available_teachers"
+
   # 음정수업 페이지
   get "pitch", to: "pitch#index"
   get "pitch/reserve", to: "pitch#reserve"
@@ -72,7 +86,46 @@ Rails.application.routes.draw do
     # 통합 회원 관리
     get 'users', to: 'dashboard#users'
     get 'users/content', to: 'dashboard#users_content'
-    
+    patch 'users/:id/update_status', to: 'dashboard#update_user_status'
+    patch 'users/:id/toggle_all_enrollments', to: 'dashboard#toggle_all_enrollments'
+    patch 'users/:id/toggle_all_enrollments_auto', to: 'dashboard#toggle_all_enrollments_auto'
+
+    # 결제 관리
+    get 'payments/content', to: 'dashboard#payments_content'
+    get 'payments/calendar_data', to: 'dashboard#payment_calendar_data'
+    post 'payments', to: 'dashboard#create_payment'
+    get 'payments/history/:user_id', to: 'dashboard#payment_history'
+    get 'payment_calendar', to: 'dashboard#payment_calendar'
+    get 'payments/user_enrollments/:user_id', to: 'dashboard#user_enrollments'
+
+    # 수강 등록 관리
+    post 'user_enrollments', to: 'dashboard#create_user_enrollment'
+    delete 'user_enrollments/:id', to: 'dashboard#delete_user_enrollment'
+    patch 'user_enrollments/:id/toggle_status', to: 'dashboard#toggle_enrollment_status'
+    get 'teacher_available_slots', to: 'dashboard#teacher_available_slots'
+
+    # 수강생 검색 API
+    get 'search_students', to: 'dashboard#search_students'
+
+    # 스케줄 관리 API
+    post 'save_schedule', to: 'dashboard#save_schedule'
+    get 'load_schedule', to: 'dashboard#load_schedule'
+    get 'schedule_changes', to: 'dashboard#schedule_changes'
+
+    # 보강/패스 관리 API
+    get 'makeup_pass_requests', to: 'dashboard#makeup_pass_requests'
+    get 'makeup_request_info/:id', to: 'dashboard#makeup_request_info'
+    patch 'makeup_pass_requests/:id/approve', to: 'dashboard#approve_makeup_pass_request'
+    patch 'makeup_pass_requests/:id/reject', to: 'dashboard#reject_makeup_pass_request'
+    delete 'makeup_pass_requests/:id', to: 'dashboard#delete_makeup_pass_request'
+
+    # 시간표 관리
+    get 'schedule_manager', to: 'dashboard#schedule_manager'
+    get 'schedule_viewer', to: 'dashboard#schedule_viewer'
+    get 'schedule_viewer_content', to: 'dashboard#schedule_viewer_content'
+    get 'schedule_manager_content', to: 'dashboard#schedule_manager_content'
+    get 'payments_content', to: 'dashboard#payments_content'
+
     # 동기화 테스트 페이지
     get 'test_sync', to: 'dashboard#test_sync'
     

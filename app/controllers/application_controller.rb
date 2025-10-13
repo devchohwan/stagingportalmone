@@ -49,6 +49,9 @@ class ApplicationController < ActionController::Base
     Reservation.where(status: ['active', 'in_use']).find_each do |reservation|
       reservation.update_status_by_time!
     end
+
+    # 보강/패스 신청 상태도 업데이트
+    MakeupPassRequest.update_statuses
   rescue => e
     # 에러가 발생해도 페이지 로딩은 계속
     Rails.logger.error "Failed to update reservation statuses: #{e.message}"

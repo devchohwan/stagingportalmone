@@ -53,6 +53,9 @@ class Admin::ReservationsController < ApplicationController
     elsif @service_type == 'pitch'
       # 음정수업 시스템에서 데이터 가져오기
       fetch_pitch_reservations
+    elsif @service_type == 'makeup_pass'
+      # 보강/패스 시스템에서 데이터 가져오기
+      fetch_makeup_pass_requests
     else
       # 연습실 시스템 (기존 로직)
       @reservations = Reservation.includes(:user, :room)
@@ -146,6 +149,10 @@ class Admin::ReservationsController < ApplicationController
     elsif service == 'makeup'
       # 보충수업 예약 삭제
       reservation = MakeupReservation.find(params[:id])
+      reservation.destroy
+    elsif service == 'makeup_pass'
+      # 보강/패스 예약 삭제
+      reservation = MakeupPassRequest.find(params[:id])
       reservation.destroy
     else
       # 연습실 예약 삭제
@@ -275,8 +282,26 @@ class Admin::ReservationsController < ApplicationController
     redirect_params[:date] = params[:date] if params[:date].present?
     redirect_params[:service] = params[:service] if params[:service].present?
 
-    # service 파라미터로 음정수업/보충수업/연습실 구분
-    if params[:service] == 'pitch'
+    # service 파라미터로 음정수업/보충수업/연습실/보강패스 구분
+    if params[:service] == 'makeup_pass'
+      # 보강/패스 시스템 예약 상태 변경 - MakeupPassRequest 모델 사용
+      Rails.logger.info "Updating makeup_pass request #{params[:id]} to status #{params[:status]}"
+      request_record = MakeupPassRequest.find(params[:id])
+
+      # validation 없이 직접 업데이트 (관리자 권한)
+      if request_record.update_columns(status: params[:status])
+        respond_to do |format|
+          format.html { redirect_to admin_reservations_path(redirect_params), notice: '상태가 변경되었습니다.' }
+          format.json { render json: { success: true, message: '상태가 변경되었습니다.' } }
+        end
+      else
+        Rails.logger.error "Update failed"
+        respond_to do |format|
+          format.html { redirect_to admin_reservations_path(redirect_params), alert: "상태 변경 실패" }
+          format.json { render json: { success: false, error: '상태 변경 실패' }, status: :unprocessable_entity }
+        end
+      end
+    elsif params[:service] == 'pitch'
       # 음정수업 시스템 예약 상태 변경 - PitchReservation 모델 사용
       Rails.logger.info "Updating pitch reservation #{params[:id]} to status #{params[:status]}"
       reservation = PitchReservation.find(params[:id])
@@ -527,6 +552,45 @@ class Admin::ReservationsController < ApplicationController
   rescue => e
     @reservations = []
     Rails.logger.error "Error fetching pitch reservations: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+  end
+
+  def fetch_makeup_pass_requests
+    # 시간이 지난 보강/패스 상태를 자동으로 업데이트
+    MakeupPassRequest.update_statuses
+
+    # 보강/패스는 makeup_pass_requests 테이블에서 조회
+    @reservations = MakeupPassRequest.includes(:user)
+                                     .order(created_at: :desc)
+
+    Rails.logger.info "Makeup/Pass requests found: #{@reservations.count}"
+
+    # 검색 기능 (이름/아이디)
+    if params[:search].present?
+      search_term = "%#{params[:search]}%"
+      @reservations = @reservations.joins(:user)
+                                   .where("users.name LIKE ? OR users.username LIKE ?", search_term, search_term)
+    end
+
+    # 필터링 옵션
+    if params[:status].present?
+      @reservations = @reservations.where(status: params[:status])
+    end
+
+    if params[:date].present?
+      date = Date.parse(params[:date])
+      # 보강인 경우 makeup_date, 패스인 경우 request_date 기준으로 필터
+      @reservations = @reservations.where(
+        "(request_type = 'makeup' AND DATE(makeup_date) = ?) OR (request_type = 'pass' AND DATE(request_date) = ?)",
+        date, date
+      )
+    end
+
+    Rails.logger.info "After filters - Makeup/Pass requests: #{@reservations.count}"
+
+  rescue => e
+    @reservations = []
+    Rails.logger.error "Error fetching makeup/pass requests: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
   end
 end

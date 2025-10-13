@@ -1,0 +1,106 @@
+<%
+  # 파라미터로 받은 값들
+  date = local_assigns[:date] || Date.current
+  teacher = local_assigns[:teacher] || ''
+  row_id = local_assigns[:row_id] || 'default'
+
+  start_date = date.beginning_of_month
+  end_date = date.end_of_month
+  weeks = (start_date.beginning_of_week(:sunday)..end_date.end_of_week(:sunday)).to_a.each_slice(7)
+  today = Date.current
+
+  # 선생님별 휴무일 정의
+  teacher_holidays = {
+    '무성' => [2, 3],           # 화, 수
+    '범석' => [3, 4],           # 수, 목
+    '두박' => [2, 3, 0],        # 화, 수, 일
+    '도현' => [3, 4, 5, 0],     # 수, 목, 금, 일
+    '로한' => [5, 6, 0],        # 금, 토, 일
+    '지명' => [5, 6, 0],        # 금, 토, 일
+    '성균' => [1, 6, 0],        # 월, 토, 일 (월요일은 학원 휴무와 중복)
+    '오또' => [5],              # 금
+    '노네임' => [2, 3]          # 화, 수
+  }
+
+  holidays = teacher_holidays[teacher] || []
+%>
+
+<div class="payment-calendar-compact" id="payment-calendar-<%= row_id %>" data-month="<%= date.strftime('%Y-%m') %>">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <button type="button" onclick="navigatePaymentCalendar('<%= row_id %>', 'prev')" style="padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; background: white; cursor: pointer; font-size: 0.85rem;">←</button>
+    <div style="font-weight: 600; font-size: 0.9rem;"><%= date.strftime('%Y년 %m월') %></div>
+    <button type="button" onclick="navigatePaymentCalendar('<%= row_id %>', 'next')" style="padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; background: white; cursor: pointer; font-size: 0.85rem;">→</button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; font-size: 0.75rem;">
+    <% %w[일 월 화 수 목 금 토].each do |day| %>
+      <div style="text-align: center; padding: 4px 0; font-weight: 600; color: #718096;"><%= day %></div>
+    <% end %>
+
+    <% weeks.each do |week| %>
+      <% week.each do |day| %>
+        <%
+          is_today = day == today
+          is_past = day < today
+          is_current_month = day.month == date.month
+          is_monday = day.wday == 1  # 월요일 (학원 휴무)
+          is_teacher_holiday = holidays.include?(day.wday)  # 선생님 휴무일
+          is_blocked = is_monday || is_teacher_holiday || is_past  # 과거 날짜도 차단
+          is_clickable = is_current_month && !is_past && !is_monday && !is_teacher_holiday
+
+          css_classes = []
+          css_classes << "payment-cal-cell"
+          css_classes << "not-current" unless is_current_month
+          css_classes << "past" if is_past
+          css_classes << "today" if is_today
+          css_classes << "blocked" if is_blocked
+          css_classes << "clickable" if is_clickable
+        %>
+
+        <%
+          cell_style = "padding: 6px 2px; text-align: center; border-radius: 4px; border: 1px solid #e2e8f0; min-height: 50px; display: flex; flex-direction: column; justify-content: center; align-items: center;"
+          cell_style += " cursor: pointer;" if is_clickable
+          cell_style += " background: #f9fafb; opacity: 0.5; cursor: not-allowed;" if is_blocked
+          cell_style += " background: #fef3c7; border-color: #fbbf24;" if is_today
+          cell_style += " opacity: 0.3;" unless is_current_month
+        %>
+        <div class="<%= css_classes.join(' ') %>"
+             data-date="<%= day.strftime('%Y-%m-%d') %>"
+             data-row-id="<%= row_id %>"
+             <% if is_clickable %>onclick="selectPaymentDate(this)"<% end %>
+             style="<%= cell_style %>">
+          <div style="font-size: 0.8rem; <%= 'color: #059669; font-weight: bold;' if is_today %> <%= 'color: #9ca3af;' if is_blocked %>"><%= day.day %></div>
+          <% if is_monday %>
+            <div style="font-size: 0.55rem; color: #ef4444; white-space: nowrap;">학원휴무</div>
+          <% elsif is_teacher_holiday %>
+            <div style="font-size: 0.55rem; color: #f59e0b;">휴무</div>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div style="margin-top: 8px; font-size: 0.7rem; color: #718096; text-align: center;">
+    <span style="color: #ef4444;">✕ 월요일(학원 휴무)</span>
+    <% if holidays.any? %>
+      <span style="margin-left: 8px; color: #f59e0b;">✕ <%= holidays.map { |d| %w[일 월 화 수 목 금 토][d] }.join(', ') %>(<%= teacher %>)</span>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  .payment-cal-cell.clickable:hover {
+    background: #e0f2fe !important;
+    border-color: #0ea5e9 !important;
+  }
+
+  .payment-cal-cell.selected {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+    color: white !important;
+    border-color: #0ea5e9 !important;
+  }
+
+  .payment-cal-cell.selected div {
+    color: white !important;
+  }
+</style>

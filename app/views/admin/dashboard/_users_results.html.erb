@@ -148,6 +148,8 @@
           <th>아이디</th>
           <th>전화번호</th>
           <th>담당</th>
+          <th>남은 수업</th>
+          <th>남은 패스</th>
           <th>비밀번호</th>
           <th>관리</th>
         </tr>
@@ -172,15 +174,21 @@
                       class="phone-update-btn">확인</button>
             </td>
             <td>
-              <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
+              <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')"
                       class="teacher-select">
                 <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인'].each do |teacher| %>
                   <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                 <% end %>
               </select>
             </td>
+            <td style="text-align: center; font-weight: 600; color: #2d3748;">
+              <%= user['remaining_lessons'] || 0 %>회
+            </td>
+            <td style="text-align: center; font-weight: 600; color: #2d3748;">
+              <%= user['remaining_passes'] || 0 %>회
+            </td>
             <td>
-              <button onclick="resetPassword('<%= user['id'] %>', '<%= user['username'] %>', '<%= user['system'] %>')" 
+              <button onclick="resetPassword('<%= user['id'] %>', '<%= user['username'] %>', '<%= user['system'] %>')"
                       class="btn-text">재설정</button>
             </td>
             <td>

@@ -1,0 +1,889 @@
+<style>
+  /* 전체 컨테이너 - 고유 클래스로 CSS 격리 */
+  .schedule-manager-wrapper {
+    min-height: 100vh;
+    background: #f9fafb;
+    padding: 1.5rem;
+  }
+
+  .schedule-manager-wrapper .header-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+  }
+
+  .schedule-manager-wrapper .header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #667eea;
+  }
+
+  .schedule-manager-wrapper .tabs-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+  }
+
+  .schedule-manager-wrapper .teacher-tab {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .schedule-manager-wrapper .teacher-tab.active {
+    background: #667eea;
+    color: white;
+  }
+
+  .schedule-manager-wrapper .teacher-tab:not(.active) {
+    background: #e5e7eb;
+    color: #374151;
+  }
+
+  .schedule-manager-wrapper .teacher-tab:not(.active):hover {
+    background: #d1d5db;
+  }
+
+  .schedule-manager-wrapper .nav-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+  }
+
+  .schedule-manager-wrapper .nav-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .schedule-manager-wrapper .nav-btn:hover {
+    background: #5568d3;
+  }
+
+  .schedule-manager-wrapper .table-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+
+  .schedule-manager-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+  }
+
+  .schedule-manager-wrapper th {
+    background: #667eea;
+    color: white;
+    font-weight: 700;
+    padding: 0.75rem;
+    border: 1px solid white;
+    text-align: center;
+  }
+
+  .schedule-manager-wrapper td {
+    border: 1px solid #e5e7eb;
+    vertical-align: top;
+    background: white;
+    padding: 0;
+  }
+
+  .schedule-manager-wrapper .time-cell {
+    background: #f9fafb;
+    font-weight: 700;
+    text-align: center;
+    padding: 0.75rem;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+  }
+
+  .schedule-manager-wrapper .schedule-cell {
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .schedule-manager-wrapper .cell-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.5rem;
+    background: linear-gradient(to bottom, rgba(102, 126, 234, 0.04), transparent);
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .schedule-manager-wrapper .add-btn {
+    width: 24px;
+    height: 24px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .schedule-manager-wrapper .add-btn:hover {
+    background: #5568d3;
+    transform: scale(1.1);
+  }
+
+  .schedule-manager-wrapper .students-area {
+    flex: 1;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .schedule-manager-wrapper .students-area.empty {
+    justify-content: center;
+    align-items: center;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .schedule-manager-wrapper .students-area.empty:hover {
+    background: rgba(102, 126, 234, 0.03);
+    color: #667eea;
+  }
+
+  .schedule-manager-wrapper .schedule-cell.holiday {
+    background: repeating-linear-gradient(
+      45deg,
+      #f9fafb,
+      #f9fafb 10px,
+      #f3f4f6 10px,
+      #f3f4f6 20px
+    );
+    opacity: 0.6;
+  }
+
+  .schedule-manager-wrapper .schedule-cell.holiday .add-btn,
+  .schedule-manager-wrapper .schedule-cell.holiday .students-area {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .schedule-manager-wrapper .schedule-cell.holiday .students-area.empty::before {
+    content: '🚫 휴무일';
+    display: block;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 0.75rem;
+  }
+
+  .schedule-manager-wrapper .schedule-cell.holiday .students-area.empty {
+    cursor: not-allowed;
+  }
+
+  .schedule-manager-wrapper .student-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.5rem 1.5rem 0.5rem 0.5rem;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .schedule-manager-wrapper .student-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    transform: translateX(2px);
+  }
+
+  .schedule-manager-wrapper .remove-btn {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 18px;
+    height: 18px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .schedule-manager-wrapper .remove-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+  }
+
+  /* 모달 - 완전 격리 */
+  .schedule-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99999 !important;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+
+  .schedule-modal-overlay.show {
+    display: flex !important;
+  }
+
+  .schedule-modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+  }
+
+  .schedule-modal-header {
+    background: #667eea;
+    color: white;
+    padding: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .schedule-modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .schedule-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+
+  .schedule-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .schedule-modal-body {
+    padding: 1.25rem;
+  }
+
+  .schedule-modal-body label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .schedule-modal-body input {
+    width: 100%;
+    padding: 0.625rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    box-sizing: border-box;
+  }
+
+  .schedule-modal-body input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .schedule-search-results {
+    margin-top: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+  }
+
+  .schedule-search-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .schedule-search-item:last-child {
+    border-bottom: none;
+  }
+
+  .schedule-search-item:hover {
+    background: #f3f4f6;
+  }
+
+  .schedule-search-empty {
+    padding: 2rem;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 0.875rem;
+  }
+
+  /* 로딩 */
+  .schedule-loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99999 !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .schedule-loading-overlay.show {
+    display: flex !important;
+  }
+
+  .schedule-loading-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .schedule-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<div class="schedule-manager-wrapper">
+  <div class="max-w-7xl mx-auto">
+    <!-- 헤더 -->
+    <div class="header-card">
+      <h2 class="header-title">🎵 시간표 관리</h2>
+      <p class="text-sm text-gray-600 mt-1">수강생을 시간표에 배치하고 관리합니다</p>
+    </div>
+
+    <!-- 선생님 탭 -->
+    <div class="tabs-card">
+      <div style="display: flex; gap: 0.5rem; overflow-x: auto;">
+        <% @teachers.each_with_index do |teacher, index| %>
+          <button
+            onclick="switchScheduleTeacher('<%= teacher %>')"
+            data-teacher="<%= teacher %>"
+            class="teacher-tab <%= index == 0 ? 'active' : '' %>">
+            👨‍🏫 <%= teacher %>
+          </button>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- 주차 네비게이션 -->
+    <div class="nav-card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <button onclick="changeScheduleWeek(-1)" class="nav-btn">← 이전 주</button>
+        <div style="text-align: center;">
+          <div id="schedule-week-display" style="font-size: 1.125rem; font-weight: 700;"></div>
+          <div id="schedule-date-range" style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;"></div>
+        </div>
+        <button onclick="changeScheduleWeek(1)" class="nav-btn">다음 주 →</button>
+      </div>
+    </div>
+
+    <!-- 시간표 테이블 -->
+    <div class="table-container">
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="time-cell" style="position: sticky; left: 0; z-index: 20;">시간</th>
+              <% ['월', '화', '수', '목', '금', '토', '일'].each_with_index do |day_name, index| %>
+                <th>
+                  <%= day_name %>
+                  <div id="date-<%= ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][index] %>" style="font-size: 0.75rem; font-weight: 400; opacity: 0.9; margin-top: 0.25rem;"></div>
+                </th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'].each do |time_slot| %>
+              <tr>
+                <td class="time-cell"><%= time_slot.split('-').join(':00-') + ':00' %></td>
+                <% ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].each do |day| %>
+                  <td>
+                    <div id="cell-<%= day %>-<%= time_slot %>" class="schedule-cell">
+                      <div class="cell-header">
+                        <button onclick="showAddStudentModal('<%= day %>', '<%= time_slot %>')" class="add-btn" title="학생 추가">+</button>
+                      </div>
+                      <div class="students-area empty" data-day="<%= day %>" data-time="<%= time_slot %>">
+                        클릭하여 추가
+                      </div>
+                    </div>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 학생 추가 모달 -->
+<div id="add-student-modal" class="schedule-modal-overlay">
+  <div class="schedule-modal-content">
+    <div class="schedule-modal-header">
+      <h3>👨‍🎓 수강생 추가</h3>
+      <button onclick="closeAddStudentModal()" class="schedule-modal-close">&times;</button>
+    </div>
+    <div class="schedule-modal-body">
+      <label>🔍 수강생 검색</label>
+      <input
+        type="text"
+        id="modal-student-search"
+        placeholder="이름 또는 아이디로 검색..."
+        onkeyup="searchStudentsInModal(this.value)">
+      <div id="modal-search-results" class="schedule-search-results">
+        <div class="schedule-search-empty">검색어를 입력하세요</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 로딩 -->
+<div id="schedule-loading" class="schedule-loading-overlay">
+  <div class="schedule-loading-content">
+    <div class="schedule-spinner"></div>
+    <p style="margin-top: 1rem; font-weight: 600; color: #374151;">처리 중...</p>
+  </div>
+</div>
+
+<script>
+(function() {
+  window.currentScheduleTeacher = '<%= @teachers.first %>';
+  window.currentScheduleWeek = 0;
+  window.scheduleData = {};
+  window.modalTargetDay = '';
+  window.modalTargetTime = '';
+  window.modalSearchTimeout = null;
+  window.teacherHolidays = <%= raw @teacher_holidays.to_json %>;
+
+  window.switchScheduleTeacher = function(teacher) {
+    window.currentScheduleTeacher = teacher;
+    document.querySelectorAll('.teacher-tab').forEach(tab => {
+      if (tab.dataset.teacher === teacher) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+    updateHolidayCells();
+    loadScheduleData();
+  };
+
+  window.changeScheduleWeek = function(offset) {
+    window.currentScheduleWeek += offset;
+    updateScheduleWeekDisplay();
+    loadScheduleData();
+  };
+
+  window.isTeacherHoliday = function(teacher, dayOfWeek) {
+    const holidays = window.teacherHolidays[teacher] || [];
+    return holidays.includes(dayOfWeek);
+  };
+
+  window.updateScheduleWeekDisplay = function() {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay() + (window.currentScheduleWeek * 7));
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const weekDisplayEl = document.getElementById('schedule-week-display');
+    const dateRangeEl = document.getElementById('schedule-date-range');
+
+    if (weekDisplayEl) {
+      weekDisplayEl.textContent = `${weekStart.getFullYear()}년 ${weekStart.getMonth() + 1}월 ${weekStart.getDate()}일 주`;
+    }
+    if (dateRangeEl) {
+      dateRangeEl.textContent = `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
+    }
+
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    days.forEach((day, index) => {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + index);
+      const dateEl = document.getElementById(`date-${day}`);
+      if (dateEl) {
+        dateEl.textContent = `${dayDate.getMonth() + 1}/${dayDate.getDate()}`;
+      }
+    });
+
+    // 휴무일 표시 업데이트
+    updateHolidayCells();
+  };
+
+  window.updateHolidayCells = function() {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay() + (window.currentScheduleWeek * 7));
+
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    days.forEach((day, index) => {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + index);
+      const dayOfWeek = dayDate.getDay();
+
+      const isHoliday = isTeacherHoliday(window.currentScheduleTeacher, dayOfWeek);
+
+      // 해당 요일의 모든 시간대 셀에 휴무일 표시
+      ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'].forEach(timeSlot => {
+        const cell = document.getElementById(`cell-${day}-${timeSlot}`);
+        if (cell) {
+          if (isHoliday) {
+            cell.classList.add('holiday');
+          } else {
+            cell.classList.remove('holiday');
+          }
+        }
+      });
+    });
+  };
+
+  window.loadScheduleData = async function() {
+    showScheduleLoading(true);
+    window.scheduleData = {};
+
+    document.querySelectorAll('.students-area').forEach(container => {
+      container.innerHTML = '클릭하여 추가';
+      container.classList.add('empty');
+    });
+
+    try {
+      const response = await fetch(`/admin/load_schedule?teacher=${encodeURIComponent(window.currentScheduleTeacher)}&week_offset=${window.currentScheduleWeek}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+
+      if (data.success) {
+        renderScheduleData(data.schedules);
+      } else {
+        alert('시간표를 불러오는데 실패했습니다: ' + (data.message || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('Error loading schedule:', error);
+      alert('시간표를 불러오는데 실패했습니다.');
+    } finally {
+      showScheduleLoading(false);
+    }
+  };
+
+  window.renderScheduleData = function(schedules) {
+    for (const [day, timeSlots] of Object.entries(schedules)) {
+      for (const [timeSlot, students] of Object.entries(timeSlots)) {
+        if (!window.scheduleData[day]) window.scheduleData[day] = {};
+        if (!window.scheduleData[day][timeSlot]) window.scheduleData[day][timeSlot] = [];
+
+        const cell = document.getElementById(`cell-${day}-${timeSlot}`);
+        if (!cell) continue;
+
+        const container = cell.querySelector('.students-area');
+        if (!container) continue;
+
+        if (students.length > 0) {
+          container.classList.remove('empty');
+          container.innerHTML = '';
+        }
+
+        students.forEach(student => {
+          if (!student.is_pass && !student.is_makeup_away && !student.is_makeup && !student.is_absent) {
+            window.scheduleData[day][timeSlot].push(student.id);
+            const card = createScheduleStudentCard(student, day, timeSlot);
+            container.appendChild(card);
+          }
+        });
+      }
+    }
+  };
+
+  window.createScheduleStudentCard = function(student, day, timeSlot) {
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.dataset.userId = student.id;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '×';
+    removeBtn.onclick = function() {
+      window.removeStudentFromSchedule(student.id, day, timeSlot);
+    };
+
+    const nameDiv = document.createElement('div');
+    nameDiv.style.fontWeight = '700';
+    nameDiv.style.fontSize = '0.875rem';
+    nameDiv.style.color = '#111827';
+    nameDiv.style.marginBottom = '0.25rem';
+    nameDiv.textContent = `🎵 ${student.name}`;
+
+    const usernameDiv = document.createElement('div');
+    usernameDiv.style.fontSize = '0.75rem';
+    usernameDiv.style.color = '#6b7280';
+    usernameDiv.textContent = student.username;
+
+    card.appendChild(removeBtn);
+    card.appendChild(nameDiv);
+    card.appendChild(usernameDiv);
+
+    return card;
+  };
+
+  window.showAddStudentModal = function(day, timeSlot) {
+    const currentCount = window.scheduleData[day]?.[timeSlot]?.length || 0;
+    if (currentCount >= 3) {
+      alert('이 시간대는 이미 3명으로 가득 찼습니다.');
+      return;
+    }
+
+    window.modalTargetDay = day;
+    window.modalTargetTime = timeSlot;
+
+    const searchInput = document.getElementById('modal-student-search');
+    const searchResults = document.getElementById('modal-search-results');
+    const modal = document.getElementById('add-student-modal');
+
+    if (searchInput) searchInput.value = '';
+    if (searchResults) searchResults.innerHTML = '<div class="schedule-search-empty">검색어를 입력하세요</div>';
+    if (modal) modal.classList.add('show');
+  };
+
+  window.closeAddStudentModal = function() {
+    const modal = document.getElementById('add-student-modal');
+    if (modal) modal.classList.remove('show');
+  };
+
+  window.searchStudentsInModal = async function(query) {
+    clearTimeout(window.modalSearchTimeout);
+
+    const resultsDiv = document.getElementById('modal-search-results');
+    if (!resultsDiv) return;
+
+    if (query.length < 2) {
+      resultsDiv.innerHTML = '<div class="schedule-search-empty">검색어를 입력하세요</div>';
+      return;
+    }
+
+    window.modalSearchTimeout = setTimeout(async () => {
+      try {
+        const response = await fetch(`/admin/search_students?search=${encodeURIComponent(query)}&teacher=${encodeURIComponent(window.currentScheduleTeacher)}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+
+        resultsDiv.innerHTML = '';
+
+        if (data.students && data.students.length > 0) {
+          data.students.forEach(student => {
+            const item = document.createElement('div');
+            item.className = 'schedule-search-item';
+
+            const nameDiv = document.createElement('div');
+            nameDiv.style.fontWeight = '700';
+            nameDiv.style.color = '#111827';
+            nameDiv.textContent = `🎵 ${student.name}`;
+
+            const infoDiv = document.createElement('div');
+            infoDiv.style.fontSize = '0.75rem';
+            infoDiv.style.color = '#6b7280';
+            infoDiv.style.marginTop = '0.25rem';
+            infoDiv.textContent = `${student.username} - ${student.teacher}`;
+
+            item.appendChild(nameDiv);
+            item.appendChild(infoDiv);
+            item.onclick = () => window.addStudentToSchedule(student);
+            resultsDiv.appendChild(item);
+          });
+        } else {
+          resultsDiv.innerHTML = '<div class="schedule-search-empty">검색 결과가 없습니다</div>';
+        }
+      } catch (error) {
+        console.error('Error searching students:', error);
+        resultsDiv.innerHTML = '<div class="schedule-search-empty" style="color: #ef4444;">검색 중 오류가 발생했습니다</div>';
+      }
+    }, 300);
+  };
+
+  window.addStudentToSchedule = function(student) {
+    const day = window.modalTargetDay;
+    const timeSlot = window.modalTargetTime;
+
+    if (window.scheduleData[day]?.[timeSlot]?.includes(student.id)) {
+      alert('이미 추가된 학생입니다.');
+      return;
+    }
+
+    if (!window.scheduleData[day]) window.scheduleData[day] = {};
+    if (!window.scheduleData[day][timeSlot]) window.scheduleData[day][timeSlot] = [];
+
+    if (window.scheduleData[day][timeSlot].length >= 3) {
+      alert('이 시간대는 이미 3명으로 가득 찼습니다.');
+      return;
+    }
+
+    window.scheduleData[day][timeSlot].push(student.id);
+
+    const cell = document.getElementById(`cell-${day}-${timeSlot}`);
+    const container = cell.querySelector('.students-area');
+
+    if (container) {
+      if (container.classList.contains('empty')) {
+        container.classList.remove('empty');
+        container.innerHTML = '';
+      }
+
+      const card = createScheduleStudentCard(student, day, timeSlot);
+      container.appendChild(card);
+    }
+
+    closeAddStudentModal();
+
+    // 자동 저장
+    autoSaveSchedule();
+  };
+
+  window.removeStudentFromSchedule = function(userId, day, timeSlot) {
+    if (!confirm('이 학생을 시간표에서 제거하시겠습니까?')) return;
+
+    if (window.scheduleData[day]?.[timeSlot]) {
+      window.scheduleData[day][timeSlot] = window.scheduleData[day][timeSlot].filter(id => id !== userId);
+    }
+
+    const cell = document.getElementById(`cell-${day}-${timeSlot}`);
+    const container = cell.querySelector('.students-area');
+    const cards = container ? container.querySelectorAll(`[data-user-id="${userId}"]`) : [];
+
+    cards.forEach(card => card.remove());
+
+    if (container && container.children.length === 0) {
+      container.classList.add('empty');
+      container.innerHTML = '클릭하여 추가';
+    }
+
+    // 자동 저장
+    autoSaveSchedule();
+  };
+
+  // 자동 저장 (디바운싱 적용)
+  let autoSaveTimeout = null;
+  window.autoSaveSchedule = function() {
+    clearTimeout(autoSaveTimeout);
+
+    autoSaveTimeout = setTimeout(async () => {
+      try {
+        const response = await fetch('/admin/save_schedule', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          },
+          body: JSON.stringify({
+            teacher: window.currentScheduleTeacher,
+            schedules: window.scheduleData
+          })
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+
+        if (data.success) {
+          console.log('시간표가 자동 저장되었습니다.');
+        } else {
+          console.error('자동 저장 실패:', data.message);
+        }
+      } catch (error) {
+        console.error('Error auto-saving schedule:', error);
+      }
+    }, 500); // 500ms 후 저장
+  };
+
+  window.showScheduleLoading = function(show) {
+    const loading = document.getElementById('schedule-loading');
+    if (loading) {
+      if (show) {
+        loading.classList.add('show');
+      } else {
+        loading.classList.remove('show');
+      }
+    }
+  };
+
+  window.setupEmptyContainerClicks = function() {
+    document.querySelectorAll('.students-area').forEach(container => {
+      const newContainer = container.cloneNode(true);
+      container.parentNode.replaceChild(newContainer, container);
+
+      newContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.student-card')) return;
+
+        const day = this.dataset.day;
+        const time = this.dataset.time;
+
+        if (day && time) {
+          window.showAddStudentModal(day, time);
+        }
+      });
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      updateScheduleWeekDisplay();
+      loadScheduleData();
+      setupEmptyContainerClicks();
+    });
+  } else {
+    updateScheduleWeekDisplay();
+    loadScheduleData();
+    setupEmptyContainerClicks();
+  }
+})();
+</script>

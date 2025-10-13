@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user: one
+  teacher: MyString
+  subject: MyString
+  day: MyString
+  time_slot: MyString
+  remaining_lessons: 1
+  first_lesson_date: 2025-10-10
+  end_date: 2025-10-10
+  status: MyString
+
+two:
+  user: two
+  teacher: MyString
+  subject: MyString
+  day: MyString
+  time_slot: MyString
+  remaining_lessons: 1
+  first_lesson_date: 2025-10-10
+  end_date: 2025-10-10
+  status: MyString

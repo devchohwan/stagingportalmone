@@ -219,7 +219,113 @@ class Admin::DashboardController < ApplicationController
     
     render partial: 'users_content'
   end
-  
+
+  # 결제 관리 페이지
+  def payments_content
+    @page = (params[:page] || 1).to_i
+    @per_page = 50
+
+    # 모든 승인된 사용자 가져오기
+    approved_users_query = User.approved.includes(:penalties)
+
+    # 사용자 데이터 해시로 변환
+    @all_users = approved_users_query.map do |u|
+      {
+        'id' => u.id,
+        'name' => u.name,
+        'username' => u.username,
+        'phone' => u.respond_to?(:phone) ? u.phone : nil,
+        'teacher' => u.teacher,
+        'last_payment_date' => u.respond_to?(:last_payment_date) ? u.last_payment_date : nil,
+        'remaining_lessons' => u.respond_to?(:remaining_lessons) ? u.remaining_lessons : 0
+      }
+    end
+
+    # 검색어가 있으면 필터링
+    search_query = params[:search]&.strip&.downcase
+
+    if search_query.present?
+      @all_users = @all_users.select { |u|
+        u['name']&.downcase&.include?(search_query) ||
+        u['username']&.downcase&.include?(search_query)
+      }
+    end
+
+    # 페이지네이션
+    @total_count = @all_users.size
+    @total_pages = (@total_count.to_f / @per_page).ceil
+    @users = @all_users[(@page - 1) * @per_page, @per_page] || []
+
+    render partial: 'payments_content'
+  end
+
+  # 월별 결제 캘린더 데이터
+  def payment_calendar_data
+    year = params[:year].to_i
+    month = params[:month].to_i
+
+    # 해당 월의 시작일과 종료일
+    start_date = Date.new(year, month, 1)
+    end_date = start_date.end_of_month
+
+    # 활성 회원만
+    users = User.where(status: ['active', 'approved'])
+
+    # 날짜별 결제 대상자 그룹핑
+    payment_data = {}
+
+    users.each do |user|
+      # 첫 수업일이 있는 경우만 처리
+      next unless user.first_lesson_date.present?
+
+      # 마지막 결제 정보 가져오기
+      last_payment = Payment.where(user_id: user.id).order(created_at: :desc).first
+
+      # 결제 기간 계산 (기본 1개월)
+      payment_period_days = if last_payment&.period.present?
+        last_payment.period * 30
+      else
+        30 # 기본값
+      end
+
+      # 다음 결제일 = 첫 수업일 + 결제한 기간
+      next_payment_date = user.first_lesson_date + payment_period_days.days
+
+      # 해당 월에 결제일이 있는지 확인
+      if next_payment_date >= start_date && next_payment_date <= end_date
+        date_key = next_payment_date.strftime('%Y-%m-%d')
+        payment_data[date_key] ||= []
+
+        # 결제 완료 여부: 마지막 결제일이 다음 결제 예정일 이후인지 확인
+        is_paid = user.last_payment_date.present? && user.last_payment_date >= next_payment_date
+
+        payment_data[date_key] << {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          teacher: user.teacher,
+          first_lesson_date: user.first_lesson_date,
+          last_payment_date: user.last_payment_date,
+          next_payment_date: next_payment_date,
+          payment_period: last_payment&.period || 1,
+          remaining_lessons: user.remaining_lessons || 0,
+          is_paid: is_paid,
+          days_overdue: is_paid ? 0 : (Date.current - next_payment_date).to_i
+        }
+      end
+    end
+
+    render json: {
+      success: true,
+      year: year,
+      month: month,
+      data: payment_data
+    }
+  rescue => e
+    Rails.logger.error "결제 캘린더 데이터 오류: #{e.message}"
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
   # 사용자 정보 업데이트
   def update_practice_user_info
     Rails.logger.info "=== ADMIN UPDATE USER INFO ==="
@@ -264,20 +370,20 @@ class Admin::DashboardController < ApplicationController
   # 사용자 거부/삭제
   def reject_practice_user
     user = User.find(params[:id])
-    
+
     # 연관된 데이터 먼저 삭제
     begin
       user.penalties.destroy_all if user.penalties.exists?
       user.reservations.destroy_all if user.reservations.exists?
-      user.makeup_lessons.destroy_all if user.makeup_lessons.exists?
       user.makeup_reservations.destroy_all if user.makeup_reservations.exists?
+      user.makeup_pass_requests.destroy_all if user.makeup_pass_requests.exists?
     rescue => e
       Rails.logger.error "Error deleting associated records: #{e.message}"
     end
-    
+
     # 사용자 삭제
     user.delete # destroy 대신 delete 사용으로 콜백 스킵
-    
+
     head :ok
   end
   
@@ -425,18 +531,860 @@ class Admin::DashboardController < ApplicationController
   def update_reservation_status
     head :ok
   end
-  
+
   def delete_reservation
     redirect_to admin_reservations_path, notice: "예약이 삭제되었습니다."
   end
+
+  # 수강생 검색 API (JSON)
+  def search_students
+    search_term = params[:search]&.strip&.downcase
+    teacher = params[:teacher]&.strip
+    page = (params[:page] || 1).to_i
+    per_page = 10
+
+    # 기본 쿼리: 승인된 사용자
+    query = User.approved
+
+    # 담당별 필터링
+    if teacher.present?
+      query = query.where(teacher: teacher)
+    end
+
+    # 검색어 필터링
+    if search_term.present?
+      query = query.where("LOWER(name) LIKE ? OR LOWER(username) LIKE ?", "%#{search_term}%", "%#{search_term}%")
+    end
+
+    # 전체 개수
+    total_count = query.count
+    total_pages = (total_count.to_f / per_page).ceil
+
+    # 페이지네이션
+    students = query.offset((page - 1) * per_page)
+                    .limit(per_page)
+                    .map do |user|
+      {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        teacher: user.teacher || '미지정'
+      }
+    end
+
+    render json: {
+      students: students,
+      page: page,
+      per_page: per_page,
+      total_count: total_count,
+      total_pages: total_pages
+    }
+  end
+
+  # 스케줄 저장 API
+  def save_schedule
+    teacher = params[:teacher]
+    schedules = params[:schedules] # { day: { time_slot: [user_ids] } }
+
+    if teacher.blank?
+      render json: { success: false, message: '담당 정보가 누락되었습니다.' }, status: :bad_request
+      return
+    end
+
+    begin
+      ActiveRecord::Base.transaction do
+        # 해당 담당의 기존 스케줄 삭제
+        TeacherSchedule.where(teacher: teacher).destroy_all
+
+        # 새로운 스케줄 저장 (schedules가 비어있으면 모두 삭제만 됨)
+        if schedules.present?
+          schedules.each do |day, time_slots|
+            time_slots.each do |time_slot, user_ids|
+              user_ids.each do |user_id|
+                TeacherSchedule.create!(
+                  teacher: teacher,
+                  day: day,
+                  time_slot: time_slot,
+                  user_id: user_id
+                )
+              end
+            end
+          end
+        end
+      end
+
+      render json: { success: true, message: '스케줄이 저장되었습니다.' }
+    rescue => e
+      Rails.logger.error "스케줄 저장 오류: #{e.message}"
+      render json: { success: false, message: '스케줄 저장 중 오류가 발생했습니다.' }, status: :internal_server_error
+    end
+  end
+
+  # 스케줄 불러오기 API
+  def load_schedule
+    teacher = params[:teacher]
+    week_offset = params[:week_offset].to_i || 0
+
+    if teacher.blank?
+      render json: { success: false, message: '담당 정보가 필요합니다.' }, status: :bad_request
+      return
+    end
+
+    # 현재 주차 계산
+    today = Date.current
+    start_of_current_week = today.beginning_of_week(:sunday)
+    target_week_start = start_of_current_week + week_offset.weeks
+    target_week_end = target_week_start + 6.days
+
+    schedules = TeacherSchedule.includes(:user).where(teacher: teacher)
+
+    # { day: { time_slot: [{ id, name, username }] } } 형식으로 변환
+    schedule_data = {}
+    schedules.each do |schedule|
+      day = schedule.day
+      time_slot = schedule.time_slot
+      user = schedule.user
+
+      # 이 주차에 보강/패스 신청이 있는지 확인
+      day_index = { 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 0 }[day]
+      target_date = target_week_start + day_index.days
+
+      # 시작일 체크: 첫 수업 시작 전이면 표시 안 함
+      if user.first_lesson_date.present? && target_date < user.first_lesson_date
+        Rails.logger.info "SKIP(시작일 전): #{user.name} / target=#{target_date} < first=#{user.first_lesson_date}"
+        next
+      end
+
+      # UserEnrollment에서 휴원 상태 및 남은 수업 횟수 확인 (time_slot 형식 변환 필요)
+      # TeacherSchedule: "14-15", UserEnrollment: "14:00"
+      enrollment_time_slot = time_slot.split('-').first + ':00'
+      enrollment = UserEnrollment.find_by(
+        user_id: user.id,
+        teacher: teacher,
+        day: day,
+        time_slot: enrollment_time_slot,
+        is_paid: true
+      )
+
+      is_on_leave = enrollment&.status == 'on_leave'
+
+      # 휴원 상태일 때: 남은 수업 횟수만 체크 (날짜 무시)
+      if is_on_leave
+        if enrollment.present? && enrollment.remaining_lessons <= 0
+          Rails.logger.info "SKIP(휴원 중 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
+          next
+        end
+        Rails.logger.info "표시됨(휴원중): #{user.name} / target=#{target_date} / remaining=#{enrollment&.remaining_lessons}"
+      else
+        # 활성 상태일 때: end_date 체크 (UserEnrollment의 end_date 사용)
+        enrollment_end_date = enrollment&.end_date || schedule.end_date
+        if enrollment_end_date.present? && target_date > enrollment_end_date
+          Rails.logger.info "SKIP(활성 - 종료일 후): #{user.name} / target=#{target_date} > end=#{enrollment_end_date}"
+          next
+        end
+        Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / end=#{enrollment_end_date}"
+      end
+
+      # 이 날짜에 패스 신청이 있는지 확인
+      pass_request = MakeupPassRequest.where(
+        user_id: user.id,
+        request_type: 'pass',
+        request_date: target_date,
+        status: 'active'
+      ).first
+
+      # 이 날짜에 보강 신청(원래 자리에서 이동)이 있는지 확인
+      makeup_away_request = MakeupPassRequest.where(
+        user_id: user.id,
+        request_type: 'makeup',
+        request_date: target_date,
+        status: 'active'
+      ).first
+
+      # 이 날짜에 취소된 보강 신청이 있는지 확인 (결석 처리)
+      cancelled_makeup_request = MakeupPassRequest.where(
+        user_id: user.id,
+        request_type: 'makeup',
+        request_date: target_date,
+        status: 'cancelled'
+      ).first
+
+      schedule_data[day] ||= {}
+      schedule_data[day][time_slot] ||= []
+
+      if pass_request
+        # 패스인 경우: 회색으로 표시, "패스" 표시
+        schedule_data[day][time_slot] << {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          teacher: user.teacher,
+          is_pass: true,
+          is_on_leave: is_on_leave
+        }
+      elsif makeup_away_request
+        # 보강으로 이동하는 경우: 회색으로 표시, "→ 선생님" 표시
+        schedule_data[day][time_slot] << {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          teacher: user.teacher,
+          is_makeup_away: true,
+          moved_to_teacher: makeup_away_request.teacher,
+          makeup_request_id: makeup_away_request.id,
+          is_on_leave: is_on_leave
+        }
+      elsif cancelled_makeup_request
+        # 보강 취소한 경우: 회색으로 표시, "결석" 표시
+        schedule_data[day][time_slot] << {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          teacher: user.teacher,
+          is_absent: true,
+          is_on_leave: is_on_leave
+        }
+      else
+        # 정상 출석 또는 휴원
+        schedule_data[day][time_slot] << {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          teacher: user.teacher,
+          is_on_leave: is_on_leave
+        }
+      end
+    end
+
+    # 이 주차의 보강 신청을 추가 (다른 선생님한테서 이동해온 학생들)
+    makeup_requests = MakeupPassRequest.includes(:user).where(
+      request_type: 'makeup',
+      teacher: teacher,
+      makeup_date: target_week_start..target_week_end,
+      status: 'active'
+    )
+
+    makeup_requests.each do |req|
+      day_name = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[req.makeup_date.wday]
+      time_slot = req.time_slot
+
+      schedule_data[day_name] ||= {}
+      schedule_data[day_name][time_slot] ||= []
+      schedule_data[day_name][time_slot] << {
+        id: req.user.id,
+        name: req.user.name,
+        username: req.user.username,
+        teacher: req.user.teacher,
+        is_makeup: true,
+        original_teacher: req.user.teacher,
+        week_number: req.week_number,
+        makeup_request_id: req.id
+      }
+    end
+
+    render json: { success: true, schedules: schedule_data }
+  rescue => e
+    Rails.logger.error "스케줄 불러오기 오류: #{e.message}"
+    render json: { success: false, message: '스케줄을 불러오는 중 오류가 발생했습니다.' }, status: :internal_server_error
+  end
+
+  # 스케줄 변경 감지 (최근 N초간 변경 확인)
+  def schedule_changes
+    since = params[:since].to_i
+    since_time = Time.at(since)
+
+    # 최근 변경된 보강/패스 신청이 있는지 확인
+    recent_changes = MakeupPassRequest.where('updated_at > ?', since_time).exists?
+
+    render json: {
+      changed: recent_changes,
+      timestamp: Time.current.to_i
+    }
+  rescue => e
+    Rails.logger.error "스케줄 변경 감지 오류: #{e.message}"
+    render json: { changed: false, timestamp: Time.current.to_i }
+  end
+
+  # 보강 신청 상세 정보
+  def makeup_request_info
+    request = MakeupPassRequest.includes(:user).find(params[:id])
+
+    render json: {
+      success: true,
+      user_name: request.user.name,
+      user_teacher: request.user.teacher,
+      request_type: request.request_type,
+      original_date: request.request_date.strftime('%Y년 %m월 %d일'),
+      makeup_date: request.makeup_date&.strftime('%Y년 %m월 %d일'),
+      time_slot: request.formatted_time,
+      teacher: request.teacher,
+      week_number: request.week_number,
+      content: request.content,
+      created_at: request.created_at.strftime('%Y년 %m월 %d일 %H:%M')
+    }
+  rescue => e
+    Rails.logger.error "보강 신청 정보 불러오기 오류: #{e.message}"
+    render json: { success: false, message: '정보를 불러오는 중 오류가 발생했습니다.' }, status: :internal_server_error
+  end
+
+  # 보강/패스 목록 불러오기 API
+  def makeup_pass_requests
+    request_type = params[:type] # 'makeup' or 'pass'
+
+    requests = MakeupPassRequest.includes(:user).recent
+    requests = requests.where(request_type: request_type) if request_type.present?
+
+    render json: {
+      success: true,
+      requests: requests.map { |req|
+        # 보강인 경우 보강 받을 날짜, 패스인 경우 패스할 날짜
+        display_date = req.makeup? && req.makeup_date ? req.makeup_date : req.request_date
+
+        {
+          id: req.id,
+          user_id: req.user_id,
+          user_name: req.user.name,
+          user_teacher: req.user.teacher,
+          request_type: req.request_type,
+          request_date: display_date.strftime('%Y년 %m월 %d일'),
+          time_slot: req.time_slot,
+          formatted_time: req.formatted_time,
+          teacher: req.teacher,
+          week_number: req.week_number,
+          content: req.content,
+          status: req.status,
+          created_at: req.created_at.strftime('%Y년 %m월 %d일 %H:%M')
+        }
+      }
+    }
+  rescue => e
+    Rails.logger.error "보강/패스 목록 불러오기 오류: #{e.message}"
+    render json: { success: false, message: '목록을 불러오는 중 오류가 발생했습니다.' }, status: :internal_server_error
+  end
+
+  # 보강/패스 승인
+  def approve_makeup_pass_request
+    request = MakeupPassRequest.find(params[:id])
+    request.approve!
+    render json: { success: true, message: '승인되었습니다.' }
+  rescue => e
+    Rails.logger.error "보강/패스 승인 오류: #{e.message}"
+    render json: { success: false, message: '승인 처리 중 오류가 발생했습니다.' }, status: :internal_server_error
+  end
+
+  # 보강/패스 거절
+  def reject_makeup_pass_request
+    request = MakeupPassRequest.find(params[:id])
+    request.reject!
+    render json: { success: true, message: '거절되었습니다.' }
+  rescue => e
+    Rails.logger.error "보강/패스 거절 오류: #{e.message}"
+    render json: { success: false, message: '거절 처리 중 오류가 발생했습니다.' }, status: :internal_server_error
+  end
+
+  def delete_makeup_pass_request
+    request = MakeupPassRequest.find(params[:id])
+    request.destroy
+    render json: { success: true, message: '삭제되었습니다.' }
+  rescue => e
+    Rails.logger.error "보강/패스 삭제 오류: #{e.message}"
+    render json: { success: false, message: '삭제 처리 중 오류가 발생했습니다.' }, status: :internal_server_error
+  end
+
+  def create_payment
+    # 다중 결제인지 확인
+    if params[:payments].present?
+      create_multi_payment
+      return
+    end
+
+    # 기존 단일 결제 로직
+    user = User.find(params[:user_id])
+
+    # 첫수업 시작일시 파싱
+    if params[:first_lesson_date].present? && params[:first_lesson_time].present?
+      first_lesson_date = Date.parse(params[:first_lesson_date])
+      time_slot = params[:first_lesson_time]
+      day_of_week_num = first_lesson_date.wday
+
+      # 요일 번호를 요일 문자열로 변환 (0=sun, 1=mon, 2=tue, ...)
+      day_map = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }
+      day = day_map[day_of_week_num]
+
+      # 해당 요일+시간에 스케줄 관리에서 현재 등록된 학생 수 확인
+      current_count = TeacherSchedule.where(
+        teacher: user.teacher,
+        day: day,
+        time_slot: time_slot
+      ).count
+
+      # 정원 3명 체크
+      if current_count >= 3
+        render json: { success: false, message: '스케줄이 다 차있습니다. 다른 시간을 골라주세요.' }, status: :unprocessable_entity
+        return
+      end
+
+      # 종료일 계산 (첫수업일 + (수업횟수 * 7일) - 1일)
+      # 예: 8회 수업 → 8주차까지 → 첫수업일 + 7*7 = 49일 후
+      lessons_count = params[:new_total_lessons].to_i
+      end_date = first_lesson_date + ((lessons_count - 1) * 7).days
+
+      # 스케줄 관리에 자동 등록
+      TeacherSchedule.create!(
+        teacher: user.teacher,
+        day: day,
+        time_slot: time_slot,
+        user_id: user.id,
+        end_date: end_date
+      )
+    end
+
+    # 남은 수업 횟수를 새로운 총 횟수로 직접 설정
+    user.remaining_lessons = params[:new_total_lessons].to_i
+
+    # 남은 패스 횟수 증가 (1개월당 1회)
+    user.remaining_passes = (user.remaining_passes || 0) + params[:period].to_i
+
+    # 마지막 결제일 업데이트
+    payment_date = Date.parse(params[:payment_date])
+    user.last_payment_date = payment_date
+
+    # 첫수업 시작일 업데이트 (입력된 경우에만)
+    if params[:first_lesson_date].present?
+      user.first_lesson_date = Date.parse(params[:first_lesson_date])
+    end
+
+    # 패스 만료일 계산 (1개월 = 30일, 3개월 = 90일)
+    days_to_add = params[:period].to_i * 30
+    new_expire_date = payment_date + days_to_add.days
+
+    # 기존 만료일보다 새 만료일이 더 나중이면 업데이트
+    if user.passes_expire_date.nil? || new_expire_date > user.passes_expire_date
+      user.passes_expire_date = new_expire_date
+    end
+
+    # Payment 모델에 결제 기록 저장 (히스토리용)
+    Payment.create!(
+      user_id: user.id,
+      subject: params[:subject],
+      period: params[:period],
+      amount: params[:amount],
+      payment_date: params[:payment_date],
+      lessons: params[:lessons],
+      first_lesson_date: params[:first_lesson_date].present? ? Date.parse(params[:first_lesson_date]) : nil,
+      first_lesson_time: params[:first_lesson_time]
+    )
+
+    if user.save
+      render json: { success: true, message: '결제 정보가 저장되었습니다.' }
+    else
+      render json: { success: false, message: user.errors.full_messages.join(', ') }, status: :unprocessable_entity
+    end
+  rescue => e
+    Rails.logger.error "Payment creation error: #{e.message}"
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def create_multi_payment
+    Rails.logger.info "=== CREATE MULTI PAYMENT ==="
+    Rails.logger.info "Params: #{params.to_unsafe_h.inspect}"
+
+    user = User.find(params[:user_id])
+    payment_date = Date.parse(params[:payment_date])
+
+    # 과목별 가격 정의
+    subject_prices = {
+      '클린' => { 1 => 370000, 3 => 950000 },
+      '언클린' => { 1 => 370000, 3 => 950000 },
+      '믹싱' => { 1 => 280000, 4 => 990000 },
+      '작곡' => { 1 => 350000, 3 => 950000 },
+      '기타' => { 1 => 300000, 3 => 770000 }
+    }
+
+    ActiveRecord::Base.transaction do
+      # 다중 결제 처리
+      params[:payments].each do |payment_data|
+        Rails.logger.info "=== Processing payment_data: #{payment_data.inspect}"
+
+        enrollment = UserEnrollment.find(payment_data[:enrollment_id])
+        period = payment_data[:period].to_i
+        first_lesson_date = payment_data[:first_lesson_date].present? ? Date.parse(payment_data[:first_lesson_date]) : nil
+        first_lesson_time = payment_data[:first_lesson_time]
+
+        Rails.logger.info "=== Enrollment: id=#{enrollment.id}, day=#{enrollment.day}, time_slot=#{enrollment.time_slot}"
+        Rails.logger.info "=== Payment data: period=#{period}, first_lesson_date=#{first_lesson_date}, first_lesson_time=#{first_lesson_time}"
+
+        # 수업 횟수 계산 (주 1회 * 기간 주수)
+        lessons = period * 4
+
+        # UserEnrollment 업데이트
+        Rails.logger.info "=== PAYMENT: Updating enrollment #{enrollment.id} ==="
+        Rails.logger.info "Before: remaining_lessons=#{enrollment.remaining_lessons}, is_paid=#{enrollment.is_paid}"
+
+        enrollment.remaining_lessons = (enrollment.remaining_lessons || 0) + lessons
+        enrollment.is_paid = true  # 결제 완료 표시
+
+        # 첫수업 날짜/시간 업데이트
+        if first_lesson_date.present?
+          enrollment.first_lesson_date = first_lesson_date
+          user.first_lesson_date = first_lesson_date if user.first_lesson_date.nil?
+        end
+
+        # 종료일 계산
+        days_to_add = period * 30
+        new_end_date = (enrollment.end_date || payment_date) + days_to_add.days
+        enrollment.end_date = new_end_date
+
+        Rails.logger.info "After update: remaining_lessons=#{enrollment.remaining_lessons}, is_paid=#{enrollment.is_paid}"
+        enrollment.save!
+        Rails.logger.info "After save: remaining_lessons=#{enrollment.remaining_lessons}, is_paid=#{enrollment.is_paid}"
+
+        # 스케줄 관리에 자동 등록 (첫수업 날짜/시간이 있는 경우)
+        Rails.logger.info "=== Checking TeacherSchedule: first_lesson_date=#{first_lesson_date.present?}, day=#{enrollment.day.present?}, time_slot=#{enrollment.time_slot.present?}"
+
+        if first_lesson_date.present? && enrollment.day.present? && enrollment.time_slot.present?
+          # time_slot 형식 변환: "14:00" → "14-15"
+          # enrollment.time_slot이 "14:00" 형식이면 "14-15" 형식으로 변환
+          converted_time_slot = enrollment.time_slot
+          if enrollment.time_slot =~ /^\d{2}:00$/
+            hour = enrollment.time_slot.split(':')[0].to_i
+            converted_time_slot = "#{hour}-#{hour + 1}"
+            Rails.logger.info "=== Time slot converted: #{enrollment.time_slot} → #{converted_time_slot}"
+          end
+
+          # 기존 스케줄이 없는 경우에만 생성
+          existing = TeacherSchedule.exists?(
+            teacher: enrollment.teacher,
+            day: enrollment.day,
+            time_slot: converted_time_slot,
+            user_id: user.id
+          )
+
+          Rails.logger.info "=== TeacherSchedule exists? #{existing}"
+
+          unless existing
+            # 종료일 계산 (첫수업일 + (수업횟수 - 1) * 7일)
+            schedule_end_date = first_lesson_date + ((lessons - 1) * 7).days
+
+            Rails.logger.info "=== Creating TeacherSchedule: teacher=#{enrollment.teacher}, day=#{enrollment.day}, time=#{converted_time_slot}, end=#{schedule_end_date}"
+
+            TeacherSchedule.create!(
+              teacher: enrollment.teacher,
+              day: enrollment.day,
+              time_slot: converted_time_slot,
+              user_id: user.id,
+              end_date: schedule_end_date
+            )
+
+            Rails.logger.info "=== TeacherSchedule created successfully"
+          end
+        end
+
+        # 과목별 가격 가져오기
+        amount = subject_prices.dig(enrollment.subject, period) || 0
+
+        # Payment 기록 저장
+        Payment.create!(
+          user_id: user.id,
+          enrollment_id: enrollment.id,
+          subject: enrollment.subject,
+          period: period,
+          amount: amount,
+          payment_date: payment_date,
+          lessons: lessons,
+          discount_items: params[:discount_items],
+          discount_amount: params[:discount_amount],
+          final_amount: params[:final_amount],
+          first_lesson_date: first_lesson_date,
+          first_lesson_time: first_lesson_time
+        )
+      end
+
+      # User 레벨의 패스 업데이트 (전체 등록 과목 기준)
+      total_lessons = params[:payments].sum { |p| p[:period].to_i * 4 }
+      total_passes = params[:payments].size  # 과목당 1개
+
+      user.remaining_passes = (user.remaining_passes || 0) + total_passes
+
+      # 패스 만료일 연장
+      max_period = params[:payments].map { |p| p[:period].to_i }.max
+      days_to_add = max_period * 30
+      new_expire_date = payment_date + days_to_add.days
+
+      if user.passes_expire_date.nil? || new_expire_date > user.passes_expire_date
+        user.passes_expire_date = new_expire_date
+      end
+
+      user.last_payment_date = payment_date
+      user.save!
+
+      render json: { success: true, message: '결제 정보가 저장되었습니다.' }
+    end
+  rescue => e
+    Rails.logger.error "Multi-payment creation error: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def update_user_status
+    user = User.find(params[:id])
+    new_status = params[:status]
+
+    user.status = new_status
+    if user.save
+      message = new_status == 'on_leave' ? '휴원 처리되었습니다.' : '복귀 처리되었습니다.'
+      render json: { success: true, message: message }
+    else
+      render json: { success: false, message: '상태 변경에 실패했습니다.' }, status: :unprocessable_entity
+    end
+  rescue => e
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def toggle_all_enrollments
+    user = User.find(params[:id])
+    new_status = params[:status]
+
+    # 모든 UserEnrollment의 상태 변경
+    count = user.user_enrollments.update_all(status: new_status)
+
+    message = new_status == 'on_leave' ? "#{count}개 과목이 휴원 처리되었습니다." : "#{count}개 과목이 복귀 처리되었습니다."
+    render json: { success: true, message: message }
+  rescue => e
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def toggle_all_enrollments_auto
+    user = User.find(params[:id])
+
+    # 현재 상태 확인 (휴원 중인 과목이 있는지)
+    has_on_leave = user.user_enrollments.exists?(status: 'on_leave')
+
+    # 휴원 중인 과목이 하나라도 있으면 전부 복귀, 없으면 전부 휴원
+    new_status = has_on_leave ? 'active' : 'on_leave'
+    count = user.user_enrollments.update_all(status: new_status)
+
+    message = new_status == 'on_leave' ? "#{count}개 과목을 휴원 처리했습니다." : "#{count}개 과목을 복귀 처리했습니다."
+    render json: { success: true, message: message }
+  rescue => e
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def user_enrollments
+    user = User.find(params[:user_id])
+    # 미결제 항목만 가져오기
+    enrollments = user.user_enrollments.where(is_paid: [false, nil]).order(created_at: :desc)
+
+    enrollment_data = enrollments.map do |enrollment|
+      {
+        id: enrollment.id,
+        teacher: enrollment.teacher,
+        subject: enrollment.subject,
+        day: enrollment.day,
+        day_korean: enrollment.day_korean,
+        time_slot: enrollment.time_slot,
+        remaining_lessons: enrollment.remaining_lessons || 0,
+        first_lesson_date: enrollment.first_lesson_date&.strftime('%Y년 %m월 %d일'),
+        first_lesson_date_raw: enrollment.first_lesson_date&.strftime('%Y-%m-%d'),
+        end_date: enrollment.end_date&.strftime('%Y년 %m월 %d일'),
+        status: enrollment.status,
+        display_name: "#{enrollment.subject} (#{enrollment.teacher}) - #{enrollment.day_korean} #{enrollment.time_display}"
+      }
+    end
+
+    render json: {
+      success: true,
+      user_name: user.name,
+      enrollments: enrollment_data
+    }
+  rescue => e
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def create_user_enrollment
+    user = User.find(params[:user_id])
+
+    enrollment = user.user_enrollments.create!(
+      teacher: params[:teacher],
+      subject: params[:subject],
+      day: params[:day],
+      time_slot: params[:time_slot],
+      first_lesson_date: params[:first_lesson_date],
+      end_date: params[:end_date],
+      remaining_lessons: params[:remaining_lessons] || 0,
+      status: 'active'
+    )
+
+    render json: {
+      success: true,
+      message: '과목이 추가되었습니다.',
+      enrollment: {
+        id: enrollment.id,
+        teacher: enrollment.teacher,
+        subject: enrollment.subject,
+        day: enrollment.day,
+        day_korean: enrollment.day_korean,
+        time_slot: enrollment.time_slot,
+        first_lesson_date: enrollment.first_lesson_date,
+        end_date: enrollment.end_date,
+        remaining_lessons: enrollment.remaining_lessons
+      }
+    }
+  rescue => e
+    Rails.logger.error "Enrollment creation error: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def delete_user_enrollment
+    enrollment = UserEnrollment.find(params[:id])
+    enrollment.destroy
+
+    render json: { success: true, message: '과목이 삭제되었습니다.' }
+  rescue => e
+    Rails.logger.error "Enrollment deletion error: #{e.message}"
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def toggle_enrollment_status
+    enrollment = UserEnrollment.find(params[:id])
+    new_status = params[:status]
+
+    enrollment.status = new_status
+    if enrollment.save
+      message = new_status == 'on_leave' ? '휴원 처리되었습니다.' : '복귀 처리되었습니다.'
+      render json: {
+        success: true,
+        message: message,
+        enrollment: {
+          id: enrollment.id,
+          user_id: enrollment.user_id,
+          teacher: enrollment.teacher,
+          day: enrollment.day,
+          time_slot: enrollment.time_slot,
+          status: enrollment.status
+        }
+      }
+    else
+      render json: { success: false, message: '상태 변경에 실패했습니다.' }, status: :unprocessable_entity
+    end
+  rescue => e
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  # 시간표 뷰어 페이지
+  def schedule_viewer
+    @teachers = User::TEACHERS - ['온라인']
+    @selected_teacher = params[:teacher] || @teachers.first
+  end
+
+  # 시간표 관리 페이지
+  def schedule_manager
+    @teachers = User::TEACHERS - ['온라인']
+    @selected_teacher = params[:teacher] || @teachers.first
+  end
   
+  # 시간표 뷰어 콘텐츠 (AJAX)
+  def schedule_viewer_content
+    @teachers = User::TEACHERS - ['온라인']
+    @selected_teacher = params[:teacher] || @teachers.first
+    @teacher_holidays = Teacher::HOLIDAYS
+    render partial: 'admin/dashboard/schedule_viewer_content', layout: false
+  end
+  
+  # 시간표 관리 콘텐츠 (AJAX)
+  def schedule_manager_content
+    @teachers = User::TEACHERS - ['온라인']
+    @selected_teacher = params[:teacher] || @teachers.first
+    @teacher_holidays = Teacher::HOLIDAYS
+    render partial: 'admin/dashboard/schedule_manager_content', layout: false
+  end
+
+  def teacher_available_slots
+    teacher = params[:teacher]
+
+    # TeacherSchedule에서 해당 선생님의 모든 시간표 가져오기 (중복 제거)
+    schedules = TeacherSchedule.where(teacher: teacher)
+                                .select(:day, :time_slot)
+                                .distinct
+                                .order(:day, :time_slot)
+
+    slots = schedules.map do |schedule|
+      {
+        day: schedule.day,
+        time_slot: schedule.time_slot
+      }
+    end
+
+    render json: {
+      success: true,
+      slots: slots
+    }
+  rescue => e
+    Rails.logger.error "Teacher slots error: #{e.message}"
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  def payment_calendar
+    teacher = params[:teacher]
+    user_id = params[:user_id]
+    date = Date.parse(params[:date])
+
+    render partial: 'admin/dashboard/payment_calendar',
+           locals: { date: date, teacher: teacher, row_id: user_id }
+  end
+
+  def payment_history
+    user = User.find(params[:user_id])
+    payments = user.payments.order(payment_date: :desc)
+
+    history = payments.map do |payment|
+      # 첫수업 시작일시 포맷
+      first_lesson_datetime = nil
+      if payment.first_lesson_date.present?
+        date_str = payment.first_lesson_date.strftime('%Y년 %m월 %d일')
+        if payment.first_lesson_time.present?
+          time_display = payment.first_lesson_time.split('-').join(':00-') + ':00'
+          first_lesson_datetime = "#{date_str} #{time_display}"
+        else
+          first_lesson_datetime = date_str
+        end
+      end
+
+      {
+        id: payment.id,
+        subject: payment.subject,
+        period: payment.period,
+        amount: payment.amount,
+        lessons: payment.lessons,
+        passes: payment.period, # 1개월 = 1회 패스, 3개월 = 3회 패스
+        payment_date: payment.payment_date.strftime('%Y년 %m월 %d일'),
+        first_lesson_datetime: first_lesson_datetime,
+        created_at: payment.created_at.strftime('%Y-%m-%d %H:%M')
+      }
+    end
+
+    render json: {
+      success: true,
+      user_name: user.name,
+      history: history
+    }
+  rescue => e
+    Rails.logger.error "Payment history error: #{e.message}"
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
   private
-  
+
   # ApplicationController의 authenticate_admin! 사용하도록 제거
-  
+
   def user_to_hash(user)
     # 기본 사용자 정보만 반환 (penalty 정보는 별도로 처리)
     # phone과 online_verification_image는 프로덕션 DB에 없을 수 있으므로 안전하게 처리
+
+    # UserEnrollment의 모든 remaining_lessons 합산
+    total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
+
     {
       'id' => user.id,
       'username' => user.username,
@@ -449,7 +1397,28 @@ class Admin::DashboardController < ApplicationController
       'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
       'no_show_count' => 0,  # 기본값
       'cancel_count' => 0,   # 기본값
-      'is_blocked' => false  # 기본값
+      'is_blocked' => false,  # 기본값
+      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
+      'remaining_lessons' => total_remaining_lessons
     }
+  end
+
+  # 결제관리 콘텐츠 (AJAX)
+  def payments_content
+    users = User.where(is_approved: true).where.not(username: 'admin').order(:name)
+    @users = users.map do |user|
+      last_payment = Payment.where(user_id: user.id).order(payment_date: :desc).first
+      {
+        'id' => user.id,
+        'name' => user.name,
+        'username' => user.username,
+        'teacher' => user.teacher,
+        'status' => user.status,
+        'last_payment_date' => last_payment&.payment_date
+      }
+    end
+    @page = 1
+    @total_pages = 1
+    render partial: 'admin/dashboard/payments_content', layout: false
   end
 end

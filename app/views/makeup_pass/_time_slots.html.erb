@@ -1,0 +1,26 @@
+<%
+  grouped_slots = time_slots.group_by { |slot| slot[:period] }
+%>
+
+<div class="time-slots-container">
+  <% ['오후', '저녁'].each do |period| %>
+    <% if grouped_slots[period].present? %>
+      <div class="period-section">
+        <h4 class="period-title"><%= period %></h4>
+        <div class="time-grid">
+          <% grouped_slots[period].each do |slot| %>
+            <button class="time-slot-btn <%= 'disabled' if slot[:disabled] %>" 
+                    data-time="<%= slot[:time].iso8601 %>"
+                    data-display="<%= slot[:display] %>"
+                    <%= 'disabled' if slot[:disabled] %>
+                    <% unless slot[:disabled] %>
+                      onclick="window.selectTime(this)"
+                    <% end %>>
+              <%= slot[:display] %>
+            </button>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

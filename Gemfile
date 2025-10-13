@@ -82,3 +82,6 @@ group :test do
 end
 # Dotenv gem for environment variables
 gem 'dotenv-rails', groups: [:development, :test]
+
+# Cron job scheduler
+gem 'whenever', require: false
