@@ -231,7 +231,7 @@
     padding: 20px;
     background: #f9fafb;
     transition: all 0.3s;
-    min-height: 150px;
+    min-height: 100px;
   }
 
   .unschedule-zone.drag-over {
@@ -267,7 +267,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    min-height: 50px;
+    min-height: 40px;
     padding: 10px;
   }
 
@@ -1097,6 +1097,9 @@
     this.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', this.innerHTML);
+
+    // 드래그 중에도 마우스휠 스크롤 가능하도록 설정
+    document.body.style.pointerEvents = 'auto';
   }
 
   function handleDragEnd(e) {
@@ -1224,6 +1227,11 @@
       const userId = draggedCard.dataset.userId;
       const currentDay = draggedCard.dataset.currentDay;
       const currentTimeSlot = draggedCard.dataset.currentTimeSlot;
+
+      // 이미 미배치 회원인 경우 아무것도 하지 않음
+      if (!currentDay && !currentTimeSlot) {
+        return false;
+      }
 
       if (confirm('스케줄을 해제하시겠습니까? (결제 및 수업 정보는 유지됩니다)')) {
         // 서버에 스케줄 해제 요청
