@@ -171,6 +171,11 @@ class PracticeController < ApplicationController
   private
 
   def check_on_leave
+    Rails.logger.info "=== CHECK ON LEAVE ==="
+    Rails.logger.info "User: #{current_user.username}"
+    Rails.logger.info "Status: #{current_user.status}"
+    Rails.logger.info "on_leave?: #{current_user.on_leave?}"
+
     if current_user.on_leave?
       redirect_to practice_path, alert: '휴원중입니다. 복귀 후 만나요!'
     end

@@ -39,7 +39,14 @@ class User < ApplicationRecord
   def blocked?
     current_month_penalty.is_blocked
   end
-  
+
+  # Check if user is on leave (all enrollments are on_leave)
+  def on_leave?
+    active_enrollments = user_enrollments.where(is_paid: true).where('remaining_lessons > 0')
+    return false if active_enrollments.empty?
+    active_enrollments.all? { |e| e.status == 'on_leave' }
+  end
+
   def display_name
     "#{name} (#{username})"
   end
