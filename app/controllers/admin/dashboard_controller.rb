@@ -220,44 +220,6 @@ class Admin::DashboardController < ApplicationController
     render partial: 'users_content'
   end
 
-  # 결제 관리 페이지
-  def payments_content
-    @page = (params[:page] || 1).to_i
-    @per_page = 50
-
-    # 모든 승인된 사용자 가져오기
-    approved_users_query = User.approved.includes(:penalties)
-
-    # 사용자 데이터 해시로 변환
-    @all_users = approved_users_query.map do |u|
-      {
-        'id' => u.id,
-        'name' => u.name,
-        'username' => u.username,
-        'phone' => u.respond_to?(:phone) ? u.phone : nil,
-        'teacher' => u.teacher,
-        'last_payment_date' => u.respond_to?(:last_payment_date) ? u.last_payment_date : nil,
-        'remaining_lessons' => u.respond_to?(:remaining_lessons) ? u.remaining_lessons : 0
-      }
-    end
-
-    # 검색어가 있으면 필터링
-    search_query = params[:search]&.strip&.downcase
-
-    if search_query.present?
-      @all_users = @all_users.select { |u|
-        u['name']&.downcase&.include?(search_query) ||
-        u['username']&.downcase&.include?(search_query)
-      }
-    end
-
-    # 페이지네이션
-    @total_count = @all_users.size
-    @total_pages = (@total_count.to_f / @per_page).ceil
-    @users = @all_users[(@page - 1) * @per_page, @per_page] || []
-
-    render partial: 'payments_content'
-  end
 
   # 월별 결제 캘린더 데이터
   def payment_calendar_data
