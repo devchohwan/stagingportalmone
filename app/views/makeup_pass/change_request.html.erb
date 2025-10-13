@@ -957,21 +957,21 @@ function updateCalendarForType(type) {
     var cell = allDayCells[i];
     var dayLabel = cell.querySelector('.day-label');
 
-    // 원래 상태 정보를 data 속성에서 가져오기
-    var originalClickable = cell.hasAttribute('data-original-clickable');
     var isNextLesson = dayLabel && dayLabel.textContent.trim() === '이번수업';
     var isFollowingLesson = dayLabel && dayLabel.textContent.trim() === '다음수업';
 
-    // 첫 실행 시 원래 클릭 가능 상태 저장
     if (!cell.hasAttribute('data-original-clickable') && !cell.hasAttribute('data-original-not-clickable')) {
       if (cell.getAttribute('data-clickable') === 'true') {
         cell.setAttribute('data-original-clickable', 'true');
+        var originalOnclick = cell.getAttribute('onclick');
+        if (originalOnclick) {
+          cell.setAttribute('data-original-onclick', originalOnclick);
+        }
       } else {
         cell.setAttribute('data-original-not-clickable', 'true');
       }
     }
 
-    // between-lessons 원래 상태 저장
     if (!cell.hasAttribute('data-original-between')) {
       if (cell.classList.contains('between-lessons')) {
         cell.setAttribute('data-original-between', 'true');
@@ -979,34 +979,33 @@ function updateCalendarForType(type) {
     }
 
     var isBetweenLessons = cell.hasAttribute('data-original-between');
+    var originalClickable = cell.hasAttribute('data-original-clickable');
 
     if (type === 'makeup') {
-      // 보강: 이번수업부터 다음수업 전날까지 연노랑 표시, 하지만 이번수업만 클릭 가능
       if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
-      // 중간 날짜는 연노랑으로 표시
       if (isBetweenLessons) {
         cell.classList.add('between-lessons');
       }
-      // 다음수업일은 연노랑 제거
       if (isFollowingLesson) {
         cell.classList.remove('lesson-day');
         cell.style.backgroundColor = '';
         cell.style.borderColor = '';
       }
 
-      // 스타일 복원 (다음수업일 제외)
       if (!isFollowingLesson) {
         cell.style.backgroundColor = '';
         cell.style.borderColor = '';
       }
 
-      // 이번수업만 클릭 가능
       if (originalClickable) {
-        if (isNextLesson) {
+        if (isNextLesson || isBetweenLessons) {
           cell.setAttribute('data-clickable', 'true');
-          cell.setAttribute('onclick', 'selectDate(this)');
+          var savedOnclick = cell.getAttribute('data-original-onclick');
+          if (savedOnclick) {
+            cell.setAttribute('onclick', savedOnclick);
+          }
           cell.style.cursor = 'pointer';
           cell.style.opacity = '';
         } else {
@@ -1017,7 +1016,6 @@ function updateCalendarForType(type) {
         }
       }
     } else if (type === 'pass') {
-      // 패스: between-lessons와 다음수업 연노랑 제거, 이번수업만 유지
       if (isBetweenLessons || isFollowingLesson) {
         cell.classList.remove('between-lessons');
         cell.classList.remove('lesson-day');
@@ -1031,16 +1029,17 @@ function updateCalendarForType(type) {
         cell.style.borderColor = '';
       }
 
-      // 이번수업은 유지
       if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
 
-      // 이번수업만 클릭 가능
       if (originalClickable) {
         if (isNextLesson) {
           cell.setAttribute('data-clickable', 'true');
-          cell.setAttribute('onclick', 'selectDate(this)');
+          var savedOnclick = cell.getAttribute('data-original-onclick');
+          if (savedOnclick) {
+            cell.setAttribute('onclick', savedOnclick);
+          }
           cell.style.cursor = 'pointer';
           cell.style.opacity = '';
         } else {

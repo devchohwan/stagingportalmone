@@ -1129,6 +1129,13 @@ function updateCalendarForType(type) {
 
 window.confirmMakeupPassRequest = function() {
   try {
+    console.log('confirmMakeupPassRequest 호출됨', {
+      selectedDate: selectedDate,
+      selectedType: selectedType,
+      selectedTimeSlot: selectedTimeSlot,
+      selectedTeacher: selectedTeacher
+    });
+
     if (!selectedDate || !selectedType) {
       alert('신청 정보가 불완전합니다.');
       return false;
@@ -1147,6 +1154,11 @@ window.confirmMakeupPassRequest = function() {
 
     var lessonContent = document.getElementById('lesson-content').value.trim();
     var weekNumber = document.getElementById('week-number').value;
+
+    console.log('입력값 확인:', {
+      weekNumber: weekNumber,
+      lessonContent: lessonContent
+    });
 
     // 주차와 내용 확인
     if (!weekNumber || !lessonContent) {
@@ -1193,8 +1205,11 @@ window.confirmMakeupPassRequest = function() {
     var typeText = selectedType === 'makeup' ? '보강' : '패스';
     var confirmMessage = '';
 
+    console.log('selectedType 체크:', selectedType);
+
     if (selectedType === 'pass') {
       confirmMessage = '패스 신청을 진행하시겠습니까?\n패스 신청 시 패스권이 1회 사용되며,\n패스 사용은 취소하실 수 없습니다.';
+      console.log('패스 confirm 메시지 설정:', confirmMessage);
     } else {
       confirmMessage = '신청을 진행하시겠습니까?\n\n날짜: ' + formattedDate + '\n유형: ' + typeText;
 
@@ -1206,6 +1221,7 @@ window.confirmMakeupPassRequest = function() {
       confirmMessage += '\n주차: ' + weekNumber + '주차\n내용: ' + (lessonContent.length > 30 ? lessonContent.substring(0, 30) + '...' : lessonContent);
     }
 
+    console.log('최종 confirm 메시지:', confirmMessage);
     if (confirm(confirmMessage)) {
       var submitBtn = document.getElementById('reservation-submit-btn');
 
