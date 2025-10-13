@@ -1286,6 +1286,7 @@ class Admin::DashboardController < ApplicationController
     end
     @page = 1
     @total_pages = 1
+    @teacher_holidays = Teacher::HOLIDAYS
     render partial: 'admin/dashboard/payments_content', layout: false
   end
 
