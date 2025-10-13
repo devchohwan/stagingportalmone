@@ -379,6 +379,14 @@
               card.style.background = '#d1f4e0';  // 연한 초록색
               card.style.color = '#000';
               card.style.border = '2px solid #7ed8a9';
+            } else if (student.is_on_leave) {
+              // 휴원 상태
+              card.style.background = '#fef3c7'; // 연노랑
+              card.style.borderColor = '#fbbf24';
+            } else {
+              // 활성 상태
+              card.style.background = '#d9f99d'; // 연두색
+              card.style.borderColor = '#84cc16';
             }
 
             const usernameDiv = document.createElement('div');
@@ -388,6 +396,9 @@
             // 보강일 경우: 아이디(담당선생님) 보강
             if (student.is_makeup && student.original_teacher) {
               usernameDiv.textContent = `${student.username}(${student.original_teacher}) 보강`;
+            } else if (student.is_on_leave) {
+              // 휴원 상태 표시
+              usernameDiv.textContent = student.username + ' (휴원)';
             } else {
               usernameDiv.textContent = student.username;
             }
