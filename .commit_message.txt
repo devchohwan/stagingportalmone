@@ -1,1 +1,1 @@
-🐛 회원삭제 함수에 에러 처리 및 콘솔 로그 추가
+🐛 회원삭제 시 FOREIGN KEY 오류 수정 (delete → destroy)

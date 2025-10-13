@@ -337,20 +337,15 @@ class Admin::DashboardController < ApplicationController
   def reject_practice_user
     user = User.find(params[:id])
 
-    # 연관된 데이터 먼저 삭제
-    begin
-      user.penalties.destroy_all if user.penalties.exists?
-      user.reservations.destroy_all if user.reservations.exists?
-      user.makeup_reservations.destroy_all if user.makeup_reservations.exists?
-      user.makeup_pass_requests.destroy_all if user.makeup_pass_requests.exists?
-    rescue => e
-      Rails.logger.error "Error deleting associated records: #{e.message}"
+    # destroy를 사용하여 모델의 dependent: :destroy 콜백으로 모든 연관 데이터 자동 삭제
+    # User 모델에 정의된 연관관계: penalties, reservations, makeup_reservations,
+    # makeup_pass_requests, pitch_reservations, pitch_penalties, payments, user_enrollments
+    if user.destroy
+      head :ok
+    else
+      Rails.logger.error "User deletion failed: #{user.errors.full_messages.join(', ')}"
+      render json: { error: '회원 삭제에 실패했습니다.' }, status: :unprocessable_entity
     end
-
-    # 사용자 삭제
-    user.delete # destroy 대신 delete 사용으로 콜백 스킵
-
-    head :ok
   end
   
   # 사용자 보류
