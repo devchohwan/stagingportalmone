@@ -617,20 +617,18 @@ class Admin::DashboardController < ApplicationController
         next
       end
 
-      # UserEnrollment에서 휴원 상태 및 남은 수업 횟수 확인 (time_slot 형식 변환 필요)
-      # TeacherSchedule: "14-15", UserEnrollment: "14:00"
-      enrollment_time_slot = time_slot.split('-').first + ':00'
+      # UserEnrollment에서 휴원 상태 및 남은 수업 횟수 확인
       enrollment = UserEnrollment.find_by(
         user_id: user.id,
         teacher: teacher,
         day: day,
-        time_slot: enrollment_time_slot,
+        time_slot: time_slot,
         is_paid: true
       )
 
       is_on_leave = enrollment&.status == 'on_leave'
 
-      # 휴원 상태일 때: 남은 수업 횟수만 체크 (날짜 무시)
+      # 휴원 상태일 때: 계속 표시 (남은 수업이 있는 한)
       if is_on_leave
         if enrollment.present? && enrollment.remaining_lessons <= 0
           Rails.logger.info "SKIP(휴원 중 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
@@ -638,13 +636,19 @@ class Admin::DashboardController < ApplicationController
         end
         Rails.logger.info "표시됨(휴원중): #{user.name} / target=#{target_date} / remaining=#{enrollment&.remaining_lessons}"
       else
-        # 활성 상태일 때: end_date 체크 (UserEnrollment의 end_date 사용)
+        # 활성 상태일 때: remaining_lessons로 체크
+        if enrollment.present? && enrollment.remaining_lessons <= 0
+          Rails.logger.info "SKIP(활성 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
+          next
+        end
+
+        # end_date도 체크 (혹시 모를 경우 대비)
         enrollment_end_date = enrollment&.end_date || schedule.end_date
         if enrollment_end_date.present? && target_date > enrollment_end_date
           Rails.logger.info "SKIP(활성 - 종료일 후): #{user.name} / target=#{target_date} > end=#{enrollment_end_date}"
           next
         end
-        Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / end=#{enrollment_end_date}"
+        Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / remaining=#{enrollment&.remaining_lessons} / end=#{enrollment_end_date}"
       end
 
       # 이 날짜에 패스 신청이 있는지 확인
@@ -1309,7 +1313,7 @@ class Admin::DashboardController < ApplicationController
   def process_payment
     user_id = params[:user_id]
     enrollments = params[:enrollments] || []
-    payment_date = params[:payment_date]
+    payment_date = Date.parse(params[:payment_date])
     discounts = params[:discounts] || []
     total_price = params[:total_price].to_i
     discount_amount = params[:discount_amount].to_i
@@ -1319,36 +1323,37 @@ class Admin::DashboardController < ApplicationController
 
     ActiveRecord::Base.transaction do
       enrollments.each do |enrollment|
-        # Payment 레코드 생성
+        first_lesson_date = enrollment['first_lesson_date'].present? ? Date.parse(enrollment['first_lesson_date']) : nil
+        
         payment = Payment.create!(
           user_id: user_id,
           payment_date: payment_date,
           amount: enrollment['price'],
-          discount_amount: discount_amount / enrollments.length, # 할인을 과목 수로 나눔
+          discount_amount: discount_amount / enrollments.length,
           subject: enrollment['subject'],
           teacher: enrollment['teacher'],
           months: enrollment['months'],
           lessons: enrollment['lessons'],
-          first_lesson_date: enrollment['first_lesson_date'],
+          first_lesson_date: first_lesson_date,
           first_lesson_time: enrollment['time_slot'],
           discounts: discounts.join(',')
         )
+
+        # day_of_week (숫자)를 day (문자열)로 변환
+        day_mapping = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }
+        day_string = day_mapping[enrollment['day_of_week']]
 
         # UserEnrollment 생성
         user_enrollment = UserEnrollment.create!(
           user_id: user_id,
           teacher: enrollment['teacher'],
           subject: enrollment['subject'],
-          day_of_week: enrollment['day_of_week'],
+          day: day_string,
           time_slot: enrollment['time_slot'],
           remaining_lessons: enrollment['lessons'],
           status: 'active',
           is_paid: true
         )
-
-        # day_of_week (숫자)를 day (문자열)로 변환
-        day_mapping = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }
-        day_string = day_mapping[enrollment['day_of_week']]
 
         # TeacherSchedule 등록 (중복 체크)
         existing_schedule = TeacherSchedule.find_by(
@@ -1375,9 +1380,13 @@ class Admin::DashboardController < ApplicationController
           )
         end
 
-        # User의 remaining_lessons 업데이트
+        # User의 remaining_lessons와 remaining_passes 업데이트
         current_lessons = user.remaining_lessons || 0
-        user.update!(remaining_lessons: current_lessons + enrollment['lessons'])
+        current_passes = user.remaining_passes || 0
+        user.update!(
+          remaining_lessons: current_lessons + enrollment['lessons'],
+          remaining_passes: current_passes + enrollment['months']
+        )
       end
     end
 
@@ -1401,7 +1410,9 @@ class Admin::DashboardController < ApplicationController
         months: payment.months,
         lessons: payment.lessons,
         amount: payment.amount,
-        discount_amount: payment.discount_amount || 0
+        discount_amount: payment.discount_amount || 0,
+        first_lesson_date: payment.first_lesson_date&.strftime('%Y.%m.%d'),
+        first_lesson_time: payment.first_lesson_time
       }
     end
 
@@ -1416,9 +1427,20 @@ class Admin::DashboardController < ApplicationController
   # 수강 등록 상태 토글
   def toggle_enrollment_status
     enrollment = UserEnrollment.find(params[:id])
+    old_status = enrollment.status
     new_status = params[:status]
 
-    enrollment.update!(status: new_status)
+    # 휴원 해제 시 (on_leave -> active) end_date 재계산
+    if old_status == 'on_leave' && new_status == 'active'
+      # 남은 수업 횟수만큼 주 단위로 end_date 계산
+      weeks_remaining = enrollment.remaining_lessons
+      new_end_date = Date.current + weeks_remaining.weeks
+
+      enrollment.update!(status: new_status, end_date: new_end_date)
+      Rails.logger.info "휴원 해제: #{enrollment.user.name} / 남은수업=#{weeks_remaining}회 / 새 종료일=#{new_end_date}"
+    else
+      enrollment.update!(status: new_status)
+    end
 
     render json: { success: true }
   rescue ActiveRecord::RecordNotFound

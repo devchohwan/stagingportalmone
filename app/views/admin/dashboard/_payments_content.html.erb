@@ -822,15 +822,16 @@
 
     for (let date = 1; date <= lastDate; date++) {
       const fullDate = new Date(year, month, date);
-      const dateStr = fullDate.toISOString().split('T')[0];
+      const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(date).padStart(2, '0');
       const dayOfWeek = fullDate.getDay(); // 0=일, 1=월, ..., 6=토
-      const isPast = fullDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const isPast = fullDate <= todayDate; // 오늘 포함 과거 날짜
       const isHoliday = teacherHolidays.includes(dayOfWeek);
 
       let style = 'text-align: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;';
 
       if (isPast || isHoliday) {
-        // 과거 날짜 또는 휴무일은 선택 불가
+        // 과거 날짜(오늘 포함) 또는 휴무일은 선택 불가
         style += ' opacity: 0.5; pointer-events: none; cursor: not-allowed;';
         if (isHoliday) {
           style += ' background: #fef3c7;'; // 연노랑
@@ -865,7 +866,8 @@
 
   // 시간대 표시
   function showTimeSlots(dateStr) {
-    const date = new Date(dateStr);
+    const parts = dateStr.split('-');
+    const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
 
     document.getElementById('new-enrollment-time-section').style.display = 'block';
@@ -945,16 +947,24 @@
 
     if (!teacher || !subject || !dateStr || !timeSlot || !months) return;
 
-    const date = new Date(dateStr);
+    const parts = dateStr.split('-');
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1;
+    const day = parseInt(parts[2]);
+    const date = new Date(year, month, day);
     const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-    const endDate = new Date(date);
-    endDate.setMonth(endDate.getMonth() + months);
+
+    // 종료일 계산
+    const endDate = new Date(year, month + months, day);
+    const endDateStr = endDate.getFullYear() + '-' +
+                       String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
+                       String(endDate.getDate()).padStart(2, '0');
 
     document.getElementById('summary-teacher').textContent = teacher;
     document.getElementById('summary-subject').textContent = subject;
     document.getElementById('summary-schedule').textContent = dayOfWeek + '요일 ' + timeSlot.replace('-', ':00-') + ':00';
     document.getElementById('summary-first-lesson').textContent = dateStr;
-    document.getElementById('summary-end-date').textContent = endDate.toISOString().split('T')[0];
+    document.getElementById('summary-end-date').textContent = endDateStr;
     document.getElementById('summary-lessons').textContent = lessons + '회';
 
     document.getElementById('new-enrollment-summary').style.display = 'block';
@@ -974,10 +984,18 @@
       return;
     }
 
-    const date = new Date(dateStr);
+    const parts = dateStr.split('-');
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1;
+    const day = parseInt(parts[2]);
+    const date = new Date(year, month, day);
     const dayOfWeek = date.getDay(); // 0=일, 1=월, ...
-    const endDate = new Date(date);
-    endDate.setMonth(endDate.getMonth() + months);
+
+    // 종료일 계산
+    const endDate = new Date(year, month + months, day);
+    const endDateStr = endDate.getFullYear() + '-' +
+                       String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
+                       String(endDate.getDate()).padStart(2, '0');
 
     enrollments.push({
       teacher: teacher,
@@ -987,7 +1005,7 @@
       day_of_week: dayOfWeek,
       months: months,
       lessons: lessons,
-      end_date: endDate.toISOString().split('T')[0],
+      end_date: endDateStr,
       price: SUBJECT_PRICES[subject][months]
     });
 
@@ -1174,6 +1192,9 @@
             html += '<div class="payment-history-detail-row"><span class="payment-history-label">과목</span><span>' + payment.subject + '</span></div>';
             html += '<div class="payment-history-detail-row"><span class="payment-history-label">선생님</span><span>' + payment.teacher + '</span></div>';
             html += '<div class="payment-history-detail-row"><span class="payment-history-label">기간</span><span>' + payment.months + '개월 (' + payment.lessons + '회)</span></div>';
+            if (payment.first_lesson_date && payment.first_lesson_time) {
+              html += '<div class="payment-history-detail-row"><span class="payment-history-label">첫수업</span><span>' + payment.first_lesson_date + ' ' + payment.first_lesson_time + '</span></div>';
+            }
             html += '<div class="payment-history-detail-row"><span class="payment-history-label">금액</span><span>' + payment.amount.toLocaleString() + '원</span></div>';
             if (payment.discount_amount > 0) {
               html += '<div class="payment-history-detail-row"><span class="payment-history-label">할인</span><span style="color: #ef4444;">-' + payment.discount_amount.toLocaleString() + '원</span></div>';
