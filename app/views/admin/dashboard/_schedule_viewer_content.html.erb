@@ -392,8 +392,13 @@
   // 주차 표시 업데이트
   function updateWeekDisplayViewer() {
     const today = new Date();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - today.getDay() + 1 + (window.currentWeekOffsetViewer * 7));
+    const weekStart = new Date(today);
+    // 일요일 시작 (시간표 관리와 동일)
+    weekStart.setDate(today.getDate() - today.getDay() + (window.currentWeekOffsetViewer * 7));
+
+    // 월요일 날짜로 표시
+    const monday = new Date(weekStart);
+    monday.setDate(weekStart.getDate() + 1);
 
     const year = monday.getFullYear();
     const month = monday.getMonth() + 1;
@@ -409,8 +414,9 @@
     const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
 
     days.forEach((day, index) => {
-      const dayDate = new Date(monday);
-      dayDate.setDate(monday.getDate() + index);
+      const dayDate = new Date(weekStart);
+      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
+      dayDate.setDate(weekStart.getDate() + index + 1);
 
       const header = document.getElementById(`header-${day}-viewer`);
       if (header) {
@@ -424,15 +430,17 @@
   // 휴무일 셀 업데이트
   function updateHolidayCellsViewer() {
     const today = new Date();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - today.getDay() + 1 + (window.currentWeekOffsetViewer * 7));
+    const weekStart = new Date(today);
+    // 일요일 시작 (시간표 관리와 동일)
+    weekStart.setDate(today.getDate() - today.getDay() + (window.currentWeekOffsetViewer * 7));
 
     const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
     const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
 
     days.forEach((day, index) => {
-      const dayDate = new Date(monday);
-      dayDate.setDate(monday.getDate() + index);
+      const dayDate = new Date(weekStart);
+      // weekStart는 일요일이므로, mon은 +1, tue는 +2, ... sun은 +7
+      dayDate.setDate(weekStart.getDate() + index + 1);
       const dayOfWeek = dayDate.getDay();
 
       const isHoliday = window.isTeacherHolidayViewer(window.currentScheduleTeacherViewer, dayOfWeek);
