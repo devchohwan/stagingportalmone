@@ -1944,10 +1944,12 @@ class Admin::DashboardController < ApplicationController
   # 결석 처리/취소
   def toggle_absence
     schedule = TeacherSchedule.find(params[:id])
-    schedule_date = schedule.schedule_date
 
-    # 과거 수업일은 처리 불가
-    if schedule_date < Date.current
+    # 현재 보고 있는 주차의 날짜 확인 (프론트엔드에서 전달)
+    target_date = params[:target_date] ? Date.parse(params[:target_date]) : nil
+
+    # 과거 수업일은 처리 불가 (target_date가 있는 경우에만 체크)
+    if target_date && target_date < Date.current
       render json: { success: false, message: '과거 수업은 결석 처리할 수 없습니다.' }, status: :unprocessable_entity
       return
     end
@@ -1955,7 +1957,10 @@ class Admin::DashboardController < ApplicationController
     # enrollment 찾기
     enrollment = UserEnrollment.find_by(
       user_id: schedule.user_id,
-      teacher: schedule.teacher
+      teacher: schedule.teacher,
+      day: schedule.day,
+      time_slot: schedule.time_slot,
+      is_paid: true
     )
 
     unless enrollment
@@ -1983,6 +1988,7 @@ class Admin::DashboardController < ApplicationController
     }
   rescue => e
     Rails.logger.error "Toggle absence error: #{e.message}"
-    render json: { success: false, message: '오류가 발생했습니다.' }, status: :internal_server_error
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { success: false, message: "오류가 발생했습니다: #{e.message}" }, status: :internal_server_error
   end
 end

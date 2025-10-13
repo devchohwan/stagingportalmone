@@ -384,7 +384,7 @@
               if (student.schedule_id) {
                 card.onclick = (e) => {
                   e.stopPropagation();
-                  toggleAbsence(student.schedule_id, student.name, true);
+                  toggleAbsence(student.schedule_id, student.name, true, day);
                 };
               }
             } else if (student.is_makeup) {
@@ -415,7 +415,7 @@
               if (student.schedule_id) {
                 card.onclick = (e) => {
                   e.stopPropagation();
-                  toggleAbsence(student.schedule_id, student.name, false);
+                  toggleAbsence(student.schedule_id, student.name, false, day);
                 };
               }
             }
@@ -603,7 +603,7 @@
   }
 
   // 결석 처리/취소
-  window.toggleAbsence = function(scheduleId, studentName, isCurrentlyAbsent) {
+  window.toggleAbsence = function(scheduleId, studentName, isCurrentlyAbsent, day) {
     const message = isCurrentlyAbsent
       ? `${studentName} 학생의 결석처리를 취소하시겠습니까?`
       : `${studentName} 학생을 결석처리하시겠습니까?`;
@@ -612,7 +612,20 @@
       return;
     }
 
-    fetch(`/admin/teacher_schedules/${scheduleId}/toggle_absence`, {
+    // 현재 보고 있는 주차의 target_date 계산
+    const today = new Date();
+    const startOfCurrentWeek = new Date(today);
+    startOfCurrentWeek.setDate(today.getDate() - today.getDay());
+    const targetWeekStart = new Date(startOfCurrentWeek);
+    targetWeekStart.setDate(startOfCurrentWeek.getDate() + (window.currentWeekOffsetViewer * 7));
+
+    // day를 날짜로 변환
+    const dayIndex = { 'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6 }[day];
+    const targetDate = new Date(targetWeekStart);
+    targetDate.setDate(targetWeekStart.getDate() + dayIndex);
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+
+    fetch(`/admin/teacher_schedules/${scheduleId}/toggle_absence?target_date=${targetDateStr}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
