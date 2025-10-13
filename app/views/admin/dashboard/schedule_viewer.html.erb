@@ -216,10 +216,17 @@ function renderSchedule(schedules) {
           cell.appendChild(card);
         });
 
-        // 인원 표시 추가
+        // 인원 표시 추가 (결석, 패스, 보강이동 제외)
+        const activeStudents = students.filter(student =>
+          !student.is_pass &&
+          !student.is_makeup_away &&
+          !student.is_on_leave &&
+          !student.is_absent
+        ).length;
+        
         const countDiv = document.createElement('div');
         countDiv.className = 'text-xs text-gray-500 text-center mt-1';
-        countDiv.textContent = `${students.length}/3명`;
+        countDiv.textContent = `${activeStudents}/3명`;
         cell.appendChild(countDiv);
       }
     }

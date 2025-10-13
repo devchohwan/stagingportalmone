@@ -911,7 +911,11 @@
 
     timeSlots.forEach(timeSlot => {
       const students = daySchedule[timeSlot] || [];
-      const currentCount = students.length;
+      // 결석, 패스, 보강이동, 휴원 제외
+      const activeStudents = students.filter(s => 
+        !s.is_absent && !s.is_pass && !s.is_makeup_away && !s.is_on_leave
+      );
+      const currentCount = activeStudents.length;
       const isFull = currentCount >= 3;
 
       let cardStyle = 'padding: 20px; border-radius: 8px; text-align: center; border: 2px solid; transition: all 0.2s;';
