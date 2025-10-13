@@ -1021,6 +1021,9 @@
         html += `<span style="font-weight: 600;">${enrollment.teacher} - ${enrollment.subject}</span>`;
         html += `<span style="padding: 3px 8px; background: ${statusColor}20; color: ${statusColor}; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${statusText}</span>`;
         html += '</div>';
+        if (enrollment.teacher_history !== enrollment.teacher) {
+          html += `<div style="font-size: 0.75rem; color: #f59e0b; margin-bottom: 3px;">담당 이력: ${enrollment.teacher_history}</div>`;
+        }
         html += `<div style="font-size: 0.85rem; color: #6b7280;">${enrollment.day} ${enrollment.time_slot} | 남은 수업: ${enrollment.remaining_lessons}회</div>`;
         html += `<div style="font-size: 0.75rem; color: #9ca3af; margin-top: 3px;">첫 수업: ${enrollment.first_lesson_date || '-'} | 종료: ${enrollment.end_date || '-'}</div>`;
         html += '</div>';

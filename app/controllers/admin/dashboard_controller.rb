@@ -1824,6 +1824,7 @@ class Admin::DashboardController < ApplicationController
       {
         id: enrollment.id,
         teacher: enrollment.teacher,
+        teacher_history: enrollment.teacher_history_display,
         subject: enrollment.subject,
         day: enrollment.day_korean,
         time_slot: enrollment.time_slot,
