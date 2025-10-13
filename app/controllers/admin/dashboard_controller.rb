@@ -623,6 +623,12 @@ class Admin::DashboardController < ApplicationController
       time_slot = schedule.time_slot
       user = schedule.user
 
+      # user가 nil인 경우 skip (삭제된 회원)
+      unless user
+        Rails.logger.info "SKIP(user 없음): schedule_id=#{schedule.id}"
+        next
+      end
+
       # 이 주차에 보강/패스 신청이 있는지 확인
       day_index = { 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 0 }[day]
       target_date = target_week_start + day_index.days

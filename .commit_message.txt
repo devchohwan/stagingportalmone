@@ -1,1 +1,1 @@
-🐛 회원삭제 시 FOREIGN KEY 오류 수정 (delete → destroy)
+🐛 load_schedule에서 삭제된 회원(nil user) 처리 추가
