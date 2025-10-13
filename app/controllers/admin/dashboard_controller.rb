@@ -611,12 +611,6 @@ class Admin::DashboardController < ApplicationController
       day_index = { 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 0 }[day]
       target_date = target_week_start + day_index.days
 
-      # 시작일 체크: 첫 수업 시작 전이면 표시 안 함
-      if user.first_lesson_date.present? && target_date < user.first_lesson_date
-        Rails.logger.info "SKIP(시작일 전): #{user.name} / target=#{target_date} < first=#{user.first_lesson_date}"
-        next
-      end
-
       # UserEnrollment에서 휴원 상태 및 남은 수업 횟수 확인
       enrollment = UserEnrollment.find_by(
         user_id: user.id,
@@ -626,29 +620,49 @@ class Admin::DashboardController < ApplicationController
         is_paid: true
       )
 
-      is_on_leave = enrollment&.status == 'on_leave'
+      # enrollment가 없으면 skip
+      unless enrollment
+        Rails.logger.info "SKIP(enrollment 없음): #{user.name}"
+        next
+      end
+
+      # 첫수업일 체크: enrollment의 first_lesson_date 기준
+      if enrollment.first_lesson_date.present? && target_date < enrollment.first_lesson_date
+        Rails.logger.info "SKIP(첫수업일 전): #{user.name} / target=#{target_date} < first=#{enrollment.first_lesson_date}"
+        next
+      end
+
+      is_on_leave = enrollment.status == 'on_leave'
 
       # 휴원 상태일 때: 계속 표시 (남은 수업이 있는 한)
       if is_on_leave
-        if enrollment.present? && enrollment.remaining_lessons <= 0
+        if enrollment.remaining_lessons <= 0
           Rails.logger.info "SKIP(휴원 중 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
           next
         end
-        Rails.logger.info "표시됨(휴원중): #{user.name} / target=#{target_date} / remaining=#{enrollment&.remaining_lessons}"
+        Rails.logger.info "표시됨(휴원중): #{user.name} / target=#{target_date} / remaining=#{enrollment.remaining_lessons}"
       else
-        # 활성 상태일 때: remaining_lessons로 체크
-        if enrollment.present? && enrollment.remaining_lessons <= 0
+        # 활성 상태일 때: 첫수업일부터 수업 횟수만큼만 표시
+        if enrollment.remaining_lessons <= 0
           Rails.logger.info "SKIP(활성 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
           next
         end
 
-        # end_date도 체크 (혹시 모를 경우 대비)
-        enrollment_end_date = enrollment&.end_date || schedule.end_date
-        if enrollment_end_date.present? && target_date > enrollment_end_date
-          Rails.logger.info "SKIP(활성 - 종료일 후): #{user.name} / target=#{target_date} > end=#{enrollment_end_date}"
-          next
+        # 첫수업일 기준으로 마지막 수업일 계산 (매주 1회)
+        if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
+          # 총 결제 수업 횟수 = Payment의 lessons 합계
+          total_paid_lessons = Payment.where(user_id: user.id, teacher: teacher, subject: enrollment.subject).sum(:lessons)
+
+          # 마지막 수업일 = 첫수업일 + (총 수업 횟수 - 1) * 7일
+          last_lesson_date = enrollment.first_lesson_date + ((total_paid_lessons - 1) * 7).days
+
+          if target_date > last_lesson_date
+            Rails.logger.info "SKIP(활성 - 마지막수업 후): #{user.name} / target=#{target_date} > last=#{last_lesson_date} (#{total_paid_lessons}회)"
+            next
+          end
         end
-        Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / remaining=#{enrollment&.remaining_lessons} / end=#{enrollment_end_date}"
+
+        Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / remaining=#{enrollment.remaining_lessons}"
       end
 
       # 이 날짜에 패스 신청이 있는지 확인
@@ -1343,6 +1357,9 @@ class Admin::DashboardController < ApplicationController
         day_mapping = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }
         day_string = day_mapping[enrollment['day_of_week']]
 
+        # end_date 파싱
+        end_date = enrollment['end_date'].present? ? Date.parse(enrollment['end_date']) : nil
+
         # UserEnrollment 생성
         user_enrollment = UserEnrollment.create!(
           user_id: user_id,
@@ -1351,6 +1368,8 @@ class Admin::DashboardController < ApplicationController
           day: day_string,
           time_slot: enrollment['time_slot'],
           remaining_lessons: enrollment['lessons'],
+          first_lesson_date: first_lesson_date,
+          end_date: end_date,
           status: 'active',
           is_paid: true
         )
