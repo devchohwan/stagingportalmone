@@ -79,6 +79,16 @@ class TeacherSchedule < ApplicationRecord
 
       next if makeup_away # 보강으로 이동하면 skip
 
+      # 이 날짜에 취소된 보강 요청이 있는지 확인 (결석 처리)
+      cancelled_makeup = MakeupPassRequest.where(
+        user_id: user.id,
+        request_type: 'makeup',
+        request_date: date,
+        status: 'cancelled'
+      ).first
+
+      next if cancelled_makeup # 보강 취소(결석)면 skip
+
       active_students += 1
     end
 
