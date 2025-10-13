@@ -231,7 +231,7 @@
     padding: 20px;
     background: #f9fafb;
     transition: all 0.3s;
-    min-height: 100px;
+    min-height: 50px;
   }
 
   .unschedule-zone.drag-over {
@@ -1091,12 +1091,28 @@
 
   // 드래그 앤 드롭 핸들러
   let draggedCard = null;
+  let autoScrollInterval = null;
 
   function handleDragStart(e) {
     draggedCard = this;
     this.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', this.innerHTML);
+
+    // 자동 스크롤 시작
+    autoScrollInterval = setInterval(() => {
+      const mouseY = window.lastDragY;
+      if (!mouseY) return;
+
+      const scrollThreshold = 100;
+      const scrollSpeed = 10;
+
+      if (mouseY < scrollThreshold) {
+        window.scrollBy(0, -scrollSpeed);
+      } else if (mouseY > window.innerHeight - scrollThreshold) {
+        window.scrollBy(0, scrollSpeed);
+      }
+    }, 16);
   }
 
   function handleDragEnd(e) {
@@ -1107,7 +1123,18 @@
       area.classList.remove('drag-over');
     });
     document.getElementById('unschedule-dropzone').classList.remove('drag-over');
+
+    // 자동 스크롤 중지
+    if (autoScrollInterval) {
+      clearInterval(autoScrollInterval);
+      autoScrollInterval = null;
+    }
   }
+
+  // 마우스 위치 추적
+  document.addEventListener('drag', function(e) {
+    window.lastDragY = e.clientY;
+  });
 
   function handleDragOver(e) {
     if (e.preventDefault) {
