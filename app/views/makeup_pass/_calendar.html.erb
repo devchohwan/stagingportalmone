@@ -60,8 +60,10 @@
           css_classes << "lesson-day" if is_next_lesson || is_following_lesson
           css_classes << "between-lessons" if is_between_lessons && !is_monday && !is_blocked
 
-          # 클릭 가능한지 확인 (당일 예약 불가, 월요일 휴무만 체크)
-          is_clickable = is_current_month && !is_past && !is_monday && !is_same_day && !is_blocked
+          # 클릭 가능한지 확인
+          # 오늘이 수업일(is_next_lesson)이면 보강 신청 가능하도록 수정
+          is_clickable = is_current_month && !is_past && !is_monday && !is_blocked
+          is_clickable = is_clickable && (!is_same_day || is_next_lesson)
         %>
         
         <div class="<%= css_classes.join(' ') %>" 
@@ -76,7 +78,7 @@
               이번수업
             <% elsif is_following_lesson && is_current_month %>
               다음수업
-            <% elsif is_today %>
+            <% elsif is_today && !is_next_lesson %>
               예약불가
             <% elsif is_blocked && is_current_month %>
               예약불가
