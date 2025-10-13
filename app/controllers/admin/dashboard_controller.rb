@@ -1628,6 +1628,88 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, error: e.message }, status: :internal_server_error
   end
 
+  # 미배치 학생 목록 조회
+  def unscheduled_students
+    teacher = params[:teacher]
+
+    # day와 time_slot이 null인 UserEnrollment 찾기
+    enrollments = UserEnrollment.where(
+      teacher: teacher,
+      day: nil,
+      time_slot: nil,
+      is_paid: true
+    ).where('remaining_lessons > 0')
+
+    students = enrollments.map do |enrollment|
+      user = enrollment.user
+      {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        remaining_lessons: enrollment.remaining_lessons
+      }
+    end.uniq { |s| s[:id] }
+
+    render json: { success: true, students: students }
+  rescue => e
+    Rails.logger.error "미배치 학생 조회 오류: #{e.message}"
+    render json: { success: false, error: e.message }, status: :internal_server_error
+  end
+
+  # 미배치 학생을 스케줄에 배치
+  def schedule_unscheduled_student
+    user_id = params[:user_id]
+    day = params[:day]
+    time_slot = params[:time_slot]
+    teacher = params[:teacher]
+
+    ActiveRecord::Base.transaction do
+      # UserEnrollment 찾기 (day, time_slot이 null인 것)
+      enrollment = UserEnrollment.find_by(
+        user_id: user_id,
+        teacher: teacher,
+        day: nil,
+        time_slot: nil,
+        is_paid: true
+      )
+
+      unless enrollment
+        render json: { success: false, error: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
+        return
+      end
+
+      # end_date 재계산
+      new_end_date = if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
+        enrollment.first_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
+      else
+        Date.current + (enrollment.remaining_lessons * 7).days
+      end
+
+      # UserEnrollment 업데이트
+      enrollment.update!(
+        day: day,
+        time_slot: time_slot,
+        end_date: new_end_date
+      )
+
+      # TeacherSchedule 생성
+      TeacherSchedule.create!(
+        user_id: user_id,
+        teacher: teacher,
+        day: day,
+        time_slot: time_slot,
+        end_date: new_end_date
+      )
+
+      Rails.logger.info "미배치 학생 배치: #{User.find(user_id).name} / #{day} #{time_slot}"
+    end
+
+    render json: { success: true }
+  rescue => e
+    Rails.logger.error "미배치 학생 배치 오류: #{e.message}"
+    render json: { success: false, error: e.message }, status: :internal_server_error
+  end
+
   # 학생 스케줄 해제
   def unschedule_student
     user_id = params[:user_id]

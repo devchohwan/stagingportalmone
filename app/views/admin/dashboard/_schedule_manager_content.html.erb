@@ -228,37 +228,56 @@
   .unschedule-zone {
     border: 3px dashed #d1d5db;
     border-radius: 12px;
-    padding: 30px;
-    text-align: center;
+    padding: 20px;
     background: #f9fafb;
     transition: all 0.3s;
-    min-height: 120px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    min-height: 150px;
   }
 
   .unschedule-zone.drag-over {
-    border-color: #ef4444;
-    background: #fee2e2;
+    border-color: #3b82f6;
+    background: #dbeafe;
+  }
+
+  .unschedule-header {
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 15px;
   }
 
   .unschedule-icon {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
+    font-size: 2rem;
+    margin-bottom: 8px;
   }
 
   .unschedule-text {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #374151;
     margin-bottom: 5px;
   }
 
   .unschedule-subtext {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #9ca3af;
+  }
+
+  .unscheduled-students-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 50px;
+    padding: 10px;
+  }
+
+  .unscheduled-students-area:empty::after {
+    content: '미배치 회원이 없습니다';
+    width: 100%;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 0.9rem;
+    padding: 20px;
   }
 
   .students-area.drag-over {
@@ -506,10 +525,14 @@
   <!-- 스케줄 해제 영역 (드래그앤드롭) -->
   <div class="schedule-manager-wrapper">
     <div class="header-card" style="margin-top: 1.5rem;">
+      <div style="margin-bottom: 10px; font-weight: 600; color: #374151;">📋 미배치 회원</div>
       <div id="unschedule-dropzone" class="unschedule-zone">
-        <div class="unschedule-icon">🗑️</div>
-        <div class="unschedule-text">여기에 회원을 드롭하면 스케줄이 해제됩니다</div>
-        <div class="unschedule-subtext">결제 및 수업 정보는 유지됩니다</div>
+        <div class="unschedule-header">
+          <div class="unschedule-icon">📦</div>
+          <div class="unschedule-text">여기에 회원을 드롭하면 스케줄이 해제됩니다</div>
+          <div class="unschedule-subtext">다시 드래그하여 시간표에 배치할 수 있습니다</div>
+        </div>
+        <div id="unscheduled-students" class="unscheduled-students-area"></div>
       </div>
     </div>
   </div>
@@ -669,6 +692,7 @@
 
       if (data.success) {
         renderScheduleData(data.schedules);
+        loadUnscheduledStudents(window.currentScheduleTeacher);
       } else {
         alert('시간표를 불러오는데 실패했습니다: ' + (data.message || '알 수 없는 오류'));
       }
@@ -1123,11 +1147,50 @@
         return false;
       }
 
-      // 서버에 이동 요청
-      moveStudentSchedule(userId, currentDay, currentTimeSlot, newDay, newTimeSlot);
+      // 미배치 회원에서 스케줄로 이동하는 경우
+      if (!currentDay && !currentTimeSlot) {
+        scheduleUnscheduledStudent(userId, newDay, newTimeSlot);
+      } else {
+        // 스케줄 간 이동
+        moveStudentSchedule(userId, currentDay, currentTimeSlot, newDay, newTimeSlot);
+      }
     }
 
     return false;
+  }
+
+  // 미배치 회원을 스케줄에 배치
+  function scheduleUnscheduledStudent(userId, day, timeSlot) {
+    showScheduleLoading(true);
+
+    fetch('/admin/schedule_unscheduled_student', {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        day: day,
+        time_slot: timeSlot,
+        teacher: window.currentScheduleTeacher
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      showScheduleLoading(false);
+      if (data.success) {
+        alert('스케줄에 배치되었습니다.');
+        loadScheduleData();
+      } else {
+        alert('스케줄 배치 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    })
+    .catch(error => {
+      showScheduleLoading(false);
+      console.error('Error:', error);
+      alert('스케줄 배치 중 오류가 발생했습니다.');
+    });
   }
 
   function handleUnscheduleDropZoneDragOver(e) {
@@ -1235,6 +1298,65 @@
       console.error('Error:', error);
       alert('스케줄 해제 중 오류가 발생했습니다.');
     });
+  }
+
+  // 미배치 회원 로드
+  function loadUnscheduledStudents(teacher) {
+    fetch(`/admin/unscheduled_students?teacher=${encodeURIComponent(teacher)}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderUnscheduledStudents(data.students);
+        }
+      })
+      .catch(error => {
+        console.error('미배치 회원 로드 에러:', error);
+      });
+  }
+
+  // 미배치 회원 렌더링
+  function renderUnscheduledStudents(students) {
+    const container = document.getElementById('unscheduled-students');
+    container.innerHTML = '';
+
+    students.forEach(student => {
+      const card = createUnscheduledStudentCard(student);
+      container.appendChild(card);
+    });
+  }
+
+  // 미배치 회원 카드 생성
+  function createUnscheduledStudentCard(student) {
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.dataset.userId = student.id;
+    card.dataset.currentDay = '';
+    card.dataset.currentTimeSlot = '';
+    card.draggable = true;
+    card.style.background = '#fef3c7';
+    card.style.borderColor = '#f59e0b';
+
+    const usernameDiv = document.createElement('div');
+    usernameDiv.style.fontSize = '0.875rem';
+    usernameDiv.style.color = '#111827';
+    usernameDiv.style.fontWeight = '600';
+    usernameDiv.style.textAlign = 'center';
+    usernameDiv.style.pointerEvents = 'none';
+    usernameDiv.textContent = student.username;
+
+    card.appendChild(usernameDiv);
+
+    // 클릭 이벤트
+    card.addEventListener('click', function(e) {
+      e.stopPropagation();
+      showStudentDetailModal(student.id);
+    });
+
+    // 드래그 이벤트
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
+
+    return card;
   }
 
   // 드롭 존 이벤트 리스너 설정

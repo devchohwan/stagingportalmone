@@ -130,7 +130,9 @@ Rails.application.routes.draw do
     get 'schedule_viewer_content', to: 'dashboard#schedule_viewer_content'
     get 'schedule_manager_content', to: 'dashboard#schedule_manager_content'
     get 'student_detail/:id', to: 'dashboard#student_detail'
+    get 'unscheduled_students', to: 'dashboard#unscheduled_students'
     patch 'move_student_schedule', to: 'dashboard#move_student_schedule'
+    patch 'schedule_unscheduled_student', to: 'dashboard#schedule_unscheduled_student'
     patch 'unschedule_student', to: 'dashboard#unschedule_student'
 
     # 동기화 테스트 페이지
