@@ -714,6 +714,7 @@ var selectedType = null; // 'makeup' 또는 'pass'
 var selectedTimeSlot = null;
 var selectedTeacher = null;
 var hasCancelledMakeup = <%= @has_cancelled_makeup ? 'true' : 'false' %>;
+var remainingPasses = <%= @remaining_passes || 0 %>;
 <% if @next_lesson_datetime %>
 var nextLessonDatetime = '<%= @next_lesson_datetime.strftime('%y.%m.%d %H:%M') %>';
 <% else %>
@@ -723,6 +724,14 @@ var nextLessonDatetime = null;
 function selectType(element, type) {
   selectedType = type;
   console.log('타입 선택:', type);
+
+  // 패스를 선택했는데 남은 패스가 0회인 경우
+  if (type === 'pass' && remainingPasses <= 0) {
+    alert('남은 패스권이 없습니다.\n보강 신청만 가능합니다.');
+    element.classList.remove('selected');
+    selectedType = null;
+    return;
+  }
 
   // 보강 취소 이력이 있고 보강을 선택한 경우
   if (hasCancelledMakeup && type === 'makeup') {

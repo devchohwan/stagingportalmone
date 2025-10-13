@@ -11,6 +11,7 @@ class MakeupPassController < ApplicationController
     @date = params[:date] ? Date.parse(params[:date]) : Date.current
     @has_cancelled_makeup = current_user.has_cancelled_makeup_before_next_lesson?
     @next_lesson_datetime = current_user.next_lesson_datetime if @has_cancelled_makeup
+    @remaining_passes = current_user.current_remaining_passes
 
     # AJAX 요청인 경우 달력만 렌더링
     if request.xhr?
