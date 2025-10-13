@@ -2014,4 +2014,48 @@ class Admin::DashboardController < ApplicationController
       'remaining_lessons' => total_remaining_lessons
     }
   end
+
+  # 결석 취소 + 보강 재신청
+  def cancel_absence_and_reschedule
+    user = User.find(params[:user_id])
+    original_date = Date.parse(params[:original_date])
+    cancelled_request_id = params[:cancelled_makeup_request_id]
+    new_date = Date.parse(params[:new_date])
+    new_time_slot = params[:new_time_slot]
+    new_teacher = params[:new_teacher]
+
+    ActiveRecord::Base.transaction do
+      # 1. 취소된 보강 요청 삭제 (결석 처리 취소)
+      cancelled_request = MakeupPassRequest.find(cancelled_request_id)
+      cancelled_request.destroy
+
+      # 2. 새로운 보강 신청 생성
+      new_request = MakeupPassRequest.create!(
+        user_id: user.id,
+        request_type: 'makeup',
+        request_date: original_date,  # 원래 수업일
+        makeup_date: new_date,        # 선택한 보강 날짜
+        time_slot: new_time_slot,
+        teacher: new_teacher,
+        status: 'active'
+      )
+
+      # 3. 수업 횟수 복구 (보강 취소 시 차감되었던 것)
+      enrollment = UserEnrollment.find_by(
+        user_id: user.id,
+        teacher: user.primary_teacher
+      )
+      if enrollment && enrollment.remaining_lessons >= 0
+        enrollment.increment!(:remaining_lessons)
+      end
+
+      render json: {
+        success: true,
+        message: "#{user.name} 학생의 결석이 취소되고 #{new_date} #{new_time_slot.gsub('-', ':00-')}:00 #{new_teacher} 선생님으로 보강이 신청되었습니다."
+      }
+    end
+  rescue => e
+    Rails.logger.error "Error in cancel_absence_and_reschedule: #{e.message}"
+    render json: { success: false, message: "처리 중 오류가 발생했습니다: #{e.message}" }, status: :unprocessable_entity
+  end
 end

@@ -124,6 +124,7 @@ Rails.application.routes.draw do
     patch 'makeup_pass_requests/:id/approve', to: 'dashboard#approve_makeup_pass_request'
     patch 'makeup_pass_requests/:id/reject', to: 'dashboard#reject_makeup_pass_request'
     delete 'makeup_pass_requests/:id', to: 'dashboard#delete_makeup_pass_request'
+    post 'cancel_absence_and_reschedule', to: 'dashboard#cancel_absence_and_reschedule'
 
     # 시간표 관리
     get 'schedule_manager', to: 'dashboard#schedule_manager'

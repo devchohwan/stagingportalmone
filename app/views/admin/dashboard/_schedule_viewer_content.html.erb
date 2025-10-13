@@ -669,14 +669,219 @@
 
   // 보강 재신청 모달 (결석 취소 + 다른 시간 보강)
   window.openRescheduleModal = function(userId, originalDate, cancelledMakeupRequestId, studentName) {
-    // TODO: 보강 신청 UI 모달 열기 (복귀 인터페이스와 유사)
-    alert(`${studentName} 학생의 보강 재신청 모달을 구현해야 합니다.\n원래 날짜: ${originalDate}\nUser ID: ${userId}`);
+    // 모달 HTML 생성
+    const modal = document.createElement('div');
+    modal.id = 'reschedule-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 10000;';
 
-    // 향후 구현:
-    // 1. 날짜 선택 캘린더
-    // 2. 시간대 선택 (자리 현황 표시)
-    // 3. 선생님 선택 (자리 현황 표시)
-    // 4. 제출 시 /admin/cancel_absence_and_reschedule API 호출
+    modal.innerHTML = `
+      <div style="background: white; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; color: #2d3748;">${studentName} 결석 취소 및 보강 신청</h2>
+        <p style="color: #718096; margin-bottom: 20px;">원래 자리가 꽉 찼습니다. 다른 시간으로 보강을 신청하세요.</p>
+        <p style="color: #4a5568; margin-bottom: 20px; padding: 10px; background: #f7fafc; border-radius: 6px;">
+          <strong>원래 수업일:</strong> ${originalDate}
+        </p>
+
+        <!-- 날짜 선택 -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 10px; color: #2d3748;">보강 날짜 선택</label>
+          <input type="date" id="reschedule-date" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 1rem;">
+        </div>
+
+        <!-- 시간 선택 -->
+        <div style="margin-bottom: 20px;" id="reschedule-time-section" style="display: none;">
+          <label style="display: block; font-weight: 600; margin-bottom: 10px; color: #2d3748;">시간대 선택</label>
+          <div id="reschedule-time-slots" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+            <!-- 시간대 버튼들이 여기에 추가됩니다 -->
+          </div>
+        </div>
+
+        <!-- 선생님 선택 -->
+        <div style="margin-bottom: 20px;" id="reschedule-teacher-section" style="display: none;">
+          <label style="display: block; font-weight: 600; margin-bottom: 10px; color: #2d3748;">선생님 선택</label>
+          <div id="reschedule-teachers" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <!-- 선생님 버튼들이 여기에 추가됩니다 -->
+          </div>
+        </div>
+
+        <!-- 버튼 -->
+        <div style="display: flex; gap: 10px; margin-top: 30px;">
+          <button onclick="closeRescheduleModal()" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; background: white; border-radius: 6px; font-weight: 600; cursor: pointer;">취소</button>
+          <button id="reschedule-submit-btn" disabled style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: not-allowed;">신청하기</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 데이터 저장
+    window.rescheduleData = {
+      userId: userId,
+      originalDate: originalDate,
+      cancelledMakeupRequestId: cancelledMakeupRequestId,
+      studentName: studentName,
+      selectedDate: null,
+      selectedTime: null,
+      selectedTeacher: null
+    };
+
+    // 날짜 변경 이벤트
+    document.getElementById('reschedule-date').addEventListener('change', function(e) {
+      window.rescheduleData.selectedDate = e.target.value;
+      loadRescheduleTimeSlots();
+    });
+  };
+
+  // 시간대 불러오기
+  function loadRescheduleTimeSlots() {
+    const date = window.rescheduleData.selectedDate;
+    if (!date) return;
+
+    document.getElementById('reschedule-time-section').style.display = 'block';
+    document.getElementById('reschedule-time-slots').innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #9ca3af;">로딩 중...</div>';
+
+    // 모든 선생님의 시간표 불러오기
+    const teachers = <%= raw @teachers.to_json %>;
+    const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
+
+    // 시간대별로 모든 선생님의 자리 현황 집계
+    const timeSlotData = {};
+    timeSlots.forEach(slot => {
+      timeSlotData[slot] = { available: false, teachers: [] };
+    });
+
+    // 각 시간대를 렌더링
+    let html = '';
+    timeSlots.forEach(slot => {
+      const slotDisplay = slot.replace('-', ':00-') + ':00';
+      html += `<button type="button" onclick="selectRescheduleTime('${slot}')"
+                style="padding: 15px; border: 2px solid #e2e8f0; background: #dbeafe; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;"
+                data-time="${slot}">${slotDisplay}</button>`;
+    });
+
+    document.getElementById('reschedule-time-slots').innerHTML = html;
+  }
+
+  // 시간 선택
+  window.selectRescheduleTime = function(timeSlot) {
+    window.rescheduleData.selectedTime = timeSlot;
+
+    // 시각적 선택 표시
+    document.querySelectorAll('#reschedule-time-slots button').forEach(btn => {
+      btn.style.background = '#dbeafe';
+      btn.style.borderColor = '#e2e8f0';
+    });
+    document.querySelector(`#reschedule-time-slots button[data-time="${timeSlot}"]`).style.background = '#667eea';
+    document.querySelector(`#reschedule-time-slots button[data-time="${timeSlot}"]`).style.color = 'white';
+
+    loadRescheduleTeachers();
+  };
+
+  // 선생님 목록 불러오기
+  function loadRescheduleTeachers() {
+    const date = window.rescheduleData.selectedDate;
+    const timeSlot = window.rescheduleData.selectedTime;
+
+    document.getElementById('reschedule-teacher-section').style.display = 'block';
+    document.getElementById('reschedule-teachers').innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #9ca3af;">로딩 중...</div>';
+
+    fetch(`/makeup_pass/available_teachers?date=${date}&time_slot=${timeSlot}`)
+      .then(response => response.json())
+      .then(teachers => {
+        let html = '';
+        if (teachers.length === 0) {
+          html = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ef4444;">예약 가능한 선생님이 없습니다.</div>';
+        } else {
+          teachers.forEach(teacher => {
+            html += `<button type="button" onclick="selectRescheduleTeacher('${teacher.teacher}')"
+                      style="padding: 15px; border: 2px solid #e2e8f0; background: #dbeafe; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; text-align: center;"
+                      data-teacher="${teacher.teacher}">
+                      <div>${teacher.teacher}</div>
+                      <div style="font-size: 0.8rem; margin-top: 5px;">${teacher.current_count}/3</div>
+                    </button>`;
+          });
+        }
+        document.getElementById('reschedule-teachers').innerHTML = html;
+      })
+      .catch(error => {
+        console.error('Error loading teachers:', error);
+        document.getElementById('reschedule-teachers').innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ef4444;">선생님 목록을 불러오는데 실패했습니다.</div>';
+      });
+  }
+
+  // 선생님 선택
+  window.selectRescheduleTeacher = function(teacher) {
+    window.rescheduleData.selectedTeacher = teacher;
+
+    // 시각적 선택 표시
+    document.querySelectorAll('#reschedule-teachers button').forEach(btn => {
+      btn.style.background = '#dbeafe';
+      btn.style.borderColor = '#e2e8f0';
+      btn.style.color = '#1e40af';
+    });
+    const selectedBtn = document.querySelector(`#reschedule-teachers button[data-teacher="${teacher}"]`);
+    selectedBtn.style.background = '#667eea';
+    selectedBtn.style.borderColor = '#667eea';
+    selectedBtn.style.color = 'white';
+
+    // 신청 버튼 활성화
+    const submitBtn = document.getElementById('reschedule-submit-btn');
+    submitBtn.disabled = false;
+    submitBtn.style.cursor = 'pointer';
+    submitBtn.onclick = submitReschedule;
+  };
+
+  // 보강 재신청 제출
+  function submitReschedule() {
+    const data = window.rescheduleData;
+
+    if (!data.selectedDate || !data.selectedTime || !data.selectedTeacher) {
+      alert('모든 항목을 선택해주세요.');
+      return;
+    }
+
+    if (!confirm(`${data.studentName} 학생의 결석을 취소하고\n${data.selectedDate} ${data.selectedTime.replace('-', ':00-')}:00 ${data.selectedTeacher} 선생님으로 보강을 신청하시겠습니까?`)) {
+      return;
+    }
+
+    fetch('/admin/cancel_absence_and_reschedule', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        user_id: data.userId,
+        original_date: data.originalDate,
+        cancelled_makeup_request_id: data.cancelledMakeupRequestId,
+        new_date: data.selectedDate,
+        new_time_slot: data.selectedTime,
+        new_teacher: data.selectedTeacher
+      })
+    })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          alert(result.message || '결석이 취소되고 보강이 신청되었습니다.');
+          closeRescheduleModal();
+          loadScheduleViewer(); // 시간표 새로고침
+        } else {
+          alert(result.message || '처리에 실패했습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('오류가 발생했습니다.');
+      });
+  }
+
+  // 모달 닫기
+  window.closeRescheduleModal = function() {
+    const modal = document.getElementById('reschedule-modal');
+    if (modal) {
+      modal.remove();
+    }
+    window.rescheduleData = null;
   };
 
   // 초기 로드
