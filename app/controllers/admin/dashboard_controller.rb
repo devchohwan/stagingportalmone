@@ -1943,6 +1943,21 @@ class Admin::DashboardController < ApplicationController
         enrollment.update!(teacher: target_teacher)
       end
 
+      # 배치 가능 여부 검증
+      user = User.find(user_id)
+
+      # 휴원 상태 체크
+      if enrollment.status == 'on_leave'
+        render json: { success: false, error: "#{user.name} 회원은 현재 휴원 중입니다. 배치할 수 없습니다." }, status: :unprocessable_entity
+        return
+      end
+
+      # 남은 수업 횟수 체크
+      if enrollment.remaining_lessons <= 0
+        render json: { success: false, error: "#{user.name} 회원의 남은 수업 횟수가 0입니다. 배치할 수 없습니다." }, status: :unprocessable_entity
+        return
+      end
+
       # end_date 재계산
       new_end_date = if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
         enrollment.first_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
