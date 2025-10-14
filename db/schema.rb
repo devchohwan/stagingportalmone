@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_14_045000) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_14_045500) do
   create_table "enrollment_status_histories", force: :cascade do |t|
     t.integer "user_enrollment_id", null: false
     t.string "status", null: false

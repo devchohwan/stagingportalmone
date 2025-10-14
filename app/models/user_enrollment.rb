@@ -132,36 +132,39 @@ class UserEnrollment < ApplicationRecord
   # 연장된 주 수 계산 (패스 + 휴원)
   def calculate_extended_weeks(base_last_lesson_date)
     extended_weeks = 0
-    current_date = first_lesson_date
 
     # 요일 매핑
     day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
     target_wday = day_to_wday[day]
     return 0 unless target_wday
 
-    # 첫수업일부터 기본 마지막 수업일까지 매주 확인
-    while current_date <= base_last_lesson_date + (extended_weeks * 7).days
-      # 해당 날짜의 요일이 정규 수업 요일과 일치하는지 확인
-      if current_date.wday == target_wday
-        # 패스 확인
-        has_pass = MakeupPassRequest.where(
-          user_id: user_id,
-          request_date: current_date,
-          request_type: 'pass',
-          status: ['active', 'completed']
-        ).exists?
+    # 첫수업일부터 매주 정규 수업일만 확인 (7일 단위로 점프)
+    current_date = first_lesson_date
+    max_iterations = 1000 # 안전장치: 최대 1000주 (약 20년)
 
-        if has_pass
-          extended_weeks += 1
-        end
+    iteration = 0
+    while current_date <= base_last_lesson_date && iteration < max_iterations
+      # 패스 확인
+      has_pass = MakeupPassRequest.where(
+        user_id: user_id,
+        request_date: current_date,
+        request_type: 'pass',
+        status: ['active', 'completed']
+      ).exists?
 
-        # 휴원 기간 확인 (해당 날짜에 이 수강권이 on_leave 상태였는지)
-        if was_on_leave_at?(current_date)
-          extended_weeks += 1
-        end
+      if has_pass
+        extended_weeks += 1
+        base_last_lesson_date += 7.days  # 패스가 있으면 마지막 날짜 연장
       end
 
-      current_date += 1.day
+      # 휴원 기간 확인 (해당 날짜에 이 수강권이 on_leave 상태였는지)
+      if was_on_leave_at?(current_date)
+        extended_weeks += 1
+        base_last_lesson_date += 7.days  # 휴원이면 마지막 날짜 연장
+      end
+
+      current_date += 7.days  # 다음 주 같은 요일로 이동
+      iteration += 1
     end
 
     extended_weeks
