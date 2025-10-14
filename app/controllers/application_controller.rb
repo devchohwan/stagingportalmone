@@ -53,6 +53,9 @@ class ApplicationController < ActionController::Base
     # 보강/패스 신청 상태도 업데이트
     MakeupPassRequest.update_statuses
 
+    # 정규 수업 자동 차감 처리
+    UserEnrollment.process_lesson_deductions
+
     # 현재 사용자의 패스 만료 체크
     if current_user.present?
       current_user.check_passes_expiration!

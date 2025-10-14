@@ -10,7 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_13_165939) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_14_042258) do
+  create_table "lesson_deductions", force: :cascade do |t|
+    t.integer "user_enrollment_id", null: false
+    t.date "deduction_date", null: false
+    t.datetime "deduction_time", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_enrollment_id", "deduction_date"], name: "index_lesson_deductions_on_enrollment_and_date", unique: true
+  end
+
   create_table "makeup_availabilities", force: :cascade do |t|
     t.string "teacher_name", null: false
     t.integer "day_of_week"
