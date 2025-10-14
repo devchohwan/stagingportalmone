@@ -2239,9 +2239,10 @@ class Admin::DashboardController < ApplicationController
 
   private
 
-  # 관리자 페이지 접속 시 자동으로 수업 차감 처리
+  # 관리자 페이지 접속 시 자동으로 수업 차감 및 보강/패스 상태 업데이트
   def auto_deduct_lessons
     UserEnrollment.process_lesson_deductions
+    MakeupPassRequest.update_statuses
   end
 
   def user_to_hash(user)

@@ -100,6 +100,7 @@ class MakeupPassRequest < ApplicationRecord
   # 상태 자동 업데이트 (연습실 로직과 동일)
   def self.update_statuses
     now = Time.current
+    kst_zone = ActiveSupport::TimeZone['Seoul']
 
     # Active 상태인 예약들 확인
     active.find_each do |request|
@@ -108,10 +109,10 @@ class MakeupPassRequest < ApplicationRecord
       target_date = request.makeup? && request.makeup_date ? request.makeup_date : request.request_date
 
       if request.makeup?
-        # 보강은 시간까지 고려
+        # 보강은 시간까지 고려 (한국 시각 기준)
         time_parts = request.time_slot.split('-')
         end_hour = time_parts[1].to_i
-        end_time = target_date.to_time + end_hour.hours
+        end_time = kst_zone.local(target_date.year, target_date.month, target_date.day, end_hour, 0, 0)
 
         if now > end_time
           # 종료 시간 지나면 완료
