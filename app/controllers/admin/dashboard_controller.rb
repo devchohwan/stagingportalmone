@@ -1643,7 +1643,7 @@ class Admin::DashboardController < ApplicationController
           time_slot: enrollment.time_slot
         )
 
-        # UserEnrollment 업데이트
+        # UserEnrollment 업데이트 (콜백에서 자동으로 이력 기록)
         enrollment.update!(
           status: new_status,
           teacher: new_teacher,
