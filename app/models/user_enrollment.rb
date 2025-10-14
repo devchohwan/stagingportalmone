@@ -108,12 +108,13 @@ class UserEnrollment < ApplicationRecord
 
   # 다음 결제 예정일 계산
   def next_payment_date
-    # 이 수강권의 마지막 결제 정보
-    last_payment = Payment.where(user_enrollment_id: id)
+    # 이 수강권의 마지막 결제 정보 (enrollment_id 사용)
+    last_payment = Payment.where(enrollment_id: id)
                          .order(payment_date: :desc)
                          .first
 
     return nil unless last_payment
+    return nil unless last_payment.months.present?
 
     # 결제일 + 수강기간(개월)
     last_payment.payment_date + last_payment.months.months
