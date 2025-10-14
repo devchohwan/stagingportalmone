@@ -1894,9 +1894,8 @@ class Admin::DashboardController < ApplicationController
         request_type: req.request_type,
         request_date: req.request_date,
         makeup_date: req.makeup_date,
-        makeup_day: req.makeup_day,
-        makeup_time_slot: req.makeup_time_slot,
-        makeup_teacher: req.makeup_teacher,
+        time_slot: req.time_slot,
+        teacher: req.teacher,
         status: req.status,
         created_at: req.created_at.strftime('%Y-%m-%d %H:%M')
       }
