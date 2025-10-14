@@ -1701,10 +1701,8 @@
   let paymentCalendarData = <%= raw @payment_calendar_data.to_json %>;
   let currentCalendarMonth = new Date();
 
-  // 페이지 로드 시 캘린더 렌더링
-  window.addEventListener('DOMContentLoaded', function() {
-    renderPaymentCalendar();
-  });
+  // 즉시 캘린더 렌더링 (AJAX로 로드되므로 DOMContentLoaded 사용 안 함)
+  renderPaymentCalendar();
 
   // 캘린더 렌더링
   function renderPaymentCalendar() {
