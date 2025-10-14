@@ -31,8 +31,20 @@ class MakeupPassController < ApplicationController
     #   - request_date: 캘린더에서 선택한 날짜 (이번수업일)
     #   - 즉시 패스권 1회 차감, 수업횟수 1회 차감
     if request_type == 'makeup'
+      # 이번 주에 이미 보강을 받았는지 확인 (다음 정규 수업 전)
+      next_lesson_date = current_user.next_lesson_date
+      last_completed_makeup = current_user.makeup_pass_requests
+        .where(request_type: 'makeup', status: 'completed')
+        .order(makeup_date: :desc)
+        .first
+
+      if last_completed_makeup && last_completed_makeup.request_date >= next_lesson_date - 7.days
+        redirect_to makeup_pass_reserve_path, alert: '이번 주 보강을 이미 받았습니다. 다음 정규 수업 후에 다시 신청해주세요.'
+        return
+      end
+
       # 이번 수업일 = 연노랑 영역의 시작일
-      request_date = current_user.next_lesson_date
+      request_date = next_lesson_date
 
       makeup_pass_request = current_user.makeup_pass_requests.new(
         request_type: request_type,
