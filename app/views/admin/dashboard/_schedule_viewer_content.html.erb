@@ -440,9 +440,9 @@
               usernameDiv.textContent = `${student.name} (패스)`;
             } else if (student.is_on_leave) {
               // 휴원 상태 표시
-              usernameDiv.textContent = student.username + ' (휴원)';
+              usernameDiv.textContent = `${student.name} (휴원)`;
             } else {
-              usernameDiv.textContent = student.username;
+              usernameDiv.textContent = student.name;
             }
 
             card.appendChild(usernameDiv);

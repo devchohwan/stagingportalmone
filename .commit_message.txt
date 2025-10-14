@@ -1,1 +1,1 @@
-🐛 보강 이동 시 is_absent false로 설정 - 결석 대신 보강 이동 표시되도록 수정
+🐛 시간표 뷰어 표시 수정 - username 대신 name으로 표시
