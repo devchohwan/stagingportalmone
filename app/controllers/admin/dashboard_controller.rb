@@ -1434,7 +1434,7 @@ class Admin::DashboardController < ApplicationController
       users = users.joins('LEFT JOIN payments ON payments.user_id = users.id')
                    .select('users.*, MAX(payments.payment_date) as last_payment')
                    .group('users.id')
-                   .order('last_payment DESC NULLS LAST')
+                   .order(Arel.sql('last_payment DESC NULLS LAST'))
     end
 
     # 페이지네이션
