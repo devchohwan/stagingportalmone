@@ -140,7 +140,7 @@ class UserEnrollment < ApplicationRecord
 
     # 첫수업일부터 매주 정규 수업일만 확인 (7일 단위로 점프)
     current_date = first_lesson_date
-    max_iterations = 1000 # 안전장치: 최대 1000주 (약 20년)
+    max_iterations = 156 # 안전장치: 최대 156주 (3년)
 
     iteration = 0
     while current_date <= base_last_lesson_date && iteration < max_iterations
