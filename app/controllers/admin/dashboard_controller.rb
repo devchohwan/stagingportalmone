@@ -2002,14 +2002,35 @@ class Admin::DashboardController < ApplicationController
     new_teacher = params[:new_teacher]
 
     ActiveRecord::Base.transaction do
-      # 1. 취소된 보강 요청 삭제 (결석 처리 취소)
+      # 1. 취소된 보강 요청 찾기
       cancelled_request = MakeupPassRequest.find(cancelled_request_id)
-      cancelled_request.destroy
 
-      # 2. 주차 계산 (new_date의 주차)
+      # 2. 원래 자리의 결석 처리 취소
+      # original_date 날짜의 TeacherSchedule 찾기
+      original_day = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }[original_date.wday]
+      original_enrollment = UserEnrollment.find_by(
+        user_id: user.id,
+        day: original_day,
+        is_paid: true
+      )
+
+      if original_enrollment
+        schedule = TeacherSchedule.find_by(
+          user_id: user.id,
+          teacher: original_enrollment.teacher,
+          day: original_day,
+          time_slot: original_enrollment.time_slot
+        )
+
+        if schedule
+          schedule.update!(is_absent: false)
+        end
+      end
+
+      # 3. 주차 계산 (new_date의 주차)
       week_number = ((new_date - new_date.beginning_of_month).to_i / 7) + 1
 
-      # 3. 새로운 보강 신청 생성
+      # 4. 새로운 보강 신청 생성
       new_request = MakeupPassRequest.create!(
         user_id: user.id,
         request_type: 'makeup',
@@ -2022,7 +2043,10 @@ class Admin::DashboardController < ApplicationController
         status: 'active'
       )
 
-      # 4. 수업 횟수 복구 (보강 취소 시 차감되었던 것)
+      # 5. 기존 취소된 요청 삭제
+      cancelled_request.destroy
+
+      # 6. 수업 횟수 복구 (보강 취소 시 차감되었던 것)
       enrollment = UserEnrollment.find_by(
         user_id: user.id,
         teacher: user.primary_teacher
