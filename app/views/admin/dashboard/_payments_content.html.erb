@@ -640,6 +640,7 @@
             <th>상태</th>
             <th>휴원</th>
             <th>마지막 결제일</th>
+            <th>다음 결제 예정일</th>
             <th>액션</th>
           </tr>
         </thead>
@@ -717,6 +718,31 @@
                     <%= payment_date.strftime('%Y.%m.%d') %>
                     <% if is_overdue %>
                       <span style="font-size: 0.8rem; color: #ef4444;">(<%= days_ago %>일 전)</span>
+                    <% end %>
+                  </span>
+                <% else %>
+                  <span class="payment-date none">-</span>
+                <% end %>
+              </td>
+              <td>
+                <%
+                  # 다음 결제 예정일 계산 (가장 빠른 예정일)
+                  next_payment_dates = enrollments.map { |e| e.next_payment_date }.compact
+                  earliest_next_payment = next_payment_dates.min
+                %>
+                <% if earliest_next_payment.present? %>
+                  <% days_until = (earliest_next_payment - Date.current).to_i %>
+                  <% is_soon = days_until <= 7 && days_until >= 0 %>
+                  <% is_today = days_until == 0 %>
+                  <% is_overdue = days_until < 0 %>
+                  <span class="payment-date <%= is_overdue ? 'overdue' : '' %>" style="<%= is_today ? 'background: #fef3c7; padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #d97706;' : is_soon ? 'color: #f59e0b; font-weight: 600;' : '' %>">
+                    <%= earliest_next_payment.strftime('%Y.%m.%d') %>
+                    <% if is_today %>
+                      <span style="font-size: 0.8rem;">(오늘)</span>
+                    <% elsif is_soon && !is_overdue %>
+                      <span style="font-size: 0.8rem;">(D-<%= days_until %>)</span>
+                    <% elsif is_overdue %>
+                      <span style="font-size: 0.8rem; color: #ef4444;">(+<%= -days_until %>일)</span>
                     <% end %>
                   </span>
                 <% else %>
