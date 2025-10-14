@@ -1,8 +1,8 @@
 # Name of your application. Used to uniquely configure containers.
-service: portal-monemusic
+service: staging-portal-monemusic
 
 # Name of the container image.
-image: amuguona/portal-monemusic
+image: amuguona/staging-portal-monemusic
 
 # Deploy to these servers.
 servers:
@@ -19,7 +19,7 @@ servers:
 # Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
 proxy:
   ssl: true
-  host: portal.monemusic.com
+  host: stagingportal.monemusic.com
   app_port: 3000
 
 # Credentials for your image host.
@@ -78,7 +78,7 @@ aliases:
 # Use a persistent storage volume for Active Storage files.
 # Recommended to change this to a mounted volume path that is backed up off server.
 volumes:
-  - "portal_monemusic_storage:/rails/storage"
+  - "staging_portal_monemusic_storage:/rails/storage"
 
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
@@ -125,7 +125,7 @@ accessories:
       - "postgres_data:/var/lib/postgresql/data"
     
   practice:
-    image: amuguona/portal-monemusic
+    image: amuguona/staging-portal-monemusic
     host: 115.68.195.125
     port: 3001
     env:
@@ -145,10 +145,10 @@ accessories:
         - SOLAPI_SENDER_PHONE
     cmd: "./bin/rails server -p 3001 -b 0.0.0.0"
     volumes:
-      - "practice_storage:/rails/storage"
-    
+      - "staging_practice_storage:/rails/storage"
+
   makeup:
-    image: amuguona/portal-monemusic
+    image: amuguona/staging-portal-monemusic
     host: 115.68.195.125
     port: 3002
     env:
@@ -168,4 +168,4 @@ accessories:
         - SOLAPI_SENDER_PHONE
     cmd: "./bin/rails server -p 3002 -b 0.0.0.0"
     volumes:
-      - "makeup_storage:/rails/storage"
+      - "staging_makeup_storage:/rails/storage"

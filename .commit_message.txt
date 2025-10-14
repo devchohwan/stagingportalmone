@@ -1,1 +1,1 @@
-🔧 Zone.Identifier 파일 제거 및 .gitignore 추가
+🔧 스테이징 배포 설정 - stagingportal.monemusic.com
