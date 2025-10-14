@@ -1,1 +1,1 @@
-✨ start_date 기반 스케줄 표시 로직 완성 (schema 업데이트)
+🐛 마이그레이션 중복 컬럼 에러 수정 (column_exists 체크 추가)
