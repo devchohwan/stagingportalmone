@@ -1806,7 +1806,7 @@
       }
 
       const onclick = count > 0 ? `onclick="showPaymentDateDetail('${dateStr}')"` : '';
-      const style = `padding: 15px; border: 2px solid ${borderColor}; background: ${bgColor}; vertical-align: top; cursor: ${cursor}; transition: all 0.2s;`;
+      const style = `height: 100px; padding: 15px; border: 2px solid ${borderColor}; background: ${bgColor}; vertical-align: top; cursor: ${cursor}; transition: all 0.2s;`;
       const hover = count > 0 ? `onmouseover="this.style.background='#bfdbfe'" onmouseout="this.style.background='${bgColor}'"` : '';
 
       html += `<td style="${style}" ${onclick} ${hover}>`;
