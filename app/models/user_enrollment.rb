@@ -65,10 +65,11 @@ class UserEnrollment < ApplicationRecord
     # 첫 수업일부터 오늘까지 매주 수업일 확인
     current_date = first_lesson_date
     today = Date.current
+    kst_zone = ActiveSupport::TimeZone['Seoul']
 
     while current_date <= today
-      # 해당 날짜의 수업 종료 시각
-      lesson_end_time = current_date.to_time.in_time_zone + end_hour.hours
+      # 해당 날짜의 수업 종료 시각 (한국 시각 기준)
+      lesson_end_time = kst_zone.local(current_date.year, current_date.month, current_date.day, end_hour, 0, 0)
 
       # 수업 종료 시각이 지났고, 아직 차감되지 않은 경우
       if Time.current > lesson_end_time && !already_deducted?(current_date)
