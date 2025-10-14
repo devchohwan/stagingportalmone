@@ -1,1 +1,1 @@
-🔧 스테이징 배포 설정 - stagingportal.monemusic.com
+🔧 실행 권한 추가 및 DB 포트 분리 (5433)

@@ -44,7 +44,7 @@ env:
   clear:
     # Database configuration
     DB_HOST: 115.68.195.125
-    DB_PORT: 5432
+    DB_PORT: 5433
     # Service configuration
     SERVICE_TYPE: portal
     RAILS_LOG_TO_STDOUT: true
@@ -111,18 +111,18 @@ ssh:
 
 # Use accessory services (secrets come from .kamal/secrets).
 accessories:
-  postgres:
+  postgres_staging:
     image: postgres:16
     host: 115.68.195.125
-    port: 5432
+    port: 5433
     env:
       clear:
-        POSTGRES_USER: monemusic
-        POSTGRES_DB: monemusic_production
+        POSTGRES_USER: monemusic_staging
+        POSTGRES_DB: monemusic_staging
       secret:
         - POSTGRES_PASSWORD
     volumes:
-      - "postgres_data:/var/lib/postgresql/data"
+      - "postgres_staging_data:/var/lib/postgresql/data"
     
   practice:
     image: amuguona/staging-portal-monemusic
@@ -135,7 +135,7 @@ accessories:
         RAILS_LOG_TO_STDOUT: true
         RAILS_SERVE_STATIC_FILES: true
         DB_HOST: 115.68.195.125
-        DB_PORT: 5432
+        DB_PORT: 5433
       secret:
         - RAILS_MASTER_KEY
         - DB_USERNAME
@@ -158,7 +158,7 @@ accessories:
         RAILS_LOG_TO_STDOUT: true
         RAILS_SERVE_STATIC_FILES: true
         DB_HOST: 115.68.195.125
-        DB_PORT: 5432
+        DB_PORT: 5433
       secret:
         - RAILS_MASTER_KEY
         - DB_USERNAME
