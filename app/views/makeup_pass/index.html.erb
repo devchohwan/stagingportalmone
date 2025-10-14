@@ -165,9 +165,9 @@
 
     <div class="action-buttons">
       <% if @has_active_makeup %>
-        <a href="#" class="btn-primary disabled" onclick="event.preventDefault(); alert('이미 보강을 신청하셨습니다. 시간 변경을 원하시면 아래 \'내 신청 내역\'으로 들어가주세요'); return false;">보강 / 패스 신청하기</a>
+        <a href="#" class="btn-primary" onclick="event.preventDefault(); alert('이미 보강을 신청하셨습니다. 시간 변경을 원하시면 아래 \'내 신청 내역\'으로 들어가주세요'); return false;">보강 / 패스 신청하기</a>
       <% elsif @has_completed_makeup_this_week %>
-        <a href="#" class="btn-primary disabled" onclick="event.preventDefault(); alert('이번 주 보강을 이미 받았습니다. 다음 정규 수업 후에 다시 신청해주세요.'); return false;">보강 / 패스 신청하기</a>
+        <a href="#" class="btn-primary" onclick="event.preventDefault(); alert('이번 주 보강을 이미 받았습니다. 다음 정규 수업 후에 다시 신청해주세요.'); return false;">보강 / 패스 신청하기</a>
       <% else %>
         <%= link_to "보강 / 패스 신청하기", makeup_pass_reserve_path, class: "btn-primary" %>
       <% end %>
