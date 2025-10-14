@@ -878,6 +878,9 @@
 
   // 과목 추가 폼 초기화
   function initializeEnrollmentForm() {
+    // 캘린더를 현재 달로 초기화
+    calendarDate = new Date();
+
     // 선생님 선택 시 과목 자동 입력
     document.getElementById('new-enrollment-teacher').addEventListener('change', function() {
       const selectedOption = this.options[this.selectedIndex];
@@ -903,17 +906,22 @@
   }
 
   // 달력 표시
+  // 캘린더 현재 날짜 상태
+  let calendarDate = new Date();
+
   function showCalendar() {
     const calendarDiv = document.getElementById('new-enrollment-calendar');
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
 
     // 선택된 선생님의 휴무일 가져오기 (0=일, 1=월, 2=화, 3=수, 4=목, 5=금, 6=토)
     const teacherHolidays = selectedTeacher ? (TEACHER_HOLIDAYS[selectedTeacher] || []) : [];
 
-    let html = '<div style="text-align: center; margin-bottom: 10px; font-weight: 600;">';
-    html += year + '년 ' + (month + 1) + '월</div>';
+    let html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
+    html += '<button onclick="changeCalendarMonth(-1)" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">◀</button>';
+    html += '<div style="font-weight: 600;">' + year + '년 ' + (month + 1) + '월</div>';
+    html += '<button onclick="changeCalendarMonth(1)" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">▶</button>';
+    html += '</div>';
     html += '<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">';
 
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
@@ -952,6 +960,12 @@
     html += '</div>';
     calendarDiv.innerHTML = html;
   }
+
+  // 캘린더 월 변경
+  window.changeCalendarMonth = function(delta) {
+    calendarDate.setMonth(calendarDate.getMonth() + delta);
+    showCalendar();
+  };
 
   // 날짜 선택
   window.selectDate = function(dateStr) {
