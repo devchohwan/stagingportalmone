@@ -616,6 +616,44 @@
 </div>
 
 <div class="payments-container">
+  <!-- 검색 및 필터 UI -->
+  <div style="padding: 20px; background: white; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: end;">
+      <!-- 검색창 -->
+      <div>
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">🔍 수강생 검색</label>
+        <input type="text" id="search-input" value="<%= @search %>" placeholder="이름으로 검색..." style="width: 100%; padding: 10px 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.95rem;">
+      </div>
+
+      <!-- 선생님 필터 -->
+      <div>
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">👨‍🏫 선생님</label>
+        <select id="teacher-filter" style="width: 100%; padding: 10px 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.95rem; cursor: pointer;">
+          <option value="전체" <%= @teacher_filter == '전체' || @teacher_filter.blank? ? 'selected' : '' %>>전체</option>
+          <% @teachers.each do |teacher| %>
+            <option value="<%= teacher %>" <%= @teacher_filter == teacher ? 'selected' : '' %>><%= teacher %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <!-- 정렬 -->
+      <div>
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">📊 정렬</label>
+        <select id="sort-select" style="width: 100%; padding: 10px 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.95rem; cursor: pointer;">
+          <option value="name" <%= @sort_by == 'name' ? 'selected' : '' %>>이름순</option>
+          <option value="next_payment_asc" <%= @sort_by == 'next_payment_asc' ? 'selected' : '' %>>다음 결제일 빠른순</option>
+          <option value="next_payment_desc" <%= @sort_by == 'next_payment_desc' ? 'selected' : '' %>>다음 결제일 늦은순</option>
+          <option value="last_payment_desc" <%= @sort_by == 'last_payment_desc' ? 'selected' : '' %>>마지막 결제일 최신순</option>
+        </select>
+      </div>
+
+      <!-- 검색 버튼 -->
+      <div>
+        <button onclick="applyFilters()" style="padding: 11px 24px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; white-space: nowrap;">검색</button>
+      </div>
+    </div>
+  </div>
+
   <div class="payments-content">
     <% if @users.empty? %>
       <div class="empty-state-payment">
@@ -777,7 +815,7 @@
 
       <% if @total_pages > 1 %>
         <div class="pagination-container">
-          <button class="pagination-btn" onclick="loadPaymentsTab(<%= [@page - 1, 1].max %>)" <%= 'disabled' if @page == 1 %>>
+          <button class="pagination-btn" onclick="loadPaymentsPage(<%= [@page - 1, 1].max %>)" <%= 'disabled' if @page == 1 %>>
             이전
           </button>
 
@@ -786,12 +824,12 @@
           <% start_page = [end_page - 4, 1].max if end_page - start_page < 4 %>
 
           <% (start_page..end_page).each do |page_num| %>
-            <button class="pagination-btn <%= 'active' if page_num == @page %>" onclick="loadPaymentsTab(<%= page_num %>)">
+            <button class="pagination-btn <%= 'active' if page_num == @page %>" onclick="loadPaymentsPage(<%= page_num %>)">
               <%= page_num %>
             </button>
           <% end %>
 
-          <button class="pagination-btn" onclick="loadPaymentsTab(<%= [@page + 1, @total_pages].min %>)" <%= 'disabled' if @page == @total_pages %>>
+          <button class="pagination-btn" onclick="loadPaymentsPage(<%= [@page + 1, @total_pages].min %>)" <%= 'disabled' if @page == @total_pages %>>
             다음
           </button>
         </div>
@@ -2031,6 +2069,68 @@
       document.getElementById('payment-date-modal').style.display = 'none';
     }
   };
+
+  // 검색/필터 적용
+  window.applyFilters = function() {
+    const search = document.getElementById('search-input').value;
+    const teacher = document.getElementById('teacher-filter').value;
+    const sort = document.getElementById('sort-select').value;
+
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (teacher && teacher !== '전체') params.append('teacher', teacher);
+    if (sort) params.append('sort', sort);
+    params.append('page', 1);
+
+    fetch('/admin/payments_content?' + params.toString())
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('payments-tab').innerHTML = html;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('검색에 실패했습니다.');
+      });
+  };
+
+  // 페이지 이동
+  window.loadPaymentsPage = function(page) {
+    const search = document.getElementById('search-input')?.value || '';
+    const teacher = document.getElementById('teacher-filter')?.value || '전체';
+    const sort = document.getElementById('sort-select')?.value || 'name';
+
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (teacher && teacher !== '전체') params.append('teacher', teacher);
+    if (sort) params.append('sort', sort);
+    params.append('page', page);
+
+    fetch('/admin/payments_content?' + params.toString())
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('payments-tab').innerHTML = html;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('페이지 로드에 실패했습니다.');
+      });
+  };
+
+  // 엔터키로 검색
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        applyFilters();
+      }
+    });
+  }
+
+  // 필터/정렬 변경 시 자동 검색
+  const teacherFilter = document.getElementById('teacher-filter');
+  const sortSelect = document.getElementById('sort-select');
+  if (teacherFilter) teacherFilter.addEventListener('change', applyFilters);
+  if (sortSelect) sortSelect.addEventListener('change', applyFilters);
 
   console.log('결제관리 JavaScript 로드 완료');
 })();

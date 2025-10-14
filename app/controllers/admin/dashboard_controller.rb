@@ -1398,7 +1398,49 @@ class Admin::DashboardController < ApplicationController
 
   # 결제관리 콘텐츠 (AJAX)
   def payments_content
-    users = User.order(:name)
+    # 검색 및 필터 파라미터
+    search_query = params[:search]
+    teacher_filter = params[:teacher]
+    sort_by = params[:sort] || 'name'
+    page = (params[:page] || 1).to_i
+    per_page = 20
+
+    # 기본 쿼리
+    users = User.all
+
+    # 이름 검색
+    if search_query.present?
+      users = users.where('name LIKE ?', "%#{search_query}%")
+    end
+
+    # 선생님 필터 (enrollments를 통해)
+    if teacher_filter.present? && teacher_filter != '전체'
+      user_ids = UserEnrollment.where(teacher: teacher_filter, is_paid: true)
+                                .select(:user_id)
+                                .distinct
+                                .pluck(:user_id)
+      users = users.where(id: user_ids)
+    end
+
+    # 전체 카운트 (페이지네이션용)
+    total_count = users.count
+    @total_pages = (total_count.to_f / per_page).ceil
+
+    # 정렬
+    case sort_by
+    when 'name'
+      users = users.order(:name)
+    when 'last_payment_desc'
+      users = users.joins('LEFT JOIN payments ON payments.user_id = users.id')
+                   .select('users.*, MAX(payments.payment_date) as last_payment')
+                   .group('users.id')
+                   .order('last_payment DESC NULLS LAST')
+    end
+
+    # 페이지네이션
+    users = users.offset((page - 1) * per_page).limit(per_page)
+
+    # 결과 매핑
     @users = users.map do |user|
       last_payment = Payment.where(user_id: user.id).order(payment_date: :desc).first
       {
@@ -1410,8 +1452,21 @@ class Admin::DashboardController < ApplicationController
         'last_payment_date' => last_payment&.payment_date
       }
     end
-    @page = 1
-    @total_pages = 1
+
+    # 다음 결제일 기준 정렬 (메모리에서 처리)
+    if sort_by == 'next_payment_asc' || sort_by == 'next_payment_desc'
+      @users = @users.sort_by do |user|
+        enrollments = UserEnrollment.where(user_id: user['id'], is_paid: true, status: 'active')
+        next_dates = enrollments.map { |e| e.next_payment_date }.compact
+        next_dates.min || Date.new(9999, 12, 31) # nil은 맨 뒤로
+      end
+      @users.reverse! if sort_by == 'next_payment_desc'
+    end
+
+    @page = page
+    @search = search_query
+    @teacher_filter = teacher_filter
+    @sort_by = sort_by
     @teachers = User::TEACHERS - ['온라인']
     @teacher_holidays = Teacher::HOLIDAYS
 
