@@ -1177,7 +1177,8 @@
         user_id: userId,
         day: day,
         time_slot: timeSlot,
-        teacher: window.currentScheduleTeacher
+        teacher: window.currentScheduleTeacher,
+        week_offset: window.currentScheduleWeek
       })
     })
     .then(response => response.json())
@@ -1257,7 +1258,8 @@
         from_time_slot: fromTimeSlot,
         to_day: toDay,
         to_time_slot: toTimeSlot,
-        to_teacher: window.currentScheduleTeacher
+        to_teacher: window.currentScheduleTeacher,
+        week_offset: window.currentScheduleWeek
       })
     })
     .then(response => response.json())

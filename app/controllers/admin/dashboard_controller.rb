@@ -1819,9 +1819,9 @@ class Admin::DashboardController < ApplicationController
     to_teacher = params[:to_teacher]
     to_day = params[:to_day]
     to_time_slot = params[:to_time_slot]
+    week_offset = params[:week_offset].to_i
 
     ActiveRecord::Base.transaction do
-      # UserEnrollment 찾기 (from_teacher로 찾기)
       enrollment = UserEnrollment.find_by(
         user_id: user_id,
         teacher: from_teacher,
@@ -1835,21 +1835,25 @@ class Admin::DashboardController < ApplicationController
         return
       end
 
-      # 다음 수업일 계산 (새로운 요일 기준)
       day_index = { 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 0 }[to_day]
       today = Date.current
-      days_until_next = (day_index - today.wday) % 7
-      days_until_next = 7 if days_until_next == 0 # 오늘이면 다음주로
-      next_lesson_date = today + days_until_next.days
+      start_of_current_week = today.beginning_of_week(:sunday)
+      target_week_start = start_of_current_week + week_offset.weeks
+      next_lesson_date = target_week_start + day_index.days
 
-      # end_date 재계산: 다음 수업일 + (남은 수업 - 1) * 7일
+      if Teacher.closed_on?(to_teacher, next_lesson_date)
+        day_names = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+        day_name = day_names[next_lesson_date.wday]
+        render json: { success: false, error: "#{next_lesson_date.strftime('%Y년 %m월 %d일')} (#{day_name})은 #{to_teacher} 선생님의 휴무일입니다. 이동할 수 없습니다." }, status: :unprocessable_entity
+        return
+      end
+
       new_end_date = if enrollment.remaining_lessons > 0
         next_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
       else
         next_lesson_date
       end
 
-      # 기존 TeacherSchedule 삭제
       old_schedule = TeacherSchedule.find_by(
         user_id: user_id,
         teacher: from_teacher,
@@ -1858,7 +1862,6 @@ class Admin::DashboardController < ApplicationController
       )
       old_schedule&.destroy
 
-      # UserEnrollment 업데이트 (선생님도 변경 가능)
       enrollment.update!(
         teacher: to_teacher,
         day: to_day,
@@ -1866,7 +1869,6 @@ class Admin::DashboardController < ApplicationController
         end_date: new_end_date
       )
 
-      # 새로운 TeacherSchedule 생성
       TeacherSchedule.create!(
         user_id: user_id,
         teacher: to_teacher,
@@ -1876,7 +1878,7 @@ class Admin::DashboardController < ApplicationController
         end_date: new_end_date
       )
 
-      Rails.logger.info "스케줄 이동: #{User.find(user_id).name} / #{from_teacher} #{from_day} #{from_time_slot} → #{to_teacher} #{to_day} #{to_time_slot}"
+      Rails.logger.info "스케줄 이동: #{User.find(user_id).name} / #{from_teacher} #{from_day} #{from_time_slot} → #{to_teacher} #{to_day} #{to_time_slot} / start_date: #{next_lesson_date}"
     end
 
     render json: { success: true }
@@ -1926,10 +1928,9 @@ class Admin::DashboardController < ApplicationController
     day = params[:day]
     time_slot = params[:time_slot]
     target_teacher = params[:teacher]
+    week_offset = params[:week_offset].to_i
 
     ActiveRecord::Base.transaction do
-      # UserEnrollment 찾기 (day, time_slot이 null인 것)
-      # target_teacher의 수강 정보를 찾되, 없으면 다른 선생님의 미배치 수강 정보를 찾음
       enrollment = UserEnrollment.find_by(
         user_id: user_id,
         teacher: target_teacher,
@@ -1938,7 +1939,6 @@ class Admin::DashboardController < ApplicationController
         is_paid: true
       )
 
-      # target_teacher의 수강 정보가 없으면 다른 선생님의 미배치 수강 정보 찾기
       other_enrollment = nil
       unless enrollment
         other_enrollment = UserEnrollment.find_by(
@@ -1953,48 +1953,47 @@ class Admin::DashboardController < ApplicationController
           return
         end
 
-        # 다른 선생님의 수강 정보를 target_teacher로 변경
         enrollment = other_enrollment
         enrollment.update!(teacher: target_teacher)
       end
 
-      # 배치 가능 여부 검증
       user = User.find(user_id)
 
-      # 휴원 상태 체크
       if enrollment.status == 'on_leave'
         render json: { success: false, error: "#{user.name} 회원은 현재 휴원 중입니다. 배치할 수 없습니다." }, status: :unprocessable_entity
         return
       end
 
-      # 남은 수업 횟수 체크
       if enrollment.remaining_lessons <= 0
         render json: { success: false, error: "#{user.name} 회원의 남은 수업 횟수가 0입니다. 배치할 수 없습니다." }, status: :unprocessable_entity
         return
       end
 
-      # 다음 수업일 계산 (새로운 요일 기준)
       day_index = { 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 0 }[day]
       today = Date.current
-      days_until_next = (day_index - today.wday) % 7
-      days_until_next = 7 if days_until_next == 0 # 오늘이면 다음주로
-      next_lesson_date = today + days_until_next.days
+      start_of_current_week = today.beginning_of_week(:sunday)
+      target_week_start = start_of_current_week + week_offset.weeks
+      next_lesson_date = target_week_start + day_index.days
 
-      # end_date 재계산: 다음 수업일 + (남은 수업 - 1) * 7일
+      if Teacher.closed_on?(target_teacher, next_lesson_date)
+        day_names = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+        day_name = day_names[next_lesson_date.wday]
+        render json: { success: false, error: "#{next_lesson_date.strftime('%Y년 %m월 %d일')} (#{day_name})은 #{target_teacher} 선생님의 휴무일입니다. 배치할 수 없습니다." }, status: :unprocessable_entity
+        return
+      end
+
       new_end_date = if enrollment.remaining_lessons > 0
         next_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
       else
         next_lesson_date
       end
 
-      # UserEnrollment 업데이트
       enrollment.update!(
         day: day,
         time_slot: time_slot,
         end_date: new_end_date
       )
 
-      # TeacherSchedule 생성
       TeacherSchedule.create!(
         user_id: user_id,
         teacher: target_teacher,
@@ -2004,7 +2003,7 @@ class Admin::DashboardController < ApplicationController
         end_date: new_end_date
       )
 
-      Rails.logger.info "미배치 학생 배치: #{User.find(user_id).name} / #{target_teacher} / #{day} #{time_slot}"
+      Rails.logger.info "미배치 학생 배치: #{User.find(user_id).name} / #{target_teacher} / #{day} #{time_slot} / start_date: #{next_lesson_date}"
     end
 
     render json: { success: true }
