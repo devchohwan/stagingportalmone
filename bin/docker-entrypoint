@@ -9,6 +9,11 @@ fi
 # If running the rails server then create or migrate existing database
 if [ "${*: -2:1}" = "./bin/rails" ] && [ "${*: -1:1}" = "server" ]; then
   ./bin/rails db:prepare
+
+  # Setup cron for scheduled tasks
+  bundle exec whenever --update-crontab --set environment=$RAILS_ENV
+  cron
+  echo "Cron started for scheduled tasks"
 fi
 
 exec "${@}"

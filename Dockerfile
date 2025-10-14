@@ -18,7 +18,7 @@ WORKDIR /rails
 
 # Install base packages
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 libvips libpq-dev postgresql-client && \
+    apt-get install --no-install-recommends -y curl libjemalloc2 libvips libpq-dev postgresql-client cron && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Set production environment
@@ -67,7 +67,9 @@ RUN groupadd --system --gid 1000 rails && \
     mkdir -p log storage tmp /rails/public/uploads/verifications && \
     chown -R rails:rails db log storage tmp /rails/public/uploads /rails/app && \
     chmod -R 755 /rails/public/uploads /rails/app
-USER 1000:1000
+
+# Note: Running as root to allow cron to function.
+# In production, consider using a separate container for cron jobs.
 
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
