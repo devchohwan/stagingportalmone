@@ -1,6 +1,7 @@
 class Admin::DashboardController < ApplicationController
   before_action :authenticate_admin!
-  
+  before_action :auto_deduct_lessons
+
   def index
     # 통계 정보
     @total_users = User.count
@@ -2237,6 +2238,11 @@ class Admin::DashboardController < ApplicationController
   end
 
   private
+
+  # 관리자 페이지 접속 시 자동으로 수업 차감 처리
+  def auto_deduct_lessons
+    UserEnrollment.process_lesson_deductions
+  end
 
   def user_to_hash(user)
     total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
