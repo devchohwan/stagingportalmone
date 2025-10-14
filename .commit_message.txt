@@ -1,1 +1,1 @@
-🔧 docker-compose에서 entrypoint 사용하도록 수정 - cron 활성화
+⏰ cron 스케줄 수정 - 수업 종료 시각(13~22시)에 정확히 차감
