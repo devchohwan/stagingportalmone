@@ -1198,6 +1198,11 @@
       return;
     }
 
+    // 연장 모드일 때는 enrollment 리스트를 표시하지 않음 (이미 표시되어 있음)
+    if (window.extendingEnrollmentId) {
+      return;
+    }
+
     let html = '<div style="margin-bottom: 20px;"><h4 style="font-weight: 600; margin-bottom: 10px;">등록할 과목</h4>';
     enrollments.forEach((enroll, index) => {
       const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1205,8 +1210,15 @@
       html += '<div style="display: flex; justify-content: space-between; align-items: start;">';
       html += '<div>';
       html += '<div style="font-weight: 600; margin-bottom: 5px;">' + enroll.subject + ' - ' + enroll.teacher + '</div>';
-      html += '<div style="font-size: 0.85rem; color: #6b7280;">' + dayNames[enroll.day_of_week] + '요일 ' + enroll.time_slot.replace('-', ':00-') + ':00</div>';
-      html += '<div style="font-size: 0.85rem; color: #6b7280;">첫수업: ' + enroll.first_lesson_date + ' | 종료: ' + enroll.end_date + '</div>';
+
+      if (enroll.day_of_week !== null && enroll.time_slot) {
+        html += '<div style="font-size: 0.85rem; color: #6b7280;">' + dayNames[enroll.day_of_week] + '요일 ' + enroll.time_slot.replace('-', ':00-') + ':00</div>';
+      }
+
+      if (enroll.first_lesson_date && enroll.end_date) {
+        html += '<div style="font-size: 0.85rem; color: #6b7280;">첫수업: ' + enroll.first_lesson_date + ' | 종료: ' + enroll.end_date + '</div>';
+      }
+
       html += '<div style="font-size: 0.85rem; color: #667eea; font-weight: 600; margin-top: 5px;">' + enroll.price.toLocaleString() + '원 (' + enroll.months + '개월/' + enroll.lessons + '회)</div>';
       html += '</div>';
       html += '<button onclick="removeEnrollment(' + index + ')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">삭제</button>';
