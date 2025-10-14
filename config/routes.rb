@@ -101,6 +101,7 @@ Rails.application.routes.draw do
     get 'users/:id', to: 'dashboard#get_user'
     post 'process_payment', to: 'dashboard#process_payment'
     get 'payment_history/:user_id', to: 'dashboard#payment_history'
+    get 'enrollment_info/:id', to: 'dashboard#enrollment_info'
 
     # 수강 등록 관리
     post 'user_enrollments', to: 'dashboard#create_user_enrollment'

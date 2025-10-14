@@ -1315,26 +1315,38 @@
     const finalPrice = Math.max(0, totalPrice - totalDiscount);
 
     // 서버에 전송
+    const paymentData = {
+      user_id: currentUserId,
+      enrollments: enrollments,
+      payment_date: paymentDate,
+      discounts: selectedDiscounts,
+      total_price: totalPrice,
+      discount_amount: totalDiscount,
+      final_price: finalPrice
+    };
+
+    // 연장 모드일 경우 enrollment_id 추가
+    if (window.extendingEnrollmentId) {
+      paymentData.extending_enrollment_id = window.extendingEnrollmentId;
+    }
+
     fetch('/admin/process_payment', {
       method: 'POST',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        user_id: currentUserId,
-        enrollments: enrollments,
-        payment_date: paymentDate,
-        discounts: selectedDiscounts,
-        total_price: totalPrice,
-        discount_amount: totalDiscount,
-        final_price: finalPrice
-      })
+      body: JSON.stringify(paymentData)
     })
     .then(response => response.json())
     .then(data => {
       if (data.success) {
         alert('결제가 완료되었습니다!');
+
+        // 연장 모드 플래그 초기화
+        window.extendingEnrollmentId = null;
+        window.extendingUserId = null;
+
         closePaymentModal();
         window.loadPaymentsTab(); // 목록 새로고침
       } else {
@@ -1352,13 +1364,43 @@
     fetch(`/admin/payment_history/${userId}`)
       .then(response => response.json())
       .then(data => {
-        document.getElementById('payment-history-user-name').textContent = data.user_name + ' - 결제 이력';
+        document.getElementById('payment-history-user-name').textContent = data.user_name + ' - 결제 정보';
 
         const listDiv = document.getElementById('payment-history-list');
+        let html = '';
+
+        // 활성 과목 섹션
+        if (data.enrollments && data.enrollments.length > 0) {
+          html += '<div style="margin-bottom: 30px;">';
+          html += '<h4 style="font-size: 1rem; font-weight: 700; color: #2d3748; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #667eea;">📚 활성 과목</h4>';
+
+          data.enrollments.forEach(enrollment => {
+            const statusBadge = enrollment.status === 'on_leave'
+              ? '<span style="display: inline-block; padding: 4px 8px; background: #fef3c7; color: #f59e0b; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">휴원</span>'
+              : '<span style="display: inline-block; padding: 4px 8px; background: #d1fae5; color: #10b981; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">활성</span>';
+
+            html += '<div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #667eea;">';
+            html += '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">';
+            html += '<div style="font-weight: 700; font-size: 1rem; color: #2d3748;">' + enrollment.subject + ' (' + enrollment.teacher + ') ' + statusBadge + '</div>';
+            html += '</div>';
+            html += '<div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 5px;">📅 ' + enrollment.day + ' ' + enrollment.time_slot + '</div>';
+            html += '<div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 5px;">📖 남은 수업: ' + enrollment.remaining_lessons + '회</div>';
+            if (enrollment.next_payment_date) {
+              html += '<div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 10px;">💳 다음 결제일: ' + enrollment.next_payment_date + '</div>';
+            }
+            html += '<button onclick="extendEnrollment(' + enrollment.id + ', ' + userId + ')" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">연장하기</button>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+
+        // 결제 이력 섹션
+        html += '<div>';
+        html += '<h4 style="font-size: 1rem; font-weight: 700; color: #2d3748; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #667eea;">📋 결제 이력</h4>';
+
         if (data.payments.length === 0) {
-          listDiv.innerHTML = '<div class="payment-history-empty">결제 이력이 없습니다.</div>';
+          html += '<div class="payment-history-empty">결제 이력이 없습니다.</div>';
         } else {
-          let html = '';
           data.payments.forEach(payment => {
             html += '<div class="payment-history-item">';
             html += '<div class="payment-history-date">' + payment.payment_date + '</div>';
@@ -1375,14 +1417,15 @@
             }
             html += '</div></div>';
           });
-          listDiv.innerHTML = html;
         }
+        html += '</div>';
 
+        listDiv.innerHTML = html;
         document.getElementById('payment-history-modal').style.display = 'flex';
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('결제 이력을 불러오는데 실패했습니다.');
+        alert('결제 정보를 불러오는데 실패했습니다.');
       });
   };
 
@@ -1391,6 +1434,79 @@
     if (!event || event.target.id === 'payment-history-modal') {
       document.getElementById('payment-history-modal').style.display = 'none';
     }
+  };
+
+  // 과목 연장하기 (기존 enrollment 연장)
+  window.extendEnrollment = function(enrollmentId, userId) {
+    // 결제 정보 모달 닫기
+    closePaymentHistoryModal();
+
+    // enrollment 정보 가져오기
+    fetch(`/admin/enrollment_info/${enrollmentId}`)
+      .then(response => response.json())
+      .then(enrollment => {
+        // 결제 모달 열기 (연장 모드로)
+        currentUserId = userId;
+        enrollments = [];
+
+        document.getElementById('payment-modal').style.display = 'flex';
+        document.getElementById('payment-modal-title').textContent = enrollment.subject + ' 연장하기';
+
+        // 연장 모드 플래그 설정
+        window.extendingEnrollmentId = enrollmentId;
+        window.extendingUserId = userId;
+
+        // 기간/횟수 선택 UI를 직접 표시
+        const enrollmentListDiv = document.getElementById('enrollment-list');
+        enrollmentListDiv.innerHTML = `
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h4 style="font-size: 1rem; font-weight: 700; color: #2d3748; margin-bottom: 15px;">📚 연장 정보</h4>
+            <div style="margin-bottom: 10px; color: #6b7280;">과목: ${enrollment.subject}</div>
+            <div style="margin-bottom: 10px; color: #6b7280;">선생님: ${enrollment.teacher}</div>
+            <div style="margin-bottom: 10px; color: #6b7280;">시간: ${enrollment.day} ${enrollment.time_slot}</div>
+            <div style="margin-bottom: 20px; color: #6b7280;">현재 남은 수업: ${enrollment.remaining_lessons}회</div>
+
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #2d3748; margin-bottom: 10px;">연장 기간 선택</h4>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+              <button onclick="selectExtensionDuration(1, 4, ${enrollment.subject}, ${enrollment.teacher})" style="padding: 15px; background: white; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#667eea'" onmouseout="this.style.borderColor='#e5e7eb'">
+                <div style="font-weight: 700; font-size: 1.1rem; color: #2d3748;">1개월</div>
+                <div style="font-size: 0.85rem; color: #6b7280;">4회 수업</div>
+              </button>
+              <button onclick="selectExtensionDuration(3, 12, '${enrollment.subject}', '${enrollment.teacher}')" style="padding: 15px; background: white; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#667eea'" onmouseout="this.style.borderColor='#e5e7eb'">
+                <div style="font-weight: 700; font-size: 1.1rem; color: #2d3748;">3개월</div>
+                <div style="font-size: 0.85rem; color: #6b7280;">12회 수업</div>
+              </button>
+            </div>
+          </div>
+        `;
+
+        // 결제 섹션 표시
+        updatePaymentSection();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('과목 정보를 불러오는데 실패했습니다.');
+      });
+  };
+
+  // 연장 기간 선택
+  window.selectExtensionDuration = function(months, lessons, subject, teacher) {
+    const price = months === 1 ? 200000 : 600000;
+
+    enrollments = [{
+      subject: subject,
+      teacher: teacher,
+      months: months,
+      lessons: lessons,
+      price: price,
+      day_of_week: null, // 연장 시에는 불필요
+      time_slot: null,
+      first_lesson_date: null,
+      end_date: null
+    }];
+
+    updateEnrollmentList();
+    updatePaymentSection();
   };
 
   // 과목별 휴원 관리 모달 열기

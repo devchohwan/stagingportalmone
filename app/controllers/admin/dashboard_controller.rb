@@ -1465,26 +1465,13 @@ class Admin::DashboardController < ApplicationController
     total_price = params[:total_price].to_i
     discount_amount = params[:discount_amount].to_i
     final_price = params[:final_price].to_i
+    extending_enrollment_id = params[:extending_enrollment_id] # 연장 모드
 
     user = User.find(user_id)
 
     ActiveRecord::Base.transaction do
       enrollments.each do |enrollment|
         first_lesson_date = enrollment['first_lesson_date'].present? ? Date.parse(enrollment['first_lesson_date']) : nil
-        
-        payment = Payment.create!(
-          user_id: user_id,
-          payment_date: payment_date,
-          amount: enrollment['price'],
-          discount_amount: discount_amount / enrollments.length,
-          subject: enrollment['subject'],
-          teacher: enrollment['teacher'],
-          months: enrollment['months'],
-          lessons: enrollment['lessons'],
-          first_lesson_date: first_lesson_date,
-          first_lesson_time: enrollment['time_slot'],
-          discounts: discounts.join(',')
-        )
 
         # day_of_week (숫자)를 day (문자열)로 변환
         day_mapping = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }
@@ -1493,19 +1480,63 @@ class Admin::DashboardController < ApplicationController
         # end_date 파싱
         end_date = enrollment['end_date'].present? ? Date.parse(enrollment['end_date']) : nil
 
-        # UserEnrollment 생성
-        user_enrollment = UserEnrollment.create!(
-          user_id: user_id,
-          teacher: enrollment['teacher'],
-          subject: enrollment['subject'],
-          day: day_string,
-          time_slot: enrollment['time_slot'],
-          remaining_lessons: enrollment['lessons'],
-          first_lesson_date: first_lesson_date,
-          end_date: end_date,
-          status: 'active',
-          is_paid: true
-        )
+        # 연장 모드: 기존 enrollment에 추가
+        if extending_enrollment_id.present?
+          user_enrollment = UserEnrollment.find(extending_enrollment_id)
+
+          # Payment 레코드 생성 (enrollment_id 연결)
+          payment = Payment.create!(
+            user_id: user_id,
+            enrollment_id: user_enrollment.id,
+            payment_date: payment_date,
+            amount: enrollment['price'],
+            discount_amount: discount_amount / enrollments.length,
+            subject: enrollment['subject'],
+            teacher: enrollment['teacher'],
+            months: enrollment['months'],
+            lessons: enrollment['lessons'],
+            first_lesson_date: first_lesson_date,
+            first_lesson_time: enrollment['time_slot'],
+            discounts: discounts.join(',')
+          )
+
+          # 남은 수업 횟수 증가
+          user_enrollment.update!(
+            remaining_lessons: user_enrollment.remaining_lessons + enrollment['lessons']
+          )
+        else
+          # 신규 등록 모드
+          payment = Payment.create!(
+            user_id: user_id,
+            payment_date: payment_date,
+            amount: enrollment['price'],
+            discount_amount: discount_amount / enrollments.length,
+            subject: enrollment['subject'],
+            teacher: enrollment['teacher'],
+            months: enrollment['months'],
+            lessons: enrollment['lessons'],
+            first_lesson_date: first_lesson_date,
+            first_lesson_time: enrollment['time_slot'],
+            discounts: discounts.join(',')
+          )
+
+          # UserEnrollment 생성
+          user_enrollment = UserEnrollment.create!(
+            user_id: user_id,
+            teacher: enrollment['teacher'],
+            subject: enrollment['subject'],
+            day: day_string,
+            time_slot: enrollment['time_slot'],
+            remaining_lessons: enrollment['lessons'],
+            first_lesson_date: first_lesson_date,
+            end_date: end_date,
+            status: 'active',
+            is_paid: true
+          )
+
+          # Payment에 enrollment_id 연결
+          payment.update!(enrollment_id: user_enrollment.id)
+        end
 
         # TeacherSchedule 등록 (중복 체크)
         existing_schedule = TeacherSchedule.find_by(
@@ -1553,6 +1584,7 @@ class Admin::DashboardController < ApplicationController
   def payment_history
     user = User.find(params[:user_id])
     payments = Payment.where(user_id: user.id).order(payment_date: :desc)
+    enrollments = UserEnrollment.where(user_id: user.id, is_paid: true)
 
     payment_list = payments.map do |payment|
       {
@@ -1568,12 +1600,41 @@ class Admin::DashboardController < ApplicationController
       }
     end
 
+    enrollment_list = enrollments.map do |enrollment|
+      {
+        id: enrollment.id,
+        subject: enrollment.subject,
+        teacher: enrollment.teacher,
+        day: enrollment.day_korean,
+        time_slot: enrollment.time_slot,
+        status: enrollment.status,
+        remaining_lessons: enrollment.remaining_lessons,
+        next_payment_date: enrollment.next_payment_date&.strftime('%Y.%m.%d')
+      }
+    end
+
     render json: {
       user_name: user.name,
-      payments: payment_list
+      payments: payment_list,
+      enrollments: enrollment_list
     }
   rescue ActiveRecord::RecordNotFound
     render json: { error: '회원을 찾을 수 없습니다.' }, status: :not_found
+  end
+
+  # Enrollment 정보 조회 (연장용)
+  def enrollment_info
+    enrollment = UserEnrollment.find(params[:id])
+    render json: {
+      id: enrollment.id,
+      subject: enrollment.subject,
+      teacher: enrollment.teacher,
+      day: enrollment.day,
+      time_slot: enrollment.time_slot,
+      remaining_lessons: enrollment.remaining_lessons
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
   end
 
   # 선생님별 시간표 현황 조회 (휴원 해제용)
