@@ -1,1 +1,1 @@
-🐛 정렬 쿼리에 Arel.sql 적용
+🔧 Zone.Identifier 파일 제거 및 .gitignore 추가

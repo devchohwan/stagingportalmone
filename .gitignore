@@ -56,3 +56,4 @@ copy_*.rb
 /.kamal/secrets
 .env
 .kamal/secrets
+*:Zone.Identifier
