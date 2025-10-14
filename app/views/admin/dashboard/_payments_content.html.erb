@@ -924,7 +924,7 @@
     const weekOffset = Math.round((selectedSunday - todaySunday) / (7 * 24 * 60 * 60 * 1000));
 
     // 휴원 복귀와 동일한 API 사용 (주 단위 시간표)
-    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(selectedTeacher)}&week_offset=${weekOffset}`)
+    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(selectedTeacher)}&week_offset=${weekOffset}&mode=manager`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
@@ -1453,7 +1453,7 @@
   function loadScheduleAndRenderCalendar(weekOffset) {
     const teacher = window.scheduleModalData.currentTeacher;
 
-    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(teacher)}&week_offset=${weekOffset}`)
+    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(teacher)}&week_offset=${weekOffset}&mode=manager`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
