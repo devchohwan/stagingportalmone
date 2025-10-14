@@ -749,7 +749,7 @@ class Admin::DashboardController < ApplicationController
             is_makeup_away: true,
             moved_to_teacher: makeup_away_request.teacher,
             makeup_request_id: makeup_away_request.id,
-            is_absent: schedule.is_absent,
+            is_absent: false,  # 보강 이동한 경우 결석이 아님
             is_on_leave: is_on_leave
           }
         elsif cancelled_makeup_request
