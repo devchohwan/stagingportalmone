@@ -67,15 +67,16 @@ class MakeupPassRequest < ApplicationRecord
 
       # 보강 완료 시 수업 차감 (보강만, 패스는 신청 시 이미 차감됨)
       if makeup?
-        # 보강 받은 선생님의 UserEnrollment 찾기
-        enrollment = user.user_enrollments.find_by(
-          teacher: teacher,
-          is_paid: true
-        )
+        # 유저의 활성 수강권 중 남은 수업이 있는 것 찾기 (보강은 다른 선생님한테 받을 수 있음)
+        enrollment = user.user_enrollments
+          .where(is_paid: true, status: 'active')
+          .where('remaining_lessons > 0')
+          .order(first_lesson_date: :asc)
+          .first
 
-        if enrollment && enrollment.remaining_lessons > 0
+        if enrollment
           enrollment.decrement!(:remaining_lessons)
-          Rails.logger.info "보강 완료: #{user.name} / #{teacher} / #{makeup_date} / 남은 수업: #{enrollment.remaining_lessons}"
+          Rails.logger.info "보강 완료: #{user.name} / 보강선생님: #{teacher} / 차감수강권: #{enrollment.teacher} / #{makeup_date} / 남은 수업: #{enrollment.remaining_lessons}"
         end
       end
     end
