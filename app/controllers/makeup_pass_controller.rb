@@ -5,6 +5,13 @@ class MakeupPassController < ApplicationController
   def index
     # 메인 페이지
     @has_active_makeup = current_user.makeup_pass_requests.where(status: 'active', request_type: 'makeup').exists?
+
+    # 이번 주에 이미 보강을 받았는지 확인
+    last_completed_makeup = current_user.makeup_pass_requests
+      .where(request_type: 'makeup', status: 'completed')
+      .order(makeup_date: :desc)
+      .first
+    @has_completed_makeup_this_week = last_completed_makeup && last_completed_makeup.request_date >= Date.current
   end
 
   def reserve
@@ -31,14 +38,13 @@ class MakeupPassController < ApplicationController
     #   - request_date: 캘린더에서 선택한 날짜 (이번수업일)
     #   - 즉시 패스권 1회 차감, 수업횟수 1회 차감
     if request_type == 'makeup'
-      # 이번 주에 이미 보강을 받았는지 확인 (다음 정규 수업 전)
-      next_lesson_date = current_user.next_lesson_date
+      # 이번 주에 이미 보강을 받았는지 확인 (결석 처리된 원래 수업일이 지나지 않았으면 불가)
       last_completed_makeup = current_user.makeup_pass_requests
         .where(request_type: 'makeup', status: 'completed')
         .order(makeup_date: :desc)
         .first
 
-      if last_completed_makeup && last_completed_makeup.request_date >= next_lesson_date - 7.days
+      if last_completed_makeup && last_completed_makeup.request_date >= Date.current
         redirect_to makeup_pass_reserve_path, alert: '이번 주 보강을 이미 받았습니다. 다음 정규 수업 후에 다시 신청해주세요.'
         return
       end
