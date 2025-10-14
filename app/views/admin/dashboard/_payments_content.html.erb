@@ -1765,11 +1765,11 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let html = '<table style="width: 100%; border-collapse: collapse;">';
+    let html = '<table style="width: 100%; border-collapse: collapse; table-layout: fixed;">';
     html += '<thead><tr>';
     ['일', '월', '화', '수', '목', '금', '토'].forEach((day, idx) => {
       const color = idx === 0 ? '#dc2626' : idx === 6 ? '#2563eb' : '#6b7280';
-      html += `<th style="padding: 12px; text-align: center; font-weight: 600; color: ${color}; font-size: 0.9rem;">${day}</th>`;
+      html += `<th style="width: 14.28%; padding: 12px; text-align: center; font-weight: 600; color: ${color}; font-size: 0.9rem;">${day}</th>`;
     });
     html += '</tr></thead><tbody><tr>';
 
