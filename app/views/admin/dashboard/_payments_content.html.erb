@@ -1511,7 +1511,9 @@
 
   // 연장 기간 선택
   window.selectExtensionDuration = function(months, lessons, subject, teacher) {
-    const price = months === 1 ? 200000 : 600000;
+    const price = SUBJECT_PRICES[subject] && SUBJECT_PRICES[subject][months]
+      ? SUBJECT_PRICES[subject][months]
+      : (months === 1 ? 370000 : 950000); // 기본값
 
     enrollments = [{
       subject: subject,
