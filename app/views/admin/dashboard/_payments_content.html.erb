@@ -918,9 +918,9 @@
     const teacherHolidays = selectedTeacher ? (TEACHER_HOLIDAYS[selectedTeacher] || []) : [];
 
     let html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
-    html += '<button onclick="event.stopPropagation(); changeCalendarMonth(-1);" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">◀</button>';
+    html += '<button onclick="event.stopPropagation(); changeEnrollmentCalendarMonth(-1);" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">◀</button>';
     html += '<div style="font-weight: 600;">' + year + '년 ' + (month + 1) + '월</div>';
-    html += '<button onclick="event.stopPropagation(); changeCalendarMonth(1);" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">▶</button>';
+    html += '<button onclick="event.stopPropagation(); changeEnrollmentCalendarMonth(1);" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">▶</button>';
     html += '</div>';
     html += '<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">';
 
@@ -961,8 +961,8 @@
     calendarDiv.innerHTML = html;
   }
 
-  // 캘린더 월 변경
-  window.changeCalendarMonth = function(delta) {
+  // 캘린더 월 변경 (새 과목 추가용)
+  window.changeEnrollmentCalendarMonth = function(delta) {
     calendarDate.setMonth(calendarDate.getMonth() + delta);
     showCalendar();
   };
