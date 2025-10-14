@@ -125,8 +125,8 @@ class UserEnrollment < ApplicationRecord
     # 4. 최종 마지막 수업일
     actual_last_lesson_date = base_last_lesson_date + (extended_weeks * 7).days
 
-    # 5. 다음 결제 예정일 = 마지막 수업일 다음 주
-    actual_last_lesson_date + 7.days
+    # 5. 다음 결제 예정일 = 마지막 수업일
+    actual_last_lesson_date
   end
 
   # 연장된 주 수 계산 (패스 + 휴원)
