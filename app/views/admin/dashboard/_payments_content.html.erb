@@ -837,6 +837,9 @@
 
   // 결제 모달 열기
   window.openPaymentModal = function(userId) {
+    // 다른 모달들 먼저 닫기
+    closePaymentDateModal();
+
     fetch(`/admin/users/${userId}`)
       .then(response => response.json())
       .then(data => {
