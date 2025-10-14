@@ -10,7 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_14_042258) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_14_045000) do
+  create_table "enrollment_status_histories", force: :cascade do |t|
+    t.integer "user_enrollment_id", null: false
+    t.string "status", null: false
+    t.datetime "changed_at", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_enrollment_id", "changed_at"], name: "idx_on_user_enrollment_id_changed_at_94e3488428"
+    t.index ["user_enrollment_id"], name: "index_enrollment_status_histories_on_user_enrollment_id"
+  end
+
   create_table "lesson_deductions", force: :cascade do |t|
     t.integer "user_enrollment_id", null: false
     t.date "deduction_date", null: false
@@ -302,6 +313,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_042258) do
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
+  add_foreign_key "enrollment_status_histories", "user_enrollments"
   add_foreign_key "makeup_lessons", "users"
   add_foreign_key "makeup_pass_requests", "users"
   add_foreign_key "makeup_quota", "users"
