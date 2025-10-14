@@ -1496,7 +1496,7 @@ class Admin::DashboardController < ApplicationController
             months: enrollment['months'],
             lessons: enrollment['lessons'],
             first_lesson_date: first_lesson_date,
-            first_lesson_time: enrollment['time_slot'],
+            first_lesson_time: user_enrollment.time_slot, # 기존 시간 사용
             discounts: discounts.join(',')
           )
 
@@ -1536,31 +1536,31 @@ class Admin::DashboardController < ApplicationController
 
           # Payment에 enrollment_id 연결
           payment.update!(enrollment_id: user_enrollment.id)
-        end
 
-        # TeacherSchedule 등록 (중복 체크)
-        existing_schedule = TeacherSchedule.find_by(
-          teacher: enrollment['teacher'],
-          day: day_string,
-          time_slot: enrollment['time_slot'],
-          user_id: user_id
-        )
-
-        if existing_schedule
-          # 기존 스케줄이 있으면 end_date 업데이트 (더 늦은 날짜로)
-          new_end_date = Date.parse(enrollment['end_date'])
-          if existing_schedule.end_date.nil? || new_end_date > existing_schedule.end_date
-            existing_schedule.update!(end_date: new_end_date)
-          end
-        else
-          # 새 스케줄 생성
-          TeacherSchedule.create!(
+          # TeacherSchedule 등록 (중복 체크) - 신규 등록 모드만
+          existing_schedule = TeacherSchedule.find_by(
             teacher: enrollment['teacher'],
             day: day_string,
             time_slot: enrollment['time_slot'],
-            user_id: user_id,
-            end_date: enrollment['end_date']
+            user_id: user_id
           )
+
+          if existing_schedule
+            # 기존 스케줄이 있으면 end_date 업데이트 (더 늦은 날짜로)
+            new_end_date = Date.parse(enrollment['end_date'])
+            if existing_schedule.end_date.nil? || new_end_date > existing_schedule.end_date
+              existing_schedule.update!(end_date: new_end_date)
+            end
+          else
+            # 새 스케줄 생성
+            TeacherSchedule.create!(
+              teacher: enrollment['teacher'],
+              day: day_string,
+              time_slot: enrollment['time_slot'],
+              user_id: user_id,
+              end_date: enrollment['end_date']
+            )
+          end
         end
 
         # User의 remaining_lessons와 remaining_passes 업데이트
