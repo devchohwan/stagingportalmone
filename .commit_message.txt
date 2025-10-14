@@ -1,1 +1,1 @@
-🐛 보강 재신청 API 404 에러 수정 - private 메서드를 public으로 이동
+🐛 보강 재신청 필수 필드 추가 - week_number, content 누락 오류 수정

@@ -2006,7 +2006,10 @@ class Admin::DashboardController < ApplicationController
       cancelled_request = MakeupPassRequest.find(cancelled_request_id)
       cancelled_request.destroy
 
-      # 2. 새로운 보강 신청 생성
+      # 2. 주차 계산 (new_date의 주차)
+      week_number = ((new_date - new_date.beginning_of_month).to_i / 7) + 1
+
+      # 3. 새로운 보강 신청 생성
       new_request = MakeupPassRequest.create!(
         user_id: user.id,
         request_type: 'makeup',
@@ -2014,10 +2017,12 @@ class Admin::DashboardController < ApplicationController
         makeup_date: new_date,        # 선택한 보강 날짜
         time_slot: new_time_slot,
         teacher: new_teacher,
+        week_number: week_number,
+        content: "원래 자리가 꽉 차서 다른 시간으로 보강 재신청 (원래 수업일: #{original_date})",
         status: 'active'
       )
 
-      # 3. 수업 횟수 복구 (보강 취소 시 차감되었던 것)
+      # 4. 수업 횟수 복구 (보강 취소 시 차감되었던 것)
       enrollment = UserEnrollment.find_by(
         user_id: user.id,
         teacher: user.primary_teacher
