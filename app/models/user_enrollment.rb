@@ -140,10 +140,11 @@ class UserEnrollment < ApplicationRecord
 
     # 첫수업일부터 매주 정규 수업일만 확인 (7일 단위로 점프)
     current_date = first_lesson_date
+    end_date = base_last_lesson_date  # 로컬 변수로 복사
     max_iterations = 156 # 안전장치: 최대 156주 (3년)
 
     iteration = 0
-    while current_date <= base_last_lesson_date && iteration < max_iterations
+    while current_date <= end_date && iteration < max_iterations
       # 패스 확인
       has_pass = MakeupPassRequest.where(
         user_id: user_id,
@@ -154,13 +155,13 @@ class UserEnrollment < ApplicationRecord
 
       if has_pass
         extended_weeks += 1
-        base_last_lesson_date += 7.days  # 패스가 있으면 마지막 날짜 연장
+        end_date += 7.days  # 패스가 있으면 마지막 날짜 연장
       end
 
       # 휴원 기간 확인 (해당 날짜에 이 수강권이 on_leave 상태였는지)
       if was_on_leave_at?(current_date)
         extended_weeks += 1
-        base_last_lesson_date += 7.days  # 휴원이면 마지막 날짜 연장
+        end_date += 7.days  # 휴원이면 마지막 날짜 연장
       end
 
       current_date += 7.days  # 다음 주 같은 요일로 이동
