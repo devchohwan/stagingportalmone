@@ -802,19 +802,51 @@ class Admin::DashboardController < ApplicationController
           is_paid: true
         )
         original_teacher_name = original_enrollment&.teacher || req.user.primary_teacher
+        original_time_slot = original_enrollment&.time_slot
+
+        # 원래 자기 시간인지 확인 (같은 요일, 같은 시간, 같은 선생님)
+        is_original_schedule = (day_name == request_day_name) &&
+                               (time_slot == original_time_slot) &&
+                               (req.teacher == original_teacher_name)
 
         schedule_data[day_name] ||= {}
         schedule_data[day_name][time_slot] ||= []
-        schedule_data[day_name][time_slot] << {
-          id: req.user.id,
-          name: req.user.name,
-          username: req.user.username,
-          teacher: req.teacher,
-          is_makeup: true,
-          original_teacher: original_teacher_name,
-          week_number: req.week_number,
-          makeup_request_id: req.id
-        }
+
+        if is_original_schedule
+          # 원래 자기 시간이면 정상 출석으로 표시 (이미 schedule_data에 있을 수 있으므로 중복 체크)
+          existing_student = schedule_data[day_name][time_slot].find { |s| s[:id] == req.user.id }
+
+          if existing_student
+            # 이미 있으면 is_absent를 false로 변경 (결석 취소)
+            existing_student[:is_absent] = false
+            existing_student[:is_makeup_away] = false
+            Rails.logger.info "보강 신청이 원래 시간과 동일 - 정상 출석으로 변경: #{req.user.name}"
+          else
+            # 없으면 정상 출석으로 추가
+            schedule_data[day_name][time_slot] << {
+              id: req.user.id,
+              name: req.user.name,
+              username: req.user.username,
+              teacher: req.teacher,
+              schedule_id: nil,
+              is_absent: false,
+              is_on_leave: false
+            }
+            Rails.logger.info "보강 신청이 원래 시간과 동일 - 정상 출석으로 추가: #{req.user.name}"
+          end
+        else
+          # 다른 시간이면 보강으로 표시
+          schedule_data[day_name][time_slot] << {
+            id: req.user.id,
+            name: req.user.name,
+            username: req.user.username,
+            teacher: req.teacher,
+            is_makeup: true,
+            original_teacher: original_teacher_name,
+            week_number: req.week_number,
+            makeup_request_id: req.id
+          }
+        end
       end
     end
 
