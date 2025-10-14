@@ -52,6 +52,11 @@ class ApplicationController < ActionController::Base
 
     # 보강/패스 신청 상태도 업데이트
     MakeupPassRequest.update_statuses
+
+    # 현재 사용자의 패스 만료 체크
+    if current_user.present?
+      current_user.check_passes_expiration!
+    end
   rescue => e
     # 에러가 발생해도 페이지 로딩은 계속
     Rails.logger.error "Failed to update reservation statuses: #{e.message}"

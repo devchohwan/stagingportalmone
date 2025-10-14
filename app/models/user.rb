@@ -164,9 +164,49 @@ class User < ApplicationRecord
     last_cancelled.updated_at > (next_lesson_date - 7.days) && Date.current < next_lesson_date
   end
 
-  # 패스 만료 체크 및 자동 초기화
+  # 마지막 수업일 + 시간 계산 (모든 수강 중 가장 늦은 마지막 수업)
+  def last_lesson_end_time
+    active_enrollments = user_enrollments.where(is_paid: true, status: 'active')
+                                         .where('remaining_lessons > 0')
+
+    return nil if active_enrollments.empty?
+
+    latest_end_time = nil
+
+    active_enrollments.each do |enrollment|
+      next unless enrollment.first_lesson_date.present? && enrollment.time_slot.present?
+
+      # 총 결제 수업 횟수 = Payment의 lessons 합계
+      total_paid_lessons = Payment.where(user_id: id, teacher: enrollment.teacher, subject: enrollment.subject).sum(:lessons)
+
+      # Payment가 없으면 remaining_lessons를 기준으로 계산
+      total_paid_lessons = enrollment.remaining_lessons if total_paid_lessons == 0
+
+      # 마지막 수업일 = 첫수업일 + (총 수업 횟수 - 1) * 7일
+      last_lesson_date = enrollment.first_lesson_date + ((total_paid_lessons - 1) * 7).days
+
+      # 수업 종료 시각 = 마지막 수업일 + 수업 시간대 종료 시각
+      time_parts = enrollment.time_slot.split('-')
+      end_hour = time_parts[1].to_i
+      end_time = last_lesson_date.to_time.in_time_zone + end_hour.hours
+
+      # 가장 늦은 시각 찾기
+      latest_end_time = end_time if latest_end_time.nil? || end_time > latest_end_time
+    end
+
+    latest_end_time
+  end
+
+  # 패스 만료 체크 및 자동 초기화 (마지막 수업 시간 기준)
   def check_passes_expiration!
-    if passes_expire_date.present? && Date.current > passes_expire_date
+    return if remaining_passes.nil? || remaining_passes == 0
+
+    last_end_time = last_lesson_end_time
+    return unless last_end_time.present?
+
+    # 마지막 수업 시간이 지나면 패스 소멸
+    if Time.current > last_end_time
+      Rails.logger.info "패스 만료: #{name} (마지막 수업: #{last_end_time})"
       self.remaining_passes = 0
       self.passes_expire_date = nil
       save!
@@ -175,7 +215,7 @@ class User < ApplicationRecord
 
   # 남은 패스 횟수 (만료 체크 포함)
   def current_remaining_passes
-    check_passes_expiration! if passes_expire_date.present? && Date.current > passes_expire_date
+    check_passes_expiration!
     remaining_passes || 0
   end
 
