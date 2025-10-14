@@ -1445,8 +1445,9 @@
 
   // 과목 연장하기 (기존 enrollment 연장)
   window.extendEnrollment = function(enrollmentId, userId) {
-    // 결제 정보 모달 닫기
+    // 다른 모달들 닫기
     closePaymentHistoryModal();
+    closePaymentDateModal();
 
     // enrollment 정보 가져오기
     fetch(`/admin/enrollment_info/${enrollmentId}`)
@@ -1995,7 +1996,7 @@
       html += `<div style="font-weight: 700; font-size: 1rem; color: #2d3748; margin-bottom: 8px;">${payment.user_name}</div>`;
       html += `<div style="font-size: 0.9rem; color: #6b7280; margin-bottom: 5px;">과목: ${payment.subject}</div>`;
       html += `<div style="font-size: 0.9rem; color: #6b7280; margin-bottom: 10px;">선생님: ${payment.teacher}</div>`;
-      html += `<button onclick="openPaymentModal(${payment.user_id})" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">결제 등록</button>`;
+      html += `<button onclick="extendEnrollment(${payment.enrollment_id}, ${payment.user_id})" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">연장하기</button>`;
       html += '</div>';
     });
 
