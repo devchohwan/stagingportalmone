@@ -1992,29 +1992,6 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, message: "오류가 발생했습니다: #{e.message}" }, status: :internal_server_error
   end
 
-  private
-
-  def user_to_hash(user)
-    total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
-
-    {
-      'id' => user.id,
-      'username' => user.username,
-      'name' => user.name,
-      'email' => user.email,
-      'phone' => user.respond_to?(:phone) ? user.phone : nil,
-      'teacher' => user.primary_teacher,
-      'status' => user.status,
-      'created_at' => user.created_at.to_s,
-      'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
-      'no_show_count' => 0,
-      'cancel_count' => 0,
-      'is_blocked' => false,
-      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
-      'remaining_lessons' => total_remaining_lessons
-    }
-  end
-
   # 결석 취소 + 보강 재신청
   def cancel_absence_and_reschedule
     user = User.find(params[:user_id])
@@ -2057,5 +2034,28 @@ class Admin::DashboardController < ApplicationController
   rescue => e
     Rails.logger.error "Error in cancel_absence_and_reschedule: #{e.message}"
     render json: { success: false, message: "처리 중 오류가 발생했습니다: #{e.message}" }, status: :unprocessable_entity
+  end
+
+  private
+
+  def user_to_hash(user)
+    total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
+
+    {
+      'id' => user.id,
+      'username' => user.username,
+      'name' => user.name,
+      'email' => user.email,
+      'phone' => user.respond_to?(:phone) ? user.phone : nil,
+      'teacher' => user.primary_teacher,
+      'status' => user.status,
+      'created_at' => user.created_at.to_s,
+      'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
+      'no_show_count' => 0,
+      'cancel_count' => 0,
+      'is_blocked' => false,
+      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
+      'remaining_lessons' => total_remaining_lessons
+    }
   end
 end
