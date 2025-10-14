@@ -649,46 +649,53 @@ class Admin::DashboardController < ApplicationController
         next
       end
 
-      # 첫수업일 체크: enrollment의 first_lesson_date 기준
-      if enrollment.first_lesson_date.present? && target_date < enrollment.first_lesson_date
-        Rails.logger.info "SKIP(첫수업일 전): #{user.name} / target=#{target_date} < first=#{enrollment.first_lesson_date}"
-        next
-      end
-
+      # 휴원 상태 체크
       is_on_leave = enrollment.status == 'on_leave'
 
       # 휴원 상태일 때: 시간표에서 제거
       if is_on_leave
         Rails.logger.info "SKIP(휴원중): #{user.name} / remaining=#{enrollment.remaining_lessons}"
         next
-      else
-        # 활성 상태일 때: 첫수업일부터 수업 횟수만큼만 표시
-        if enrollment.remaining_lessons <= 0
-          Rails.logger.info "SKIP(활성 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
+      end
+
+      # 활성 상태일 때: 남은 수업 횟수 체크
+      if enrollment.remaining_lessons <= 0
+        Rails.logger.info "SKIP(활성 - 수업 횟수 소진): #{user.name} / remaining=#{enrollment.remaining_lessons}"
+        next
+      end
+
+      # TeacherSchedule의 start_date와 end_date 기준으로 표시 여부 결정
+      if schedule.start_date.present? && schedule.end_date.present?
+        if target_date < schedule.start_date
+          Rails.logger.info "SKIP(시작일 전): #{user.name} / target=#{target_date} < start=#{schedule.start_date}"
           next
         end
 
-        # 첫수업일 기준으로 마지막 수업일 계산 (매주 1회)
-        if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
-          # 총 결제 수업 횟수 = Payment의 lessons 합계
-          total_paid_lessons = Payment.where(user_id: user.id, teacher: teacher, subject: enrollment.subject).sum(:lessons)
-
-          # Payment가 없으면 remaining_lessons를 기준으로 계산
-          if total_paid_lessons == 0
-            total_paid_lessons = enrollment.remaining_lessons
-          end
-
-          # 마지막 수업일 = 첫수업일 + (총 수업 횟수 - 1) * 7일
-          last_lesson_date = enrollment.first_lesson_date + ((total_paid_lessons - 1) * 7).days
-
-          if target_date > last_lesson_date
-            Rails.logger.info "SKIP(활성 - 마지막수업 후): #{user.name} / target=#{target_date} > last=#{last_lesson_date} (#{total_paid_lessons}회)"
-            next
-          end
+        if target_date > schedule.end_date
+          Rails.logger.info "SKIP(종료일 후): #{user.name} / target=#{target_date} > end=#{schedule.end_date}"
+          next
+        end
+      elsif enrollment.first_lesson_date.present?
+        # start_date가 없는 경우 (기존 데이터): first_lesson_date 기준으로 계산
+        if target_date < enrollment.first_lesson_date
+          Rails.logger.info "SKIP(첫수업일 전 - 레거시): #{user.name} / target=#{target_date} < first=#{enrollment.first_lesson_date}"
+          next
         end
 
-        Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / remaining=#{enrollment.remaining_lessons}"
+        # 총 결제 수업 횟수 = Payment의 lessons 합계
+        total_paid_lessons = Payment.where(user_id: user.id, teacher: teacher, subject: enrollment.subject).sum(:lessons)
+        total_paid_lessons = enrollment.remaining_lessons if total_paid_lessons == 0
+
+        # 마지막 수업일 = 첫수업일 + (총 수업 횟수 - 1) * 7일
+        last_lesson_date = enrollment.first_lesson_date + ((total_paid_lessons - 1) * 7).days
+
+        if target_date > last_lesson_date
+          Rails.logger.info "SKIP(마지막수업 후 - 레거시): #{user.name} / target=#{target_date} > last=#{last_lesson_date}"
+          next
+        end
       end
+
+      Rails.logger.info "표시됨(활성): #{user.name} / target=#{target_date} / remaining=#{enrollment.remaining_lessons}"
 
       schedule_data[day] ||= {}
       schedule_data[day][time_slot] ||= []
@@ -1865,6 +1872,7 @@ class Admin::DashboardController < ApplicationController
         teacher: to_teacher,
         day: to_day,
         time_slot: to_time_slot,
+        start_date: next_lesson_date,
         end_date: new_end_date
       )
 
@@ -1992,6 +2000,7 @@ class Admin::DashboardController < ApplicationController
         teacher: target_teacher,
         day: day,
         time_slot: time_slot,
+        start_date: next_lesson_date,
         end_date: new_end_date
       )
 
