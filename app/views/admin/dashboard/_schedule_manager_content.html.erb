@@ -262,20 +262,6 @@
     width: 100%;
   }
 
-  .unscheduled-students-area:empty::after {
-    content: '미배치 회원이 없습니다';
-    display: flex;
-    width: 100%;
-    height: 100%;
-    min-height: 100px;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: #9ca3af;
-    font-size: 0.9rem;
-    padding: 20px;
-  }
-
   .students-area.drag-over {
     background: #dbeafe !important;
     border: 2px dashed #3b82f6 !important;
@@ -1340,6 +1326,14 @@
   function renderUnscheduledStudents(students) {
     const container = document.getElementById('unscheduled-students');
     container.innerHTML = '';
+
+    if (students.length === 0) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.style.cssText = 'display: flex; width: 100%; height: 100%; min-height: 100px; justify-content: center; align-items: center; text-align: center; color: #9ca3af; font-size: 0.9rem; padding: 20px;';
+      emptyMsg.textContent = '미배치 회원이 없습니다';
+      container.appendChild(emptyMsg);
+      return;
+    }
 
     students.forEach(student => {
       const card = createUnscheduledStudentCard(student);
