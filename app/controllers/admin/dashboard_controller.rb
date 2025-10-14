@@ -1828,11 +1828,18 @@ class Admin::DashboardController < ApplicationController
         return
       end
 
-      # first_lesson_date는 유지, end_date만 재계산
-      new_end_date = if enrollment.first_lesson_date.present? && enrollment.remaining_lessons > 0
-        enrollment.first_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
+      # 다음 수업일 계산 (새로운 요일 기준)
+      day_index = { 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 0 }[to_day]
+      today = Date.current
+      days_until_next = (day_index - today.wday) % 7
+      days_until_next = 7 if days_until_next == 0 # 오늘이면 다음주로
+      next_lesson_date = today + days_until_next.days
+
+      # end_date 재계산: 다음 수업일 + (남은 수업 - 1) * 7일
+      new_end_date = if enrollment.remaining_lessons > 0
+        next_lesson_date + ((enrollment.remaining_lessons - 1) * 7).days
       else
-        enrollment.end_date
+        next_lesson_date
       end
 
       # 기존 TeacherSchedule 삭제
