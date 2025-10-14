@@ -603,6 +603,25 @@
   </div>
 </div>
 
+<!-- 결제 캘린더 -->
+<div style="background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; padding: 25px; margin-bottom: 25px;">
+  <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; color: #2d3748;">결제 캘린더</h3>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <button onclick="changeCalendarMonth(-1)" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">◀ 이전</button>
+    <h4 id="calendar-month-title" style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #2d3748;"></h4>
+    <button onclick="changeCalendarMonth(1)" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">다음 ▶</button>
+  </div>
+
+  <div id="payment-calendar-content"></div>
+
+  <!-- 오늘 결제 예정자 요약 -->
+  <div id="today-payments-summary" style="margin-top: 15px; padding: 15px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; display: none;">
+    <div style="font-weight: 700; font-size: 1rem; color: #d97706; margin-bottom: 8px;">📅 오늘 결제 예정</div>
+    <div id="today-payments-list" style="font-size: 0.9rem; color: #92400e;"></div>
+  </div>
+</div>
+
 <div class="payments-container">
   <div class="payments-content">
     <% if @users.empty? %>
@@ -1676,6 +1695,142 @@
 
   window.closeScheduleSelectModal = function() {
     document.getElementById('schedule-select-modal').style.display = 'none';
+  };
+
+  // ============== 결제 캘린더 ==============
+  let paymentCalendarData = <%= raw @payment_calendar_data.to_json %>;
+  let currentCalendarMonth = new Date();
+
+  // 페이지 로드 시 캘린더 렌더링
+  window.addEventListener('DOMContentLoaded', function() {
+    renderPaymentCalendar();
+  });
+
+  // 캘린더 렌더링
+  function renderPaymentCalendar() {
+    const year = currentCalendarMonth.getFullYear();
+    const month = currentCalendarMonth.getMonth();
+
+    document.getElementById('calendar-month-title').textContent = `${year}년 ${month + 1}월`;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let html = '<table style="width: 100%; border-collapse: collapse;">';
+    html += '<thead><tr>';
+    ['일', '월', '화', '수', '목', '금', '토'].forEach((day, idx) => {
+      const color = idx === 0 ? '#dc2626' : idx === 6 ? '#2563eb' : '#6b7280';
+      html += `<th style="padding: 12px; text-align: center; font-weight: 600; color: ${color}; font-size: 0.9rem;">${day}</th>`;
+    });
+    html += '</tr></thead><tbody><tr>';
+
+    // 빈 칸
+    for (let i = 0; i < firstDay; i++) {
+      html += '<td style="padding: 15px; border: 1px solid #e5e7eb; background: #f9fafb;"></td>';
+    }
+
+    // 날짜 렌더링
+    for (let date = 1; date <= lastDate; date++) {
+      const currentDate = new Date(year, month, date);
+      currentDate.setHours(0, 0, 0, 0);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+
+      const payments = paymentCalendarData[dateStr] || [];
+      const count = payments.length;
+
+      const isToday = currentDate.getTime() === today.getTime();
+      const isPast = currentDate < today;
+
+      let bgColor = 'white';
+      let borderColor = '#e5e7eb';
+      let cursor = 'default';
+
+      if (isToday) {
+        bgColor = '#fef3c7';
+        borderColor = '#f59e0b';
+      } else if (isPast) {
+        bgColor = '#f3f4f6';
+      } else if (count > 0) {
+        bgColor = '#dbeafe';
+        borderColor = '#3b82f6';
+        cursor = 'pointer';
+      }
+
+      const onclick = count > 0 ? `onclick="showPaymentDateDetail('${dateStr}')"` : '';
+      const style = `padding: 15px; border: 2px solid ${borderColor}; background: ${bgColor}; vertical-align: top; cursor: ${cursor}; transition: all 0.2s;`;
+      const hover = count > 0 ? `onmouseover="this.style.background='#bfdbfe'" onmouseout="this.style.background='${bgColor}'"` : '';
+
+      html += `<td style="${style}" ${onclick} ${hover}>`;
+      html += `<div style="font-size: 1rem; font-weight: 600; margin-bottom: 5px; color: ${isToday ? '#d97706' : '#2d3748'};">${date}</div>`;
+
+      if (count > 0) {
+        html += `<div style="display: inline-block; padding: 4px 8px; background: ${isToday ? '#f59e0b' : '#3b82f6'}; color: white; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${count}명</div>`;
+      }
+
+      html += '</td>';
+
+      if ((firstDay + date) % 7 === 0 && date !== lastDate) {
+        html += '</tr><tr>';
+      }
+    }
+
+    // 마지막 빈 칸
+    const lastDayOfWeek = (firstDay + lastDate) % 7;
+    if (lastDayOfWeek !== 0) {
+      for (let i = lastDayOfWeek; i < 7; i++) {
+        html += '<td style="padding: 15px; border: 1px solid #e5e7eb; background: #f9fafb;"></td>';
+      }
+    }
+
+    html += '</tr></tbody></table>';
+    document.getElementById('payment-calendar-content').innerHTML = html;
+
+    // 오늘 결제 예정자 표시
+    const todayStr = today.toISOString().split('T')[0];
+    const todayPayments = paymentCalendarData[todayStr] || [];
+
+    if (todayPayments.length > 0) {
+      document.getElementById('today-payments-summary').style.display = 'block';
+      let summaryHtml = `<strong>${todayPayments.length}명</strong>의 회원이 오늘 결제 예정입니다:<br>`;
+      todayPayments.forEach(p => {
+        summaryHtml += `• ${p.user_name} (${p.subject} - ${p.teacher})<br>`;
+      });
+      document.getElementById('today-payments-list').innerHTML = summaryHtml;
+    } else {
+      document.getElementById('today-payments-summary').style.display = 'none';
+    }
+  }
+
+  // 월 변경
+  window.changeCalendarMonth = function(delta) {
+    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + delta);
+    renderPaymentCalendar();
+  };
+
+  // 날짜별 결제 예정자 상세 보기
+  window.showPaymentDateDetail = function(dateStr) {
+    const payments = paymentCalendarData[dateStr] || [];
+    if (payments.length === 0) return;
+
+    const date = new Date(dateStr + 'T00:00:00');
+    const formattedDate = `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+
+    document.getElementById('payment-date-modal-title').textContent = `${formattedDate} 결제 예정자`;
+
+    let html = '';
+    payments.forEach(payment => {
+      html += '<div style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">';
+      html += `<div style="font-weight: 700; font-size: 1rem; color: #2d3748; margin-bottom: 8px;">${payment.user_name}</div>`;
+      html += `<div style="font-size: 0.9rem; color: #6b7280; margin-bottom: 5px;">과목: ${payment.subject}</div>`;
+      html += `<div style="font-size: 0.9rem; color: #6b7280; margin-bottom: 10px;">선생님: ${payment.teacher}</div>`;
+      html += `<button onclick="openPaymentModal(${payment.user_id})" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">결제 등록</button>`;
+      html += '</div>';
+    });
+
+    document.getElementById('payment-date-list').innerHTML = html;
+    document.getElementById('payment-date-modal').style.display = 'flex';
   };
 
   console.log('결제관리 JavaScript 로드 완료');

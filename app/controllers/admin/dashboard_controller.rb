@@ -1414,7 +1414,31 @@ class Admin::DashboardController < ApplicationController
     @total_pages = 1
     @teachers = User::TEACHERS - ['온라인']
     @teacher_holidays = Teacher::HOLIDAYS
+
+    # 결제 캘린더용 데이터
+    @payment_calendar_data = calculate_payment_calendar_data
+
     render partial: 'admin/dashboard/payments_content', layout: false
+  end
+
+  # 결제 예정일별 회원 목록 계산
+  def calculate_payment_calendar_data
+    payment_schedule = Hash.new { |h, k| h[k] = [] }
+
+    UserEnrollment.where(is_paid: true, status: 'active').each do |enrollment|
+      next_date = enrollment.next_payment_date
+      next unless next_date
+
+      payment_schedule[next_date] << {
+        user_id: enrollment.user_id,
+        user_name: enrollment.user.name,
+        subject: enrollment.subject,
+        teacher: enrollment.teacher,
+        enrollment_id: enrollment.id
+      }
+    end
+
+    payment_schedule
   end
 
   # 회원 정보 조회 (결제용)
