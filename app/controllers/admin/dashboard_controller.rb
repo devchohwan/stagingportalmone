@@ -1631,7 +1631,7 @@ class Admin::DashboardController < ApplicationController
         current_passes = user.remaining_passes || 0
         user.update!(
           remaining_lessons: current_lessons + enrollment['lessons'],
-          remaining_passes: current_passes + enrollment['months']
+          remaining_passes: current_passes + 1  # 과목당 1개씩 패스권 추가
         )
       end
     end
