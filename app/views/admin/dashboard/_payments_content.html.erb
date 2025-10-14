@@ -1880,6 +1880,13 @@
     document.getElementById('payment-date-modal').style.display = 'flex';
   };
 
+  // 결제 날짜 모달 닫기
+  window.closePaymentDateModal = function(event) {
+    if (!event || event.target.id === 'payment-date-modal') {
+      document.getElementById('payment-date-modal').style.display = 'none';
+    }
+  };
+
   console.log('결제관리 JavaScript 로드 완료');
 })();
 </script>
