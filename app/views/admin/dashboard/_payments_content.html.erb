@@ -844,6 +844,10 @@
         currentUserName = data.name;
         enrollments = [];
 
+        // 연장 모드 플래그 초기화 (신규 등록 모드)
+        window.extendingEnrollmentId = null;
+        window.extendingUserId = null;
+
         document.getElementById('payment-modal-user-name').textContent = data.name + ' - 결제 등록';
         document.getElementById('enrollment-list').innerHTML = '';
         document.getElementById('payment-section').innerHTML = '';
@@ -1450,7 +1454,7 @@
         enrollments = [];
 
         document.getElementById('payment-modal').style.display = 'flex';
-        document.getElementById('payment-modal-title').textContent = enrollment.subject + ' 연장하기';
+        document.getElementById('payment-modal-user-name').textContent = enrollment.subject + ' 연장하기';
 
         // 연장 모드 플래그 설정
         window.extendingEnrollmentId = enrollmentId;
