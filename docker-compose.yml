@@ -18,7 +18,7 @@ services:
     build: .
     container_name: staging-portal-web
     ports:
-      - "3010:3000"
+      - "3010:80"
     environment:
       RAILS_ENV: production
       RAILS_LOG_TO_STDOUT: "true"
@@ -37,13 +37,12 @@ services:
     volumes:
       - staging_portal_storage:/rails/storage
     restart: unless-stopped
-    command: bash -c "bin/rails db:prepare && bin/rails server -b 0.0.0.0"
 
   practice:
     build: .
     container_name: staging-practice-web
     ports:
-      - "3011:3000"
+      - "3011:80"
     environment:
       RAILS_ENV: production
       RAILS_LOG_TO_STDOUT: "true"
@@ -62,13 +61,12 @@ services:
     volumes:
       - staging_practice_storage:/rails/storage
     restart: unless-stopped
-    command: bash -c "bin/rails server -b 0.0.0.0"
 
   makeup:
     build: .
     container_name: staging-makeup-web
     ports:
-      - "3012:3000"
+      - "3012:80"
     environment:
       RAILS_ENV: production
       RAILS_LOG_TO_STDOUT: "true"
@@ -87,7 +85,6 @@ services:
     volumes:
       - staging_makeup_storage:/rails/storage
     restart: unless-stopped
-    command: bash -c "bin/rails server -b 0.0.0.0"
 
 volumes:
   postgres_staging_data:

@@ -1,1 +1,1 @@
-⏰ Docker 컨테이너에 cron 추가 - 자동 수업 차감
+🔧 docker-compose에서 entrypoint 사용하도록 수정 - cron 활성화
