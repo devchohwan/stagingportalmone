@@ -1321,7 +1321,10 @@ function navigateMakeupPassMonth(direction) {
       document.getElementById('calendar-container').innerHTML = html;
 
       selectedDate = null;
-      selectedType = null;
+      
+      if (selectedType) {
+        updateCalendarForType(selectedType);
+      }
     })
     .catch(function(error) {
       console.error('달력 로드 오류:', error);
