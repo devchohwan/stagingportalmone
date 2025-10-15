@@ -2418,9 +2418,10 @@ class Admin::DashboardController < ApplicationController
       remaining_lessons: total_remaining_lessons,
       remaining_passes: remaining_passes,
       schedule_records: TeacherSchedule.where(user_id: user.id)
+                                       .joins(:user_enrollment)
                                        .order(:lesson_date)
+                                       .select('teacher_schedules.*, user_enrollments.subject')
                                        .map.with_index { |s, idx|
-        # 주차는 순서대로 1, 2, 3, 4...
         week_number = idx + 1
         
         {
@@ -2428,7 +2429,8 @@ class Admin::DashboardController < ApplicationController
           lesson_date: s.lesson_date&.strftime('%Y.%m.%d'),
           day: s.day,
           time_slot: s.time_slot,
-          teacher: s.teacher
+          teacher: s.teacher,
+          subject: s.subject
         }
       }
     }

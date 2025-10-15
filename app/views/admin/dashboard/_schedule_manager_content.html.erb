@@ -1116,7 +1116,21 @@
 
     // 스케줄 레코드 (각 주차별)
     if (data.schedule_records && data.schedule_records.length > 0) {
-      html += '<div style="margin-bottom: 20px;"><h4 style="font-weight: 700; margin-bottom: 10px; color: #374151;">📅 스케줄 레코드 (각 주차)</h4>';
+      html += '<div style="margin-bottom: 20px;"><h4 style="font-weight: 700; margin-bottom: 10px; color: #374151;">📅 스케줄 레코드 (과목별)</h4>';
+      
+      const recordsByEnrollment = {};
+      data.schedule_records.forEach(record => {
+        const key = `${record.teacher}-${record.subject || 'unknown'}`;
+        if (!recordsByEnrollment[key]) {
+          recordsByEnrollment[key] = {
+            teacher: record.teacher,
+            subject: record.subject,
+            records: []
+          };
+        }
+        recordsByEnrollment[key].records.push(record);
+      });
+      
       const dayNames = {
         'sun': '일', 'mon': '월', 'tue': '화', 'wed': '수',
         'thu': '목', 'fri': '금', 'sat': '토'
@@ -1125,26 +1139,34 @@
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      data.schedule_records.forEach((record, idx) => {
-        const dateParts = record.lesson_date.split('.');
-        const lessonDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-        const isPast = lessonDate < today;
+      Object.values(recordsByEnrollment).forEach(group => {
+        html += `<div style="margin-bottom: 15px; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">`;
+        html += `<div style="font-weight: 600; margin-bottom: 8px; color: #374151;">${group.teacher} - ${group.subject || '미지정'}</div>`;
+        html += '<div>';
         
-        const bgColor = isPast ? '#e5e7eb' : '#f3f4f6';
-        const textOpacity = isPast ? '0.6' : '1';
+        group.records.forEach((record, idx) => {
+          const dateParts = record.lesson_date.split('.');
+          const lessonDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+          const isPast = lessonDate < today;
+          
+          const bgColor = isPast ? '#e5e7eb' : '#f3f4f6';
+          const textOpacity = isPast ? '0.6' : '1';
+          
+          html += `<div style="display: inline-block; margin: 4px; padding: 6px 10px; background: ${bgColor}; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.8rem; opacity: ${textOpacity};">`;
+          if (record.week_number) {
+            html += `<span style="font-weight: 600; color: ${isPast ? '#6b7280' : '#667eea'};">${record.week_number}주차 : </span>`;
+          }
+          html += `<span style="font-weight: 600; color: ${isPast ? '#6b7280' : '#374151'};">${record.lesson_date}</span> `;
+          html += `<span style="color: #6b7280;">${dayNames[record.day] || record.day} ${record.time_slot}</span>`;
+          if (isPast) {
+            html += ' <span style="color: #9ca3af; font-size: 0.7rem;">✓</span>';
+          }
+          html += '</div>';
+        });
         
-        html += `<div style="display: inline-block; margin: 4px; padding: 6px 10px; background: ${bgColor}; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.8rem; opacity: ${textOpacity};">`;
-        if (record.week_number) {
-          html += `<span style="font-weight: 600; color: ${isPast ? '#6b7280' : '#667eea'};">${record.week_number}주차 : </span>`;
-        }
-        html += `<span style="font-weight: 600; color: ${isPast ? '#6b7280' : '#374151'};">${record.lesson_date}</span> `;
-        html += `<span style="color: #6b7280;">${dayNames[record.day] || record.day} ${record.time_slot}</span> `;
-        html += `<span style="color: #9ca3af; font-size: 0.75rem;">${record.teacher}</span>`;
-        if (isPast) {
-          html += ' <span style="color: #9ca3af; font-size: 0.7rem;">✓</span>';
-        }
-        html += '</div>';
+        html += '</div></div>';
       });
+      
       html += '</div>';
     }
 
