@@ -3,6 +3,7 @@ class UserEnrollment < ApplicationRecord
   has_many :lesson_deductions, dependent: :destroy
   has_many :enrollment_status_histories, dependent: :destroy
   has_many :enrollment_schedule_histories, dependent: :destroy
+  has_many :teacher_schedules, dependent: :nullify
 
   before_update :track_teacher_change
   before_update :track_schedule_change, unless: :skip_schedule_tracking?
@@ -307,11 +308,91 @@ class UserEnrollment < ApplicationRecord
 
   def track_status_change
     if saved_change_to_status?
-      enrollment_status_histories.create!(
-        status: status,
-        changed_at: Time.current,
-        notes: "Status changed from #{status_before_last_save} to #{status}"
+      old_status = status_before_last_save
+      new_status = status
+      
+      if new_status == 'on_leave'
+        enrollment_status_histories.create!(
+          status: new_status,
+          changed_at: Time.current,
+          notes: "#{Date.current.strftime('%Y년 %m월 %d일')}에 휴원"
+        )
+        create_on_leave_schedules
+      elsif old_status == 'on_leave' && new_status == 'active'
+        return_date = first_lesson_date || Date.current
+        enrollment_status_histories.create!(
+          status: new_status,
+          changed_at: Time.current,
+          notes: "#{return_date.strftime('%Y년 %m월 %d일')}에 복귀"
+        )
+        remove_on_leave_schedules_and_recreate
+      else
+        enrollment_status_histories.create!(
+          status: new_status,
+          changed_at: Time.current,
+          notes: "Status changed from #{old_status} to #{new_status}"
+        )
+      end
+    end
+  end
+  
+  def create_on_leave_schedules
+    return unless day.present? && time_slot.present? && remaining_lessons > 0
+    
+    TeacherSchedule.where(
+      user_id: user_id,
+      teacher: teacher,
+      day: day,
+      time_slot: time_slot
+    ).where('lesson_date >= ?', Date.current).destroy_all
+    
+    day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+    target_wday = day_to_wday[day]
+    return unless target_wday
+    
+    current_date = Date.current
+    current_date += 1.day until current_date.wday == target_wday
+    
+    remaining_lessons.times do
+      TeacherSchedule.create!(
+        user_id: user_id,
+        teacher: teacher,
+        day: day,
+        time_slot: time_slot,
+        lesson_date: current_date,
+        is_on_leave: true,
+        user_enrollment_id: id
       )
+      current_date += 7.days
+    end
+  end
+  
+  def remove_on_leave_schedules_and_recreate
+    TeacherSchedule.where(
+      user_enrollment_id: id
+    ).where('lesson_date >= ?', Date.current).destroy_all
+    
+    return unless day.present? && time_slot.present? && remaining_lessons > 0
+    
+    day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+    target_wday = day_to_wday[day]
+    return unless target_wday
+    
+    start_date = first_lesson_date || Date.current
+    current_date = start_date
+    current_date += 1.day until current_date.wday == target_wday
+    
+    remaining_lessons.times do
+      TeacherSchedule.create!(
+        user_id: user_id,
+        teacher: teacher,
+        day: day,
+        time_slot: time_slot,
+        lesson_date: current_date,
+        is_on_leave: false,
+        user_enrollment_id: id
+      )
+      current_date += 7.days
     end
   end
 end
