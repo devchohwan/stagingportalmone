@@ -1030,12 +1030,13 @@
           html += '<div style="margin-top: 10px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">';
           html += '<div style="font-size: 0.8rem; font-weight: 600; color: #4a5568; margin-bottom: 8px;">📅 스케줄 변경 이력</div>';
           enrollment.schedule_history.forEach((history, idx) => {
-            const dayKorean = dayNames[history.day] || history.day;
             const isLast = idx === enrollment.schedule_history.length - 1;
             const textColor = isLast ? '#667eea' : '#6b7280';
             const fontWeight = isLast ? '600' : 'normal';
+            const weekText = history.week_number ? `${history.week_number}주차 ` : '';
+            const dayText = history.day_korean || dayNames[history.day] || history.day;
             html += `<div style="font-size: 0.75rem; color: ${textColor}; font-weight: ${fontWeight}; padding: 4px 0;">`;
-            html += `${history.effective_from}: ${dayKorean} ${history.time_slot}`;
+            html += `${history.changed_at}일에 ${weekText}수업일을 ${history.effective_from}일 ${dayText} ${history.time_slot}시로 변경함`;
             if (isLast) html += ' <span style="color: #10b981;">(현재)</span>';
             html += '</div>';
           });

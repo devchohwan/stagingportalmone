@@ -110,42 +110,37 @@ class User < ApplicationRecord
 
   # 이번 수업일 계산 (오늘 기준 다음에 오는 수업일)
   def next_lesson_date
-    schedule = regular_lesson_schedule
-    return nil unless schedule
-
-    today = Date.current
-    target_wday = korean_day_to_wday(schedule[:day])
-
-    # 오늘부터 다음 주 같은 요일까지 체크 (오늘 포함)
-    (0..13).each do |offset|
-      date = today + offset.days
-      return date if date.wday == target_wday && date >= today
-    end
-
-    nil
+    TeacherSchedule.where(user_id: id)
+                   .where('lesson_date >= ?', Date.current)
+                   .where(is_absent: false)
+                   .order(:lesson_date)
+                   .first
+                   &.lesson_date
   end
 
-  # 다음 수업일 계산 (이번 수업일의 다음 주)
   def following_lesson_date
     next_date = next_lesson_date
     return nil unless next_date
 
-    next_date + 7.days
+    TeacherSchedule.where(user_id: id)
+                   .where('lesson_date > ?', next_date)
+                   .where(is_absent: false)
+                   .order(:lesson_date)
+                   .first
+                   &.lesson_date
   end
 
-  # 다음 수업일시 (날짜 + 시간)
   def next_lesson_datetime
-    schedule = regular_lesson_schedule
-    return nil unless schedule
+    next_schedule = TeacherSchedule.where(user_id: id)
+                                   .where('lesson_date >= ?', Date.current)
+                                   .where(is_absent: false)
+                                   .order(:lesson_date)
+                                   .first
+    return nil unless next_schedule
 
-    lesson_date = next_lesson_date
-    return nil unless lesson_date
-
-    # time_slot 형식: "13-14", "14-15" 등
-    start_hour = schedule[:time_slot].split('-').first.to_i
-
-    # DateTime으로 변환 (한국 시간대)
-    Time.zone.local(lesson_date.year, lesson_date.month, lesson_date.day, start_hour, 0, 0)
+    start_hour = next_schedule.time_slot.split('-').first.to_i
+    Time.zone.local(next_schedule.lesson_date.year, next_schedule.lesson_date.month, 
+                    next_schedule.lesson_date.day, start_hour, 0, 0)
   end
 
   # 다음 수업 전까지 취소한 이력이 있는지 확인

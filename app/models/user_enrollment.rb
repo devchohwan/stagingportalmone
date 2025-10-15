@@ -4,14 +4,16 @@ class UserEnrollment < ApplicationRecord
   has_many :enrollment_status_histories, dependent: :destroy
   has_many :enrollment_schedule_histories, dependent: :destroy
 
-  # 콜백
   before_update :track_teacher_change
   before_update :track_schedule_change, unless: :skip_schedule_tracking?
   after_update :track_status_change
 
   attr_accessor :skip_schedule_tracking
 
-  # 요일 한글 변환
+  scope :with_lesson_in_week, ->(year_month, week_number) {
+    joins(:lesson_deductions).where(lesson_deductions: { year_month: year_month, week_number: week_number }).distinct
+  }
+
   def day_korean
     day_map = {
       'mon' => '월요일',
@@ -25,26 +27,29 @@ class UserEnrollment < ApplicationRecord
     day_map[day] || day
   end
 
-  # 시간 표시
   def time_display
     time_slot || ''
   end
 
-  # 선생님 변경 이력 배열로 반환
+  def lessons_by_week(year_month, week_number)
+    lesson_deductions.by_week(year_month, week_number)
+  end
+
+  def lessons_by_month(year_month)
+    lesson_deductions.by_year_month(year_month)
+  end
+
   def teacher_history_array
     return [] if teacher_history.blank?
     teacher_history.split(' -> ')
   end
 
-  # 선생님 변경 이력 문자열로 반환
   def teacher_history_display
     return teacher if teacher_history.blank?
     "#{teacher_history} -> #{teacher}"
   end
 
-  # 정규 수업 자동 차감 (모든 활성 수강에 대해)
   def self.process_lesson_deductions
-    # 활성 상태이고 남은 수업이 있는 수강만 처리
     active_enrollments = where(is_paid: true, status: 'active').where('remaining_lessons > 0')
 
     active_enrollments.each do |enrollment|
@@ -52,7 +57,6 @@ class UserEnrollment < ApplicationRecord
     end
   end
 
-  # 개별 수강의 수업 차감 체크 (스케줄 이력 기반)
   def check_and_deduct_lessons
     return unless first_lesson_date.present?
     return if remaining_lessons <= 0
@@ -127,17 +131,14 @@ class UserEnrollment < ApplicationRecord
     end
   end
 
-  # 이미 차감되었는지 확인
   def already_deducted?(date)
     lesson_deductions.exists?(deduction_date: date)
   end
 
-  # skip_schedule_tracking 플래그 확인
   def skip_schedule_tracking?
     @skip_schedule_tracking == true
   end
 
-  # 다음 결제 예정일 계산 (휴원/패스 고려)
   def next_payment_date
     return nil unless first_lesson_date.present?
 
@@ -194,7 +195,6 @@ class UserEnrollment < ApplicationRecord
     current_date - 1.day
   end
 
-  # 연장된 주 수 계산 (패스 + 휴원)
   def calculate_extended_weeks(base_last_lesson_date)
     extended_weeks = 0
 
@@ -236,24 +236,19 @@ class UserEnrollment < ApplicationRecord
     extended_weeks
   end
 
-  # 특정 날짜에 휴원 상태였는지 확인
   def was_on_leave_at?(date)
-    # 해당 날짜 이전의 상태 변경 이력 중 가장 최근 것을 찾음
     last_status_change = enrollment_status_histories
                           .where('changed_at <= ?', date.end_of_day)
                           .order(changed_at: :desc)
                           .first
 
-    # 이력이 없으면 현재 상태 기준
     return status == 'on_leave' unless last_status_change
 
-    # 이력이 있으면 그 당시 상태
     last_status_change.status == 'on_leave'
   end
 
   private
 
-  # 선생님 변경 추적
   def track_teacher_change
     if teacher_changed? && teacher_was.present?
       if teacher_history.blank?
@@ -264,7 +259,6 @@ class UserEnrollment < ApplicationRecord
     end
   end
 
-  # 스케줄 변경 추적 (요일/시간)
   def track_schedule_change
     return unless (day_changed? || time_slot_changed?) && (day_was.present? || time_slot_was.present?)
     return unless day.present? && time_slot.present? # 스케줄 해제는 기록하지 않음
@@ -288,7 +282,6 @@ class UserEnrollment < ApplicationRecord
     )
   end
 
-  # 상태 변경 추적 (휴원/복귀)
   def track_status_change
     if saved_change_to_status?
       enrollment_status_histories.create!(

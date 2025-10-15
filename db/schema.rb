@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_15_071910) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_15_073756) do
   create_table "enrollment_schedule_histories", force: :cascade do |t|
     t.integer "user_enrollment_id", null: false
     t.string "day", null: false
@@ -40,7 +40,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_071910) do
     t.datetime "deduction_time", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "week_number"
+    t.string "year_month"
     t.index ["user_enrollment_id", "deduction_date"], name: "index_lesson_deductions_on_enrollment_and_date", unique: true
+    t.index ["user_enrollment_id", "year_month", "week_number"], name: "index_lesson_deductions_on_enrollment_year_week"
   end
 
   create_table "makeup_availabilities", force: :cascade do |t|

@@ -2098,11 +2098,49 @@ class Admin::DashboardController < ApplicationController
         first_lesson_date: enrollment.first_lesson_date&.strftime('%Y-%m-%d'),
         end_date: enrollment.end_date&.strftime('%Y-%m-%d'),
         status: enrollment.status,
-        schedule_history: enrollment.enrollment_schedule_histories.order(:effective_from).map do |history|
+        schedule_history: enrollment.enrollment_schedule_histories.order(:effective_from).map.with_index do |history, idx|
+          week_number = if enrollment.first_lesson_date && history.effective_from
+            ((history.effective_from - enrollment.first_lesson_date).to_i / 7) + 1
+          else
+            nil
+          end
+          
+          actual_schedule = nil
+          if enrollment.first_lesson_date && week_number
+            week_start = enrollment.first_lesson_date + ((week_number - 1) * 7).days
+            week_end = week_start + 6.days
+            
+            actual_schedule = TeacherSchedule.where(
+              user_id: user.id,
+              lesson_date: week_start..week_end
+            ).order(:lesson_date).first
+          end
+          
+          if actual_schedule
+            day_map = {
+              'sun' => '일요일', 'mon' => '월요일', 'tue' => '화요일', 'wed' => '수요일',
+              'thu' => '목요일', 'fri' => '금요일', 'sat' => '토요일'
+            }
+            actual_day_korean = day_map[actual_schedule.day]
+            actual_time_slot = actual_schedule.time_slot
+            actual_date = actual_schedule.lesson_date.strftime('%Y.%m.%d')
+          else
+            day_map = {
+              0 => '일요일', 1 => '월요일', 2 => '화요일', 3 => '수요일',
+              4 => '목요일', 5 => '금요일', 6 => '토요일'
+            }
+            actual_day_korean = day_map[history.effective_from.wday]
+            actual_time_slot = history.time_slot
+            actual_date = history.effective_from.strftime('%Y.%m.%d')
+          end
+          
           {
-            effective_from: history.effective_from.strftime('%Y.%m.%d'),
+            changed_at: history.changed_at.strftime('%Y.%m.%d'),
+            effective_from: actual_date,
+            week_number: week_number,
             day: history.day,
-            time_slot: history.time_slot
+            day_korean: actual_day_korean,
+            time_slot: actual_time_slot
           }
         end
       }
