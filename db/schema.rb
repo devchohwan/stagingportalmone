@@ -10,7 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_14_131231) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_15_051335) do
+  create_table "enrollment_schedule_histories", force: :cascade do |t|
+    t.integer "user_enrollment_id", null: false
+    t.string "day", null: false
+    t.string "time_slot", null: false
+    t.datetime "changed_at", null: false
+    t.date "effective_from", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_enrollment_id", "effective_from"], name: "idx_on_user_enrollment_id_effective_from_27b2de27e8"
+    t.index ["user_enrollment_id"], name: "index_enrollment_schedule_histories_on_user_enrollment_id"
+  end
+
   create_table "enrollment_status_histories", force: :cascade do |t|
     t.integer "user_enrollment_id", null: false
     t.string "status", null: false
@@ -314,6 +326,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_14_131231) do
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
+  add_foreign_key "enrollment_schedule_histories", "user_enrollments"
   add_foreign_key "enrollment_status_histories", "user_enrollments"
   add_foreign_key "makeup_lessons", "users"
   add_foreign_key "makeup_pass_requests", "users"

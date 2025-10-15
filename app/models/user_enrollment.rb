@@ -2,9 +2,11 @@ class UserEnrollment < ApplicationRecord
   belongs_to :user
   has_many :lesson_deductions, dependent: :destroy
   has_many :enrollment_status_histories, dependent: :destroy
+  has_many :enrollment_schedule_histories, dependent: :destroy
 
   # 콜백
   before_update :track_teacher_change
+  before_update :track_schedule_change
   after_update :track_status_change
 
   # 요일 한글 변환
@@ -48,59 +50,73 @@ class UserEnrollment < ApplicationRecord
     end
   end
 
-  # 개별 수강의 수업 차감 체크
+  # 개별 수강의 수업 차감 체크 (스케줄 이력 기반)
   def check_and_deduct_lessons
-    return unless day.present? && time_slot.present? && first_lesson_date.present?
+    return unless first_lesson_date.present?
     return if remaining_lessons <= 0
 
     # 요일을 숫자로 변환
     day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
-    target_wday = day_to_wday[day]
-    return unless target_wday
-
-    # 수업 종료 시각 계산
-    time_parts = time_slot.split('-')
-    end_hour = time_parts[1].to_i
-
-    # 첫 수업일부터 오늘까지 매주 수업일 확인
-    current_date = first_lesson_date
-    today = Date.current
     kst_zone = ActiveSupport::TimeZone['Seoul']
+    today = Date.current
+
+    # 첫 수업일부터 오늘까지 하루씩 확인
+    current_date = first_lesson_date
 
     while current_date <= today
-      # 해당 날짜의 수업 종료 시각 (한국 시각 기준)
-      lesson_end_time = kst_zone.local(current_date.year, current_date.month, current_date.day, end_hour, 0, 0)
+      # 이미 차감된 날짜는 건너뜀
+      if already_deducted?(current_date)
+        current_date += 1.day
+        next
+      end
 
-      # 수업 종료 시각이 지났고, 아직 차감되지 않은 경우
-      if Time.current > lesson_end_time && !already_deducted?(current_date)
-        # 해당 날짜에 보강이나 패스가 있는지 확인
-        has_makeup_or_pass = MakeupPassRequest.where(
-          user_id: user_id,
-          request_date: current_date
-        ).where(status: ['active', 'completed']).exists?
+      # 해당 날짜에 유효한 스케줄 찾기
+      schedule = EnrollmentScheduleHistory.schedule_for_date(id, current_date)
 
-        if has_makeup_or_pass
-          # 보강이나 패스가 있으면 차감하지 않고 기록만 남김 (중복 체크 방지)
-          lesson_deductions.create!(
-            deduction_date: current_date,
-            deduction_time: lesson_end_time
-          )
-          Rails.logger.info "수업 차감 건너뜀 (보강/패스 존재): #{user.name} / #{current_date} / #{teacher}"
-        else
-          # 정규 수업 차감
-          if remaining_lessons > 0
-            decrement!(:remaining_lessons)
+      # 스케줄이 없으면 현재 스케줄 사용
+      schedule_day = schedule&.day || day
+      schedule_time_slot = schedule&.time_slot || time_slot
+
+      next unless schedule_day.present? && schedule_time_slot.present?
+
+      # 해당 날짜의 요일이 수업 요일과 일치하는지 확인
+      target_wday = day_to_wday[schedule_day]
+      if current_date.wday == target_wday
+        # 수업 종료 시각 계산
+        end_hour = schedule_time_slot.split('-').last.to_i
+        lesson_end_time = kst_zone.local(current_date.year, current_date.month, current_date.day, end_hour, 0, 0)
+
+        # 수업 종료 시각이 지났는지 확인
+        if Time.current > lesson_end_time
+          # 해당 날짜에 보강이나 패스가 있는지 확인
+          has_makeup_or_pass = MakeupPassRequest.where(
+            user_id: user_id,
+            request_date: current_date
+          ).where(status: ['active', 'completed']).exists?
+
+          if has_makeup_or_pass
+            # 보강이나 패스가 있으면 차감하지 않고 기록만 남김
             lesson_deductions.create!(
               deduction_date: current_date,
               deduction_time: lesson_end_time
             )
-            Rails.logger.info "정규 수업 차감: #{user.name} / #{current_date} / #{teacher} / 남은 수업: #{remaining_lessons}"
+            Rails.logger.info "수업 차감 건너뜀 (보강/패스 존재): #{user.name} / #{current_date} / #{teacher}"
+          else
+            # 정규 수업 차감
+            if remaining_lessons > 0
+              decrement!(:remaining_lessons)
+              lesson_deductions.create!(
+                deduction_date: current_date,
+                deduction_time: lesson_end_time
+              )
+              Rails.logger.info "정규 수업 차감: #{user.name} / #{current_date} / #{teacher} (#{schedule_day} #{schedule_time_slot}) / 남은 수업: #{remaining_lessons}"
+            end
           end
         end
       end
 
-      # 다음 주로 이동
-      current_date += 7.days
+      # 다음 날로 이동
+      current_date += 1.day
     end
   end
 
@@ -197,6 +213,29 @@ class UserEnrollment < ApplicationRecord
       else
         self.teacher_history = "#{teacher_history} -> #{teacher_was}"
       end
+    end
+  end
+
+  # 스케줄 변경 추적 (요일/시간)
+  def track_schedule_change
+    if (day_changed? || time_slot_changed?) && (day_was.present? || time_slot_was.present?)
+      # 변경 전 스케줄 기록 (아직 이력이 없는 경우)
+      if enrollment_schedule_histories.empty? && first_lesson_date.present?
+        enrollment_schedule_histories.create!(
+          day: day_was || day,
+          time_slot: time_slot_was || time_slot,
+          changed_at: created_at || Time.current,
+          effective_from: first_lesson_date
+        )
+      end
+
+      # 새 스케줄 기록
+      enrollment_schedule_histories.create!(
+        day: day,
+        time_slot: time_slot,
+        changed_at: Time.current,
+        effective_from: Date.current
+      )
     end
   end
 
