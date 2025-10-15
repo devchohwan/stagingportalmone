@@ -210,7 +210,6 @@ function navigateMonth(direction) {
     padding: 12px;
     text-align: center;
     border-radius: 8px;
-    cursor: pointer;
     transition: all 0.3s ease;
     background-color: white;
     border: 1px solid #e2e8f0;
@@ -221,7 +220,17 @@ function navigateMonth(direction) {
     justify-content: center;
   }
   
-  .calendar-day-cell:hover:not(.past-day):not(.monday-closed):not(.blocked-day):not(.same-day-disabled) {
+  .calendar-day-cell[data-clickable="true"] {
+    cursor: pointer;
+  }
+  
+  .calendar-day-cell:not([data-clickable="true"]) {
+    cursor: not-allowed;
+    opacity: 0.4;
+    background-color: #f9fafb;
+  }
+  
+  .calendar-day-cell:hover:not(.past-day):not(.monday-closed):not(.blocked-day):not(.same-day-disabled)[data-clickable="true"] {
     background-color: #f7fafc;
     border-color: #34d399;
   }
