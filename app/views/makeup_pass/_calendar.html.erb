@@ -25,7 +25,6 @@
         <%
           is_today = day == today
           is_past = day < today
-          is_same_day = day == today  # 당일인지 체크
           is_current_month = day.month == date.month
           is_monday = day.wday == 1  # 월요일 체크
           is_tuesday = day.wday == 2  # 화요일 체크
@@ -52,18 +51,16 @@
           css_classes = []
           css_classes << "calendar-day-cell"
           css_classes << "not-current-month" unless is_current_month
-          css_classes << "past-day" if is_past && !is_today
+          css_classes << "past-day" if is_past
           css_classes << "today" if is_today
-          css_classes << "same-day-disabled" if is_same_day  # 당일 예약 불가 스타일
           css_classes << "monday-closed" if is_monday
           css_classes << "blocked-day" if is_blocked
           css_classes << "lesson-day" if is_next_lesson || is_following_lesson
           css_classes << "between-lessons" if is_between_lessons && !is_monday && !is_blocked
 
           # 클릭 가능한지 확인
-          # 오늘이 수업일(is_next_lesson)이면 보강 신청 가능하도록 수정
+          # 이번수업일이면 항상 클릭 가능 (당일이어도)
           is_clickable = is_current_month && !is_past && !is_monday && !is_blocked
-          is_clickable = is_clickable && (!is_same_day || is_next_lesson)
         %>
         
         <div class="<%= css_classes.join(' ') %>" 

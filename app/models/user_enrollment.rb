@@ -6,8 +6,10 @@ class UserEnrollment < ApplicationRecord
 
   # 콜백
   before_update :track_teacher_change
-  before_update :track_schedule_change
+  before_update :track_schedule_change, unless: :skip_schedule_tracking?
   after_update :track_status_change
+
+  attr_accessor :skip_schedule_tracking
 
   # 요일 한글 변환
   def day_korean
@@ -55,67 +57,72 @@ class UserEnrollment < ApplicationRecord
     return unless first_lesson_date.present?
     return if remaining_lessons <= 0
 
-    # 요일을 숫자로 변환
     day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
     kst_zone = ActiveSupport::TimeZone['Seoul']
     today = Date.current
 
-    # 첫 수업일부터 오늘까지 하루씩 확인
     current_date = first_lesson_date
 
     while current_date <= today
-      # 이미 차감된 날짜는 건너뜀
       if already_deducted?(current_date)
         current_date += 1.day
         next
       end
 
-      # 해당 날짜에 유효한 스케줄 찾기
-      schedule = EnrollmentScheduleHistory.schedule_for_date(id, current_date)
+      schedules_for_date = enrollment_schedule_histories
+        .where('effective_from <= ?', current_date)
+        .where(day: current_date.strftime('%a').downcase)
+        .order(changed_at: :desc)
+        .to_a
 
-      # 스케줄이 없으면 현재 스케줄 사용
-      schedule_day = schedule&.day || day
-      schedule_time_slot = schedule&.time_slot || time_slot
+      schedule_to_use = nil
 
-      next unless schedule_day.present? && schedule_time_slot.present?
-
-      # 해당 날짜의 요일이 수업 요일과 일치하는지 확인
-      target_wday = day_to_wday[schedule_day]
-      if current_date.wday == target_wday
-        # 수업 종료 시각 계산
-        end_hour = schedule_time_slot.split('-').last.to_i
+      if schedules_for_date.empty?
+        if current_date.strftime('%a').downcase == day
+          schedule_to_use = OpenStruct.new(day: day, time_slot: time_slot)
+        end
+      else
+        latest_schedule = schedules_for_date.first
+        end_hour = latest_schedule.time_slot.split('-').last.to_i
         lesson_end_time = kst_zone.local(current_date.year, current_date.month, current_date.day, end_hour, 0, 0)
 
-        # 수업 종료 시각이 지났는지 확인
         if Time.current > lesson_end_time
-          # 해당 날짜에 보강이나 패스가 있는지 확인
-          has_makeup_or_pass = MakeupPassRequest.where(
-            user_id: user_id,
-            request_date: current_date
-          ).where(status: ['active', 'completed']).exists?
+          schedule_to_use = latest_schedule
+        end
+      end
 
-          if has_makeup_or_pass
-            # 보강이나 패스가 있으면 차감하지 않고 기록만 남김
-            lesson_deductions.create!(
-              deduction_date: current_date,
-              deduction_time: lesson_end_time
-            )
-            Rails.logger.info "수업 차감 건너뜀 (보강/패스 존재): #{user.name} / #{current_date} / #{teacher}"
-          else
-            # 정규 수업 차감
-            if remaining_lessons > 0
-              decrement!(:remaining_lessons)
+      if schedule_to_use
+        target_wday = day_to_wday[schedule_to_use.day]
+        if current_date.wday == target_wday
+          end_hour = schedule_to_use.time_slot.split('-').last.to_i
+          lesson_end_time = kst_zone.local(current_date.year, current_date.month, current_date.day, end_hour, 0, 0)
+
+          if Time.current > lesson_end_time
+            has_makeup_or_pass = MakeupPassRequest.where(
+              user_id: user_id,
+              request_date: current_date
+            ).where(status: ['active', 'completed']).exists?
+
+            if has_makeup_or_pass
               lesson_deductions.create!(
                 deduction_date: current_date,
                 deduction_time: lesson_end_time
               )
-              Rails.logger.info "정규 수업 차감: #{user.name} / #{current_date} / #{teacher} (#{schedule_day} #{schedule_time_slot}) / 남은 수업: #{remaining_lessons}"
+              Rails.logger.info "수업 차감 건너뜀 (보강/패스 존재): #{user.name} / #{current_date} / #{teacher}"
+            else
+              if remaining_lessons > 0
+                decrement!(:remaining_lessons)
+                lesson_deductions.create!(
+                  deduction_date: current_date,
+                  deduction_time: lesson_end_time
+                )
+                Rails.logger.info "정규 수업 차감: #{user.name} / #{current_date} / #{teacher} (#{schedule_to_use.day} #{schedule_to_use.time_slot}) / 남은 수업: #{remaining_lessons}"
+              end
             end
           end
         end
       end
 
-      # 다음 날로 이동
       current_date += 1.day
     end
   end
@@ -125,25 +132,66 @@ class UserEnrollment < ApplicationRecord
     lesson_deductions.exists?(deduction_date: date)
   end
 
+  # skip_schedule_tracking 플래그 확인
+  def skip_schedule_tracking?
+    @skip_schedule_tracking == true
+  end
+
   # 다음 결제 예정일 계산 (휴원/패스 고려)
   def next_payment_date
     return nil unless first_lesson_date.present?
 
-    # 1. 이 수강권에 결제된 총 수업 횟수 합산
     total_paid_lessons = Payment.where(enrollment_id: id).sum(:lessons)
     return nil if total_paid_lessons == 0
 
-    # 2. 기본 마지막 수업일 = 첫수업일 + (총횟수 - 1) × 7일
-    base_last_lesson_date = first_lesson_date + ((total_paid_lessons - 1) * 7).days
+    day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+    current_date = first_lesson_date
+    lessons_counted = 0
+    max_iterations = total_paid_lessons * 10
+    iteration = 0
 
-    # 3. 연장된 주 수 계산
-    extended_weeks = calculate_extended_weeks(base_last_lesson_date)
+    while lessons_counted < total_paid_lessons && iteration < max_iterations
+      iteration += 1
 
-    # 4. 최종 마지막 수업일
-    actual_last_lesson_date = base_last_lesson_date + (extended_weeks * 7).days
+      all_schedules = enrollment_schedule_histories.order(effective_from: :asc).to_a
+      
+      applicable_schedule = nil
+      if all_schedules.empty?
+        applicable_schedule = OpenStruct.new(day: day, time_slot: time_slot)
+      else
+        all_schedules.each_with_index do |schedule, index|
+          if current_date >= schedule.effective_from
+            next_schedule = all_schedules[index + 1]
+            if next_schedule.nil? || current_date < next_schedule.effective_from
+              applicable_schedule = schedule
+              break
+            end
+          end
+        end
+      end
 
-    # 5. 다음 결제 예정일 = 마지막 수업일
-    actual_last_lesson_date
+      if applicable_schedule && applicable_schedule.day.present?
+        target_wday = day_to_wday[applicable_schedule.day]
+        if current_date.wday == target_wday
+          has_pass = MakeupPassRequest.where(
+            user_id: user_id,
+            request_date: current_date,
+            request_type: 'pass',
+            status: ['active', 'completed']
+          ).exists?
+
+          is_on_leave = was_on_leave_at?(current_date)
+
+          unless has_pass || is_on_leave
+            lessons_counted += 1
+          end
+        end
+      end
+
+      current_date += 1.day
+    end
+
+    current_date - 1.day
   end
 
   # 연장된 주 수 계산 (패스 + 휴원)

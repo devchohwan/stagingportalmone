@@ -366,6 +366,11 @@
                         onclick="window.showLessonContent('<%= reservation.id %>')">
                     <%= reservation.user.name %>
                   </span>
+                <% elsif service_type == 'makeup_pass' && reservation.respond_to?(:content) && reservation.content.present? %>
+                  <span class="user-name clickable"
+                        style="cursor: pointer; text-decoration: underline; color: #7c3aed;"
+                        onclick="window.showMakeupPassContent('<%= reservation.id %>')">                    <%= reservation.user.name %>
+                  </span>
                 <% elsif service_type == 'pitch' && reservation.respond_to?(:notes) %>
                   <span class="user-name clickable"
                         style="cursor: pointer; text-decoration: underline; color: #7c3aed;"

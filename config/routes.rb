@@ -152,6 +152,7 @@ Rails.application.routes.draw do
         patch :approve_reservation
         get :lesson_content
         get :makeup_cancellation_reason
+        get :makeup_pass_content
       end
     end
     

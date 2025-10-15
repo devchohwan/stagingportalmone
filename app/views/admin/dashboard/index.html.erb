@@ -1746,4 +1746,40 @@
       modal.classList.remove('show');
     }
   }
+
+  window.showMakeupPassContent = function(reservationId) {
+    fetch('/admin/reservations/' + reservationId + '/makeup_pass_content')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const modalElements = {
+            userName: document.getElementById('modal-user-name'),
+            date: document.getElementById('modal-date'),
+            time: document.getElementById('modal-time'),
+            weekNumber: document.getElementById('modal-week-number'),
+            lessonContent: document.getElementById('modal-lesson-content'),
+            modal: document.getElementById('lesson-content-modal')
+          };
+          
+          if (modalElements.userName) modalElements.userName.textContent = data.user_name;
+          if (modalElements.date) modalElements.date.textContent = data.date;
+          if (modalElements.time) modalElements.time.textContent = data.time;
+          if (modalElements.weekNumber) modalElements.weekNumber.textContent = data.week_number ? data.week_number + '주차' : '주차 정보 없음';
+          if (modalElements.lessonContent) modalElements.lessonContent.textContent = data.content || '내용이 없습니다.';
+          
+          const modalHeader = modalElements.modal?.querySelector('.modal-header h3');
+          if (modalHeader) {
+            modalHeader.textContent = data.request_type === 'makeup' ? '보강 신청 내용' : '패스 신청 사유';
+          }
+          
+          if (modalElements.modal) modalElements.modal.classList.add('show');
+        } else {
+          alert('신청 정보를 불러올 수 없습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('오류가 발생했습니다.');
+      });
+  }
 </script>

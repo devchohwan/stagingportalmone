@@ -220,6 +220,37 @@ class Admin::ReservationsController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     render json: { success: false, error: '예약을 찾을 수 없습니다.' }, status: :not_found
   end
+
+  def makeup_pass_content
+    request_record = MakeupPassRequest.find(params[:id])
+
+    Rails.logger.info "=== Makeup Pass Content Debug ==="
+    Rails.logger.info "Request ID: #{request_record.id}"
+    Rails.logger.info "Request Type: #{request_record.request_type}"
+    Rails.logger.info "Week Number: #{request_record.week_number.inspect}"
+    Rails.logger.info "Content: #{request_record.content.inspect}"
+
+    # 날짜 및 시간 포맷팅
+    date_str = if request_record.request_type == 'makeup' && request_record.makeup_date
+                 request_record.makeup_date.strftime('%Y년 %m월 %d일')
+               else
+                 request_record.request_date.strftime('%Y년 %m월 %d일')
+               end
+
+    time_str = request_record.formatted_time || '-'
+
+    render json: {
+      success: true,
+      request_type: request_record.request_type,
+      user_name: request_record.user.name,
+      date: date_str,
+      time: time_str,
+      week_number: request_record.week_number,
+      content: request_record.content
+    }
+  rescue ActiveRecord::RecordNotFound
+    render json: { success: false, error: '신청을 찾을 수 없습니다.' }, status: :not_found
+  end
   
   def bulk_delete
     reservation_ids = params[:reservation_ids]

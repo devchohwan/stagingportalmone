@@ -1045,8 +1045,6 @@ function updateCalendarForType(type) {
     var cell = allDayCells[i];
     var dayLabel = cell.querySelector('.day-label');
 
-    // 원래 상태 정보를 data 속성에서 가져오기
-    var originalClickable = cell.hasAttribute('data-original-clickable');
     var isNextLesson = dayLabel && dayLabel.textContent.trim() === '이번수업';
     var isFollowingLesson = dayLabel && dayLabel.textContent.trim() === '다음수업';
 
@@ -1066,10 +1064,12 @@ function updateCalendarForType(type) {
       }
     }
 
+    // 원래 상태 정보를 data 속성에서 가져오기 (속성 설정 후에 확인)
+    var originalClickable = cell.hasAttribute('data-original-clickable');
     var isBetweenLessons = cell.hasAttribute('data-original-between');
 
     if (type === 'makeup') {
-      // 보강: 이번수업부터 다음수업 전날까지 연노랑 표시, 하지만 이번수업만 클릭 가능
+      // 보강: 이번수업부터 다음수업 전날까지 연노랑 표시하고 모두 클릭 가능
       if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
@@ -1090,9 +1090,9 @@ function updateCalendarForType(type) {
         cell.style.borderColor = '';
       }
 
-      // 이번수업만 클릭 가능
+      // 이번수업일 ~ 다음수업 전날까지 모두 클릭 가능
       if (originalClickable) {
-        if (isNextLesson) {
+        if (isNextLesson || isBetweenLessons) {
           cell.setAttribute('data-clickable', 'true');
           cell.setAttribute('onclick', 'selectDate(this)');
           cell.style.cursor = 'pointer';

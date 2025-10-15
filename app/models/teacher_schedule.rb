@@ -5,7 +5,7 @@ class TeacherSchedule < ApplicationRecord
   validates :day, presence: true
   validates :time_slot, presence: true
   validates :user_id, presence: true
-  validates :user_id, uniqueness: { scope: [:teacher, :day, :time_slot] }
+  validates :lesson_date, uniqueness: { scope: [:user_id, :teacher, :day, :time_slot] }
 
   # 특정 날짜/시간/선생님의 실제 현재 인원 계산
   # 시간표 뷰어(load_schedule)와 동일한 로직 사용
