@@ -2110,7 +2110,14 @@ class Admin::DashboardController < ApplicationController
         remaining_lessons: enrollment.remaining_lessons,
         first_lesson_date: enrollment.first_lesson_date&.strftime('%Y-%m-%d'),
         end_date: enrollment.end_date&.strftime('%Y-%m-%d'),
-        status: enrollment.status
+        status: enrollment.status,
+        schedule_history: enrollment.enrollment_schedule_histories.order(:effective_from).map do |history|
+          {
+            effective_from: history.effective_from.strftime('%Y.%m.%d'),
+            day: history.day,
+            time_slot: history.time_slot
+          }
+        end
       }
     end
 

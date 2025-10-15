@@ -1006,6 +1006,11 @@
     // 수강 정보
     html += '<div style="margin-bottom: 20px;"><h4 style="font-weight: 700; margin-bottom: 10px; color: #374151;">📚 수강 정보</h4>';
     if (enrollments.length > 0) {
+      const dayNames = {
+        'sun': '일요일', 'mon': '월요일', 'tue': '화요일', 'wed': '수요일',
+        'thu': '목요일', 'fri': '금요일', 'sat': '토요일'
+      };
+
       enrollments.forEach(enrollment => {
         const statusColor = enrollment.status === 'active' ? '#10b981' : '#f59e0b';
         const statusText = enrollment.status === 'active' ? '활성' : '휴원';
@@ -1019,6 +1024,24 @@
         }
         html += `<div style="font-size: 0.85rem; color: #6b7280;">${enrollment.day} ${enrollment.time_slot} | 남은 수업: ${enrollment.remaining_lessons}회</div>`;
         html += `<div style="font-size: 0.75rem; color: #9ca3af; margin-top: 3px;">첫 수업: ${enrollment.first_lesson_date || '-'} | 종료: ${enrollment.end_date || '-'}</div>`;
+
+        // 스케줄 변경 이력 표시
+        if (enrollment.schedule_history && enrollment.schedule_history.length > 0) {
+          html += '<div style="margin-top: 10px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">';
+          html += '<div style="font-size: 0.8rem; font-weight: 600; color: #4a5568; margin-bottom: 8px;">📅 스케줄 변경 이력</div>';
+          enrollment.schedule_history.forEach((history, idx) => {
+            const dayKorean = dayNames[history.day] || history.day;
+            const isLast = idx === enrollment.schedule_history.length - 1;
+            const textColor = isLast ? '#667eea' : '#6b7280';
+            const fontWeight = isLast ? '600' : 'normal';
+            html += `<div style="font-size: 0.75rem; color: ${textColor}; font-weight: ${fontWeight}; padding: 4px 0;">`;
+            html += `${history.effective_from}: ${dayKorean} ${history.time_slot}`;
+            if (isLast) html += ' <span style="color: #10b981;">(현재)</span>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+
         html += '</div>';
       });
     } else {
