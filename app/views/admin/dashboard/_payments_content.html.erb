@@ -947,15 +947,32 @@
   // 달력 표시
   // 캘린더 현재 날짜 상태
   let calendarDate = new Date();
+  let userExistingSchedules = {};
 
   function showCalendar() {
     const calendarDiv = document.getElementById('new-enrollment-calendar');
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
-
-    // 선택된 선생님의 휴무일 가져오기 (0=일, 1=월, 2=화, 3=수, 4=목, 5=금, 6=토)
     const teacherHolidays = selectedTeacher ? (TEACHER_HOLIDAYS[selectedTeacher] || []) : [];
 
+    fetch(`/admin/user_existing_schedules/${selectedUserId}?teacher=${encodeURIComponent(selectedTeacher)}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          userExistingSchedules = data.schedules;
+          renderCalendar(year, month, teacherHolidays);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching existing schedules:', error);
+        userExistingSchedules = {};
+        renderCalendar(year, month, teacherHolidays);
+      });
+  }
+
+  function renderCalendar(year, month, teacherHolidays) {
+    const calendarDiv = document.getElementById('new-enrollment-calendar');
+    
     let html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
     html += '<button onclick="event.stopPropagation(); changeEnrollmentCalendarMonth(-1);" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">◀</button>';
     html += '<div style="font-weight: 600;">' + year + '년 ' + (month + 1) + '월</div>';
@@ -978,22 +995,32 @@
     for (let date = 1; date <= lastDate; date++) {
       const fullDate = new Date(year, month, date);
       const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(date).padStart(2, '0');
-      const dayOfWeek = fullDate.getDay(); // 0=일, 1=월, ..., 6=토
+      const dayOfWeek = fullDate.getDay();
       const isHoliday = teacherHolidays.includes(dayOfWeek);
+      const existingSchedule = userExistingSchedules[dateStr];
 
-      let style = 'text-align: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;';
+      let style = 'text-align: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center;';
 
       if (isHoliday) {
-        // 휴무일은 선택 불가
         style += ' opacity: 0.5; pointer-events: none; cursor: not-allowed;';
-        style += ' background: #fef3c7;'; // 연노랑
+        style += ' background: #fef3c7;';
+      } else if (existingSchedule && existingSchedule.length > 0) {
+        style += ' background: #fee2e2; border-color: #dc2626; cursor: pointer;';
       } else {
         style += ' cursor: pointer;';
       }
 
-      const onclick = isHoliday ? '' : 'onclick="selectDate(\'' + dateStr + '\')"';
+      const onclick = (isHoliday || (existingSchedule && existingSchedule.length > 0)) ? '' : 'onclick="selectDate(\'' + dateStr + '\')"';
 
-      html += '<div ' + onclick + ' style="' + style + '" data-date="' + dateStr + '">' + date + '</div>';
+      html += '<div ' + onclick + ' style="' + style + '" data-date="' + dateStr + '" title="' + (existingSchedule && existingSchedule.length > 0 ? existingSchedule[0].teacher + ' ' + existingSchedule[0].time_display + ' 기존 수업' : '') + '">';
+      html += '<div style="font-size: 0.9rem; font-weight: 600;">' + date + '</div>';
+      
+      if (existingSchedule && existingSchedule.length > 0) {
+        html += '<div style="font-size: 0.65rem; color: #dc2626; margin-top: 2px; font-weight: 600;">' + existingSchedule[0].teacher + '</div>';
+        html += '<div style="font-size: 0.6rem; color: #7f1d1d;">' + existingSchedule[0].time_slot + '</div>';
+      }
+      
+      html += '</div>';
     }
 
     html += '</div>';
