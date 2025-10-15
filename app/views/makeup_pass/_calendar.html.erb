@@ -3,7 +3,7 @@
   end_date = date.end_of_month
   weeks = (start_date.beginning_of_week(:sunday)..end_date.end_of_week(:sunday)).to_a.each_slice(7)
   today = Date.current
-  user_teacher = current_user&.teacher || ''
+  user_teacher = current_user&.primary_teacher || ''
   next_lesson = current_user&.next_lesson_date
   following_lesson = current_user&.following_lesson_date
 %>
@@ -44,6 +44,12 @@
             is_between_lessons = true
           end
 
+          is_teacher_closed = if user_teacher.present?
+            Teacher.closed_on?(user_teacher, day)
+          else
+            day.wday == 1
+          end
+
           # 2025년 10월 2-10일 비활성화
           blocked_dates = (Date.new(2025, 10, 2)..Date.new(2025, 10, 10)).to_a
           is_blocked = blocked_dates.include?(day)
@@ -53,14 +59,12 @@
           css_classes << "not-current-month" unless is_current_month
           css_classes << "past-day" if is_past
           css_classes << "today" if is_today
-          css_classes << "monday-closed" if is_monday
+          css_classes << "monday-closed" if is_teacher_closed
           css_classes << "blocked-day" if is_blocked
-          css_classes << "lesson-day" if is_next_lesson || is_following_lesson
-          css_classes << "between-lessons" if is_between_lessons && !is_monday && !is_blocked
+          css_classes << "lesson-day" if (is_next_lesson || is_following_lesson) && !is_teacher_closed
+          css_classes << "between-lessons" if is_between_lessons && !is_teacher_closed && !is_blocked
 
-          # 클릭 가능한지 확인
-          # 이번수업일이면 항상 클릭 가능 (당일이어도)
-          is_clickable = is_current_month && !is_past && !is_monday && !is_blocked
+          is_clickable = is_current_month && !is_past && !is_teacher_closed && !is_blocked && (is_between_lessons || is_next_lesson || is_following_lesson)
         %>
         
         <div class="<%= css_classes.join(' ') %>" 
@@ -71,16 +75,16 @@
              <% end %>>
           <div class="day-number"><%= day.day %></div>
           <div class="day-label">
-            <% if is_next_lesson && is_current_month %>
+            <% if is_teacher_closed && is_current_month %>
+              휴무
+            <% elsif is_next_lesson && is_current_month && !is_teacher_closed %>
               이번수업
-            <% elsif is_following_lesson && is_current_month %>
+            <% elsif is_following_lesson && is_current_month && !is_teacher_closed %>
               다음수업
             <% elsif is_today && !is_next_lesson %>
               예약불가
             <% elsif is_blocked && is_current_month %>
               예약불가
-            <% elsif is_monday && is_current_month %>
-              휴무
             <% else %>
               &nbsp;
             <% end %>

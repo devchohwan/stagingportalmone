@@ -1033,10 +1033,17 @@
             const isLast = idx === enrollment.schedule_history.length - 1;
             const textColor = isLast ? '#667eea' : '#6b7280';
             const fontWeight = isLast ? '600' : 'normal';
-            const weekText = history.week_number ? `${history.week_number}주차 ` : '';
-            const dayText = history.day_korean || dayNames[history.day] || history.day;
+            
             html += `<div style="font-size: 0.75rem; color: ${textColor}; font-weight: ${fontWeight}; padding: 4px 0;">`;
-            html += `${history.changed_at}일에 ${weekText}수업일을 ${history.effective_from}일 ${dayText} ${history.time_slot}시로 변경함`;
+            
+            if (history.type === 'status') {
+              html += `${history.changed_at} - ${history.notes}`;
+            } else {
+              const weekText = history.week_number ? `${history.week_number}주차 ` : '';
+              const dayText = history.day_korean || dayNames[history.day] || history.day;
+              html += `${history.changed_at}일에 ${weekText}수업일을 ${history.effective_from}일 ${dayText} ${history.time_slot}시로 변경함`;
+            }
+            
             if (isLast) html += ' <span style="color: #10b981;">(현재)</span>';
             html += '</div>';
           });

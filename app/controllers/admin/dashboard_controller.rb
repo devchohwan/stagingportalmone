@@ -1036,82 +1036,87 @@ class Admin::DashboardController < ApplicationController
   end
 
   def create_payment
-    # 다중 결제인지 확인
+    Rails.logger.info "=== CREATE_PAYMENT ==="
+    Rails.logger.info "Params: #{params.to_unsafe_h.inspect}"
+    
     if params[:payments].present?
       create_multi_payment
       return
     end
 
-    # 기존 단일 결제 로직
     user = User.find(params[:user_id])
+    
+    period = params[:period].to_i
+    period = params[:months].to_i if period == 0 && params[:months].present?
+    
+    Rails.logger.info "Period: #{period}"
+    Rails.logger.info "User teacher: #{user.teacher}"
 
-    # 첫수업 시작일시 파싱
     if params[:first_lesson_date].present? && params[:first_lesson_time].present?
       first_lesson_date = Date.parse(params[:first_lesson_date])
       time_slot = params[:first_lesson_time]
       day_of_week_num = first_lesson_date.wday
 
-      # 요일 번호를 요일 문자열로 변환 (0=sun, 1=mon, 2=tue, ...)
       day_map = { 0 => 'sun', 1 => 'mon', 2 => 'tue', 3 => 'wed', 4 => 'thu', 5 => 'fri', 6 => 'sat' }
       day = day_map[day_of_week_num]
 
-      # 해당 요일+시간에 스케줄 관리에서 현재 등록된 학생 수 확인
-      current_count = TeacherSchedule.where(
-        teacher: user.teacher,
-        day: day,
-        time_slot: time_slot
-      ).count
+      lessons_count = params[:new_total_lessons].to_i
+      lessons_count = params[:lessons].to_i if lessons_count == 0
 
-      # 정원 3명 체크
-      if current_count >= 3
-        render json: { success: false, message: '스케줄이 다 차있습니다. 다른 시간을 골라주세요.' }, status: :unprocessable_entity
-        return
+      current_date = first_lesson_date
+      target_wday = day_map.key(day)
+      
+      if current_date.wday != target_wday
+        current_date += 1.day until current_date.wday == target_wday
       end
 
-      # 종료일 계산 (첫수업일 + (수업횟수 * 7일) - 1일)
-      # 예: 8회 수업 → 8주차까지 → 첫수업일 + 7*7 = 49일 후
-      lessons_count = params[:new_total_lessons].to_i
-      end_date = first_lesson_date + ((lessons_count - 1) * 7).days
-
-      # 스케줄 관리에 자동 등록
-      TeacherSchedule.create!(
-        teacher: user.teacher,
-        day: day,
-        time_slot: time_slot,
-        user_id: user.id,
-        end_date: end_date
-      )
+      lessons_count.times do
+        existing = TeacherSchedule.exists?(
+          teacher: user.teacher,
+          day: day,
+          time_slot: time_slot,
+          user_id: user.id,
+          lesson_date: current_date
+        )
+        
+        unless existing
+          TeacherSchedule.create!(
+            teacher: user.teacher,
+            day: day,
+            time_slot: time_slot,
+            user_id: user.id,
+            lesson_date: current_date,
+            is_on_leave: false
+          )
+        end
+        
+        current_date += 7.days
+      end
     end
 
-    # 남은 수업 횟수를 새로운 총 횟수로 직접 설정
     user.remaining_lessons = params[:new_total_lessons].to_i
+    user.remaining_lessons = params[:lessons].to_i if user.remaining_lessons == 0
+    
+    user.remaining_passes = (user.remaining_passes || 0) + period
 
-    # 남은 패스 횟수 증가 (1개월당 1회)
-    user.remaining_passes = (user.remaining_passes || 0) + params[:period].to_i
-
-    # 마지막 결제일 업데이트
     payment_date = Date.parse(params[:payment_date])
     user.last_payment_date = payment_date
 
-    # 첫수업 시작일 업데이트 (입력된 경우에만)
     if params[:first_lesson_date].present?
       user.first_lesson_date = Date.parse(params[:first_lesson_date])
     end
 
-    # 패스 만료일 계산 (1개월 = 30일, 3개월 = 90일)
-    days_to_add = params[:period].to_i * 30
+    days_to_add = period * 30
     new_expire_date = payment_date + days_to_add.days
 
-    # 기존 만료일보다 새 만료일이 더 나중이면 업데이트
     if user.passes_expire_date.nil? || new_expire_date > user.passes_expire_date
       user.passes_expire_date = new_expire_date
     end
 
-    # Payment 모델에 결제 기록 저장 (히스토리용)
     Payment.create!(
       user_id: user.id,
       subject: params[:subject],
-      period: params[:period],
+      period: period,
       amount: params[:amount],
       payment_date: params[:payment_date],
       lessons: params[:lessons],
@@ -1187,8 +1192,6 @@ class Admin::DashboardController < ApplicationController
         Rails.logger.info "=== Checking TeacherSchedule: first_lesson_date=#{first_lesson_date.present?}, day=#{enrollment.day.present?}, time_slot=#{enrollment.time_slot.present?}"
 
         if first_lesson_date.present? && enrollment.day.present? && enrollment.time_slot.present?
-          # time_slot 형식 변환: "14:00" → "14-15"
-          # enrollment.time_slot이 "14:00" 형식이면 "14-15" 형식으로 변환
           converted_time_slot = enrollment.time_slot
           if enrollment.time_slot =~ /^\d{2}:00$/
             hour = enrollment.time_slot.split(':')[0].to_i
@@ -1196,31 +1199,40 @@ class Admin::DashboardController < ApplicationController
             Rails.logger.info "=== Time slot converted: #{enrollment.time_slot} → #{converted_time_slot}"
           end
 
-          # 기존 스케줄이 없는 경우에만 생성
-          existing = TeacherSchedule.exists?(
-            teacher: enrollment.teacher,
-            day: enrollment.day,
-            time_slot: converted_time_slot,
-            user_id: user.id
-          )
-
-          Rails.logger.info "=== TeacherSchedule exists? #{existing}"
-
-          unless existing
-            # 종료일 계산 (첫수업일 + (수업횟수 - 1) * 7일)
-            schedule_end_date = first_lesson_date + ((lessons - 1) * 7).days
-
-            Rails.logger.info "=== Creating TeacherSchedule: teacher=#{enrollment.teacher}, day=#{enrollment.day}, time=#{converted_time_slot}, end=#{schedule_end_date}"
-
-            TeacherSchedule.create!(
-              teacher: enrollment.teacher,
-              day: enrollment.day,
-              time_slot: converted_time_slot,
-              user_id: user.id,
-              end_date: schedule_end_date
-            )
-
-            Rails.logger.info "=== TeacherSchedule created successfully"
+          day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+          target_wday = day_to_wday[enrollment.day]
+          
+          if target_wday
+            current_date = first_lesson_date
+            
+            if current_date.wday != target_wday
+              current_date += 1.day until current_date.wday == target_wday
+            end
+            
+            lessons.times do
+              existing = TeacherSchedule.exists?(
+                teacher: enrollment.teacher,
+                day: enrollment.day,
+                time_slot: converted_time_slot,
+                user_id: user.id,
+                lesson_date: current_date
+              )
+              
+              unless existing
+                TeacherSchedule.create!(
+                  teacher: enrollment.teacher,
+                  day: enrollment.day,
+                  time_slot: converted_time_slot,
+                  user_id: user.id,
+                  lesson_date: current_date,
+                  is_on_leave: false,
+                  user_enrollment_id: enrollment.id
+                )
+                Rails.logger.info "=== TeacherSchedule created: #{current_date}"
+              end
+              
+              current_date += 7.days
+            end
           end
         end
 
@@ -1245,8 +1257,7 @@ class Admin::DashboardController < ApplicationController
       end
 
       # User 레벨의 패스 업데이트 (전체 등록 과목 기준)
-      total_lessons = params[:payments].sum { |p| p[:period].to_i * 4 }
-      total_passes = params[:payments].size  # 과목당 1개
+      total_passes = params[:payments].sum { |p| p[:period].to_i }
 
       user.remaining_passes = (user.remaining_passes || 0) + total_passes
 
@@ -1648,38 +1659,50 @@ class Admin::DashboardController < ApplicationController
           # Payment에 enrollment_id 연결
           payment.update!(enrollment_id: user_enrollment.id)
 
-          # TeacherSchedule 등록 (중복 체크) - 신규 등록 모드만
-          existing_schedule = TeacherSchedule.find_by(
-            teacher: enrollment['teacher'],
-            day: day_string,
-            time_slot: enrollment['time_slot'],
-            user_id: user_id
-          )
-
-          if existing_schedule
-            # 기존 스케줄이 있으면 end_date 업데이트 (더 늦은 날짜로)
-            new_end_date = Date.parse(enrollment['end_date'])
-            if existing_schedule.end_date.nil? || new_end_date > existing_schedule.end_date
-              existing_schedule.update!(end_date: new_end_date)
+          if first_lesson_date.present?
+            day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+            target_wday = day_to_wday[day_string]
+            
+            if target_wday
+              current_date = first_lesson_date
+              
+              if current_date.wday != target_wday
+                current_date += 1.day until current_date.wday == target_wday
+              end
+              
+              enrollment['lessons'].times do
+                existing = TeacherSchedule.exists?(
+                  teacher: enrollment['teacher'],
+                  day: day_string,
+                  time_slot: enrollment['time_slot'],
+                  user_id: user_id,
+                  lesson_date: current_date
+                )
+                
+                unless existing
+                  TeacherSchedule.create!(
+                    teacher: enrollment['teacher'],
+                    day: day_string,
+                    time_slot: enrollment['time_slot'],
+                    user_id: user_id,
+                    lesson_date: current_date,
+                    is_on_leave: false,
+                    user_enrollment_id: user_enrollment.id
+                  )
+                end
+                
+                current_date += 7.days
+              end
             end
-          else
-            # 새 스케줄 생성
-            TeacherSchedule.create!(
-              teacher: enrollment['teacher'],
-              day: day_string,
-              time_slot: enrollment['time_slot'],
-              user_id: user_id,
-              end_date: enrollment['end_date']
-            )
           end
         end
 
-        # User의 remaining_lessons와 remaining_passes 업데이트
         current_lessons = user.remaining_lessons || 0
         current_passes = user.remaining_passes || 0
+        months = enrollment['months'].to_i
         user.update!(
           remaining_lessons: current_lessons + enrollment['lessons'],
-          remaining_passes: current_passes + 1  # 과목당 1개씩 패스권 추가
+          remaining_passes: current_passes + months
         )
       end
     end
@@ -2069,29 +2092,38 @@ class Admin::DashboardController < ApplicationController
           effective_from: first_lesson_date
         )
       else
-        # 기존 enrollment, first_lesson_date 유지
+        teacher_changed = enrollment.teacher != target_teacher
+        original_first_lesson_date = enrollment.first_lesson_date
+        
         enrollment.skip_schedule_tracking = true
         enrollment.update!(
           day: day,
           time_slot: time_slot
         )
 
-        # first_lesson_date를 기준으로 스케줄 생성 시작 (과거든 미래든 상관없이)
-        first_lesson_date = enrollment.first_lesson_date
+        if teacher_changed
+          first_lesson_date_for_schedule = first_lesson_date
+        else
+          first_lesson_date_for_schedule = original_first_lesson_date
+        end
 
         enrollment.enrollment_schedule_histories.create!(
           day: day,
           time_slot: time_slot,
           changed_at: Time.current,
-          effective_from: first_lesson_date
+          effective_from: first_lesson_date_for_schedule
         )
+        
+        first_lesson_date = first_lesson_date_for_schedule
       end
 
       # 시작 주차 계산
       start_week_number = enrollment.calculate_week_number(first_lesson_date)
       
-      # 과거에 이미 완료한 수업이 있으면
-      if past_completed_lessons > 0
+      teacher_changed = enrollment.teacher_was.present? && enrollment.teacher_was != target_teacher
+      
+      # 과거에 이미 완료한 수업이 있으면 (단, 선생님이 바뀔 경우 제외)
+      if past_completed_lessons > 0 && !teacher_changed
         # 첫 수업일이 속한 주의 시작일 (일요일)
         original_week_start = first_lesson_date.beginning_of_week(:sunday)
         
@@ -2136,7 +2168,8 @@ class Admin::DashboardController < ApplicationController
             teacher: target_teacher,
             day: day,
             time_slot: time_slot,
-            lesson_date: current_date
+            lesson_date: current_date,
+            user_enrollment_id: enrollment.id
           )
           lessons_created += 1
           
@@ -2258,50 +2291,74 @@ class Admin::DashboardController < ApplicationController
         first_lesson_date: enrollment.first_lesson_date&.strftime('%Y-%m-%d'),
         end_date: enrollment.end_date&.strftime('%Y-%m-%d'),
         status: enrollment.status,
-        schedule_history: enrollment.enrollment_schedule_histories.order(:effective_from).map.with_index do |history, idx|
-          week_number = if enrollment.first_lesson_date && history.effective_from
-            ((history.effective_from - enrollment.first_lesson_date).to_i / 7) + 1
-          else
-            nil
-          end
-          
-          actual_schedule = nil
-          if enrollment.first_lesson_date && week_number
-            week_start = enrollment.first_lesson_date + ((week_number - 1) * 7).days
-            week_end = week_start + 6.days
+        schedule_history: (
+          enrollment.enrollment_schedule_histories.map do |history|
+            day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+            target_wday = day_to_wday[history.day]
             
-            actual_schedule = TeacherSchedule.where(
-              user_id: user.id,
-              lesson_date: week_start..week_end
-            ).order(:lesson_date).first
+            actual_lesson_date = nil
+            if enrollment.first_lesson_date && target_wday
+              temp_date = history.effective_from
+              if temp_date.wday != target_wday
+                temp_date += 1.day until temp_date.wday == target_wday
+              end
+              actual_lesson_date = temp_date
+            end
+            
+            week_number = nil
+            if enrollment.first_lesson_date && actual_lesson_date
+              schedules_before = TeacherSchedule.where(
+                user_enrollment_id: enrollment.id
+              ).where('lesson_date < ?', actual_lesson_date)
+               .where('created_at <= ?', history.changed_at)
+               .count
+              week_number = schedules_before + 1
+            end
+            
+            {
+              type: 'schedule',
+              changed_at: history.changed_at,
+              effective_from: history.effective_from,
+              actual_lesson_date: actual_lesson_date,
+              week_number: week_number,
+              day: history.day,
+              time_slot: history.time_slot,
+              notes: nil
+            }
+          end +
+          enrollment.enrollment_status_histories.map do |history|
+            {
+              type: 'status',
+              changed_at: history.changed_at,
+              effective_from: nil,
+              status: history.status,
+              notes: history.notes
+            }
           end
-          
-          if actual_schedule
+        ).sort_by { |h| h[:changed_at] }.map.with_index do |history, idx|
+          if history[:type] == 'schedule'
             day_map = {
               'sun' => '일요일', 'mon' => '월요일', 'tue' => '화요일', 'wed' => '수요일',
               'thu' => '목요일', 'fri' => '금요일', 'sat' => '토요일'
             }
-            actual_day_korean = day_map[actual_schedule.day]
-            actual_time_slot = actual_schedule.time_slot
-            actual_date = actual_schedule.lesson_date.strftime('%Y.%m.%d')
-          else
-            day_map = {
-              0 => '일요일', 1 => '월요일', 2 => '화요일', 3 => '수요일',
-              4 => '목요일', 5 => '금요일', 6 => '토요일'
+            
+            {
+              type: 'schedule',
+              changed_at: history[:changed_at].strftime('%Y.%m.%d'),
+              effective_from: history[:actual_lesson_date]&.strftime('%Y.%m.%d'),
+              week_number: history[:week_number],
+              day: history[:day],
+              day_korean: day_map[history[:day]],
+              time_slot: history[:time_slot]
             }
-            actual_day_korean = day_map[history.effective_from.wday]
-            actual_time_slot = history.time_slot
-            actual_date = history.effective_from.strftime('%Y.%m.%d')
+          else
+            {
+              type: 'status',
+              changed_at: history[:changed_at].strftime('%Y.%m.%d %H:%M'),
+              status: history[:status],
+              notes: history[:notes]
+            }
           end
-          
-          {
-            changed_at: history.changed_at.strftime('%Y.%m.%d'),
-            effective_from: actual_date,
-            week_number: week_number,
-            day: history.day,
-            day_korean: actual_day_korean,
-            time_slot: actual_time_slot
-          }
         end
       }
     end

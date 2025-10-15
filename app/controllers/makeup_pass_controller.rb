@@ -218,7 +218,7 @@ class MakeupPassController < ApplicationController
     time_slot = params[:time_slot]
 
     # 학생이 선택 가능한 선생님 목록
-    teachers = Teacher.available_for_student(current_user.teacher)
+    teachers = Teacher.available_for_student(current_user.primary_teacher)
 
     available_teachers = []
 

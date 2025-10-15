@@ -1,3 +1,5 @@
+require 'ostruct'
+
 class UserEnrollment < ApplicationRecord
   belongs_to :user
   has_many :lesson_deductions, dependent: :destroy
@@ -166,57 +168,11 @@ class UserEnrollment < ApplicationRecord
   def next_payment_date
     return nil unless first_lesson_date.present?
 
-    total_paid_lessons = Payment.where(enrollment_id: id).sum(:lessons)
-    return nil if total_paid_lessons == 0
-
-    day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
-    current_date = first_lesson_date
-    lessons_counted = 0
-    max_iterations = total_paid_lessons * 10
-    iteration = 0
-
-    while lessons_counted < total_paid_lessons && iteration < max_iterations
-      iteration += 1
-
-      all_schedules = enrollment_schedule_histories.order(effective_from: :asc).to_a
-      
-      applicable_schedule = nil
-      if all_schedules.empty?
-        applicable_schedule = OpenStruct.new(day: day, time_slot: time_slot)
-      else
-        all_schedules.each_with_index do |schedule, index|
-          if current_date >= schedule.effective_from
-            next_schedule = all_schedules[index + 1]
-            if next_schedule.nil? || current_date < next_schedule.effective_from
-              applicable_schedule = schedule
-              break
-            end
-          end
-        end
-      end
-
-      if applicable_schedule && applicable_schedule.day.present?
-        target_wday = day_to_wday[applicable_schedule.day]
-        if current_date.wday == target_wday
-          has_pass = MakeupPassRequest.where(
-            user_id: user_id,
-            request_date: current_date,
-            request_type: 'pass',
-            status: ['active', 'completed']
-          ).exists?
-
-          is_on_leave = was_on_leave_at?(current_date)
-
-          unless has_pass || is_on_leave
-            lessons_counted += 1
-          end
-        end
-      end
-
-      current_date += 1.day
-    end
-
-    current_date - 1.day
+    last_schedule = TeacherSchedule.where(
+      user_enrollment_id: id
+    ).order(lesson_date: :desc).first
+    
+    return last_schedule&.lesson_date
   end
 
   def calculate_extended_weeks(base_last_lesson_date)
