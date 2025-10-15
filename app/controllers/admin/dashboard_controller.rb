@@ -641,6 +641,12 @@ class Admin::DashboardController < ApplicationController
         next
       end
 
+      # 시간표 관리 모드에서는 day/time_slot이 null인 회원 제외 (미배치 회원)
+      if mode == 'manager' && (enrollment.day.nil? || enrollment.time_slot.nil?)
+        Rails.logger.info "SKIP(미배치 회원): #{user.name}"
+        next
+      end
+
       is_on_leave = enrollment.status == 'on_leave'
 
       if is_on_leave
@@ -819,6 +825,90 @@ class Admin::DashboardController < ApplicationController
     render json: { success: true, schedules: schedule_data, week_start: target_week_start.strftime('%Y-%m-%d'), week_end: target_week_end.strftime('%Y-%m-%d') }
   rescue => e
     Rails.logger.error "스케줄 불러오기 오류: #{e.message}"
+    render json: { success: false, message: '스케줄을 불러오는 중 오류가 발생했습니다.' }, status: :internal_server_error
+  end
+
+  # 월간 스케줄 로드 (휴원 복귀 시간대 선택용)
+  def load_monthly_schedule
+    teacher = params[:teacher]
+    year = params[:year].to_i
+    month = params[:month].to_i
+    mode = params[:mode] || 'manager'
+
+    if teacher.blank? || year == 0 || month == 0
+      render json: { success: false, message: '필수 정보가 누락되었습니다.' }, status: :bad_request
+      return
+    end
+
+    # 해당 월의 첫날과 마지막날
+    month_start = Date.new(year, month, 1)
+    month_end = month_start.end_of_month
+
+    Rails.logger.info "=== load_monthly_schedule ==="
+    Rails.logger.info "teacher: #{teacher}, year: #{year}, month: #{month}"
+    Rails.logger.info "month_start: #{month_start}, month_end: #{month_end}"
+
+    # 해당 월의 모든 스케줄 데이터 가져오기
+    schedules = TeacherSchedule.includes(:user).where(teacher: teacher)
+                                .where(lesson_date: month_start..month_end)
+
+    # 날짜별로 스케줄 데이터 저장 (date => { time_slot => [students] })
+    schedule_data = {}
+
+    schedules.each do |schedule|
+      date_str = schedule.lesson_date.strftime('%Y-%m-%d')
+      time_slot = schedule.time_slot
+      user = schedule.user
+
+      unless user
+        Rails.logger.info "SKIP(user 없음): schedule_id=#{schedule.id}"
+        next
+      end
+
+      enrollment = UserEnrollment.find_by(
+        user_id: user.id,
+        teacher: teacher,
+        is_paid: true
+      )
+
+      unless enrollment
+        Rails.logger.info "SKIP(enrollment 없음): #{user.name}"
+        next
+      end
+
+      # 미배치 회원 제외
+      if mode == 'manager' && (enrollment.day.nil? || enrollment.time_slot.nil?)
+        Rails.logger.info "SKIP(미배치 회원): #{user.name}"
+        next
+      end
+
+      # 휴원중인 회원 제외
+      if enrollment.status == 'on_leave'
+        Rails.logger.info "SKIP(휴원중): #{user.name}"
+        next
+      end
+
+      # 수업 횟수 소진된 회원 제외
+      if enrollment.remaining_lessons <= 0
+        Rails.logger.info "SKIP(수업 횟수 소진): #{user.name}"
+        next
+      end
+
+      Rails.logger.info "표시됨: #{user.name} / date=#{date_str} / time_slot=#{time_slot}"
+
+      schedule_data[date_str] ||= {}
+      schedule_data[date_str][time_slot] ||= []
+      schedule_data[date_str][time_slot] << {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        teacher: user.teacher
+      }
+    end
+
+    render json: { success: true, schedules: schedule_data }
+  rescue => e
+    Rails.logger.error "월간 스케줄 불러오기 오류: #{e.message}"
     render json: { success: false, message: '스케줄을 불러오는 중 오류가 발생했습니다.' }, status: :internal_server_error
   end
 
@@ -1952,6 +2042,11 @@ class Admin::DashboardController < ApplicationController
       total_paid_lessons = Payment.where(enrollment_id: enrollment.id).sum(:lessons)
       total_paid_lessons = enrollment.remaining_lessons if total_paid_lessons == 0
 
+      # 기존에 이미 완료한 수업 횟수 계산 (과거 TeacherSchedule 확인)
+      past_completed_lessons = TeacherSchedule.where(
+        user_id: user_id
+      ).where('lesson_date < ?', Date.current).count
+
       # 과거 스케줄 유지, 미래만 삭제
       TeacherSchedule.where(user_id: user_id)
                      .where('lesson_date >= ?', Date.current)
@@ -1981,6 +2076,9 @@ class Admin::DashboardController < ApplicationController
           time_slot: time_slot
         )
 
+        # first_lesson_date를 기준으로 스케줄 생성 시작 (과거든 미래든 상관없이)
+        first_lesson_date = enrollment.first_lesson_date
+
         enrollment.enrollment_schedule_histories.create!(
           day: day,
           time_slot: time_slot,
@@ -1992,15 +2090,47 @@ class Admin::DashboardController < ApplicationController
       # 시작 주차 계산
       start_week_number = enrollment.calculate_week_number(first_lesson_date)
       
-      current_date = first_lesson_date
+      # 과거에 이미 완료한 수업이 있으면
+      if past_completed_lessons > 0
+        # 첫 수업일이 속한 주의 시작일 (일요일)
+        original_week_start = first_lesson_date.beginning_of_week(:sunday)
+        
+        # 같은 주에서 새로운 요일을 먼저 확인
+        same_week_new_day = original_week_start + day_index.days
+        
+        # 같은 주의 새 요일이 첫 수업일보다 늦고, 아직 지나지 않았다면 그 날부터 시작
+        if same_week_new_day > first_lesson_date && same_week_new_day >= Date.current
+          current_date = same_week_new_day
+          Rails.logger.info "같은 주의 새 요일부터 시작: #{current_date}"
+        else
+          # 그렇지 않으면 다음 주로
+          target_week_start = original_week_start + 7.days
+          current_date = target_week_start + day_index.days
+          
+          # 만약 그 날짜가 이미 지나갔다면 다음 주로
+          if current_date < Date.current
+            current_date += 7.days
+          end
+          Rails.logger.info "다음 주부터 시작: #{current_date}"
+        end
+        
+        lessons_to_create = total_paid_lessons - past_completed_lessons
+        Rails.logger.info "과거 수업 #{past_completed_lessons}회 완료, 남은 #{lessons_to_create}회 생성"
+      else
+        # 과거 수업이 없으면 first_lesson_date부터
+        current_date = first_lesson_date
+        lessons_to_create = total_paid_lessons
+      end
+      
       lessons_created = 0
+      past_lessons_count = 0  # 이미 지나간 수업 개수
       max_iterations = total_paid_lessons * 10
       iteration = 0
 
-      while lessons_created < enrollment.remaining_lessons && iteration < max_iterations
+      while lessons_created < lessons_to_create && iteration < max_iterations
         iteration += 1
         
-        if current_date.wday == day_index && current_date >= first_lesson_date
+        if current_date.wday == day_index
           TeacherSchedule.create!(
             user_id: user_id,
             teacher: target_teacher,
@@ -2009,12 +2139,27 @@ class Admin::DashboardController < ApplicationController
             lesson_date: current_date
           )
           lessons_created += 1
+          
+          # 이미 지나간 수업인지 확인 (수업 종료 시간 기준)
+          time_slot_end_hour = time_slot.split('-').last.to_i
+          lesson_end_time = Time.zone.local(current_date.year, current_date.month, current_date.day, time_slot_end_hour, 0, 0)
+          
+          if Time.current > lesson_end_time
+            past_lessons_count += 1
+          end
         end
         
         current_date += 1.day
       end
 
-      Rails.logger.info "미배치 학생 배치: #{user.name} / #{target_teacher} / #{day} #{time_slot} / #{lessons_created}개 수업 생성"
+      # 이미 지나간 수업만큼 remaining_lessons 차감
+      if past_lessons_count > 0
+        new_remaining = enrollment.remaining_lessons - past_lessons_count
+        enrollment.update!(remaining_lessons: [new_remaining, 0].max)
+        Rails.logger.info "과거 수업 차감: #{past_lessons_count}회 차감, 남은 수업: #{enrollment.remaining_lessons}회"
+      end
+
+      Rails.logger.info "미배치 학생 배치: #{user.name} / #{target_teacher} / #{day} #{time_slot} / 총 #{lessons_created}개 수업 생성 (과거 완료: #{past_completed_lessons}회, 새로 지나간: #{past_lessons_count}회, 남은: #{enrollment.remaining_lessons}회)"
     end
 
     render json: { success: true }
@@ -2045,21 +2190,13 @@ class Admin::DashboardController < ApplicationController
         return
       end
 
-      # TeacherSchedule 중 미래 스케줄만 삭제 (과거 이력 유지)
-      TeacherSchedule.where(
-        user_id: user_id,
-        teacher: teacher,
-        day: day,
-        time_slot: time_slot
-      ).where('lesson_date >= ?', Date.current).destroy_all
-
-      # UserEnrollment는 유지하되 day, time_slot만 null로 (결제 정보 유지)
+      # UserEnrollment는 유지하되 day, time_slot만 null로 (결제 정보와 스케줄 레코드 유지)
       enrollment.update!(
         day: nil,
         time_slot: nil
       )
 
-      Rails.logger.info "스케줄 해제: #{User.find(user_id).name} / #{day} #{time_slot}"
+      Rails.logger.info "스케줄 해제: #{User.find(user_id).name} / #{day} #{time_slot} (스케줄 레코드 유지)"
     end
 
     render json: { success: true }
@@ -2188,12 +2325,18 @@ class Admin::DashboardController < ApplicationController
       remaining_passes: remaining_passes,
       schedule_records: TeacherSchedule.where(user_id: user.id)
                                        .order(:lesson_date)
-                                       .map { |s| {
-                                         lesson_date: s.lesson_date&.strftime('%Y.%m.%d'),
-                                         day: s.day,
-                                         time_slot: s.time_slot,
-                                         teacher: s.teacher
-                                       }}
+                                       .map.with_index { |s, idx|
+        # 주차는 순서대로 1, 2, 3, 4...
+        week_number = idx + 1
+        
+        {
+          week_number: week_number,
+          lesson_date: s.lesson_date&.strftime('%Y.%m.%d'),
+          day: s.day,
+          time_slot: s.time_slot,
+          teacher: s.teacher
+        }
+      }
     }
   rescue ActiveRecord::RecordNotFound
     render json: { success: false, error: '회원을 찾을 수 없습니다.' }, status: :not_found

@@ -116,6 +116,7 @@ Rails.application.routes.draw do
     # 스케줄 관리 API
     post 'save_schedule', to: 'dashboard#save_schedule'
     get 'load_schedule', to: 'dashboard#load_schedule'
+    get 'load_monthly_schedule', to: 'dashboard#load_monthly_schedule'
     get 'schedule_changes', to: 'dashboard#schedule_changes'
     patch 'teacher_schedules/:id/toggle_absence', to: 'dashboard#toggle_absence'
 

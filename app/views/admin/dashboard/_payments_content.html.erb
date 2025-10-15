@@ -1640,11 +1640,9 @@
   window.toggleEnrollmentStatus = function(enrollmentId, currentStatus, teacher) {
     const newStatus = currentStatus === 'on_leave' ? 'active' : 'on_leave';
 
-    // 휴원 해제 시 시간표 선택 모달 표시
     if (currentStatus === 'on_leave') {
       window.showScheduleSelectModal(enrollmentId, teacher);
     } else {
-      // 휴원 처리 (그냥 상태만 변경)
       fetch(`/admin/user_enrollments/${enrollmentId}/toggle_status`, {
         method: 'PATCH',
         headers: {
@@ -1670,30 +1668,28 @@
     }
   };
 
-  // 시간표 선택 모달 표시 (휴원 해제용)
+  window.TEACHERS_DATA = <%= raw @teachers.to_json %>;
+  window.TEACHER_HOLIDAYS_DATA = <%= raw @teacher_holidays.to_json %>;
+
+  // 시간표 선택 모달 표시 (휴원 해제용 - 월간 캘린더)
   window.showScheduleSelectModal = function(enrollmentId, teacher) {
     window.currentEnrollmentId = enrollmentId;
 
     window.scheduleModalData = {
       currentTeacher: teacher,
-      teachers: <%= raw @teachers.to_json %>,
-      teacherHolidays: <%= raw @teacher_holidays.to_json %>,
+      teachers: window.TEACHERS_DATA,
+      teacherHolidays: window.TEACHER_HOLIDAYS_DATA,
       selectedDate: null,
-      selectedWeekOffset: 0,
-      availabilityData: {},
+      currentMonth: new Date(),
       scheduleData: {}
     };
 
-    // 선생님 탭 렌더링
     renderTeacherTabs();
-
-    // 캘린더 렌더링 (현재 주)
-    loadScheduleAndRenderCalendar(0);
+    loadScheduleForMonthAndRenderCalendar();
 
     document.getElementById('schedule-select-modal').style.display = 'flex';
   };
 
-  // 선생님 탭 렌더링
   function renderTeacherTabs() {
     const tabsContainer = document.getElementById('teacher-tabs');
     const teachers = window.scheduleModalData.teachers;
@@ -1712,7 +1708,6 @@
     tabsContainer.innerHTML = html;
   }
 
-  // 선생님 전환
   window.switchTeacher = function(teacher) {
     window.scheduleModalData.currentTeacher = teacher;
     window.scheduleModalData.selectedDate = null;
@@ -1721,21 +1716,21 @@
     document.getElementById('selected-date-info').style.display = 'none';
     document.getElementById('schedule-select-content').innerHTML = '<p style="text-align: center; color: #9ca3af;">날짜를 선택해주세요.</p>';
 
-    // 현재 주의 시간표 다시 불러오기
-    loadScheduleAndRenderCalendar(window.scheduleModalData.selectedWeekOffset);
+    loadScheduleForMonthAndRenderCalendar();
   };
 
-  // 시간표 불러오고 캘린더 렌더링
-  function loadScheduleAndRenderCalendar(weekOffset) {
+  function loadScheduleForMonthAndRenderCalendar() {
     const teacher = window.scheduleModalData.currentTeacher;
+    const currentMonth = window.scheduleModalData.currentMonth;
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
 
-    fetch(`/admin/load_schedule?teacher=${encodeURIComponent(teacher)}&week_offset=${weekOffset}&mode=manager`)
+    fetch(`/admin/load_monthly_schedule?teacher=${encodeURIComponent(teacher)}&year=${year}&month=${month}&mode=manager`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
           window.scheduleModalData.scheduleData = data.schedules;
-          window.scheduleModalData.selectedWeekOffset = weekOffset;
-          renderScheduleCalendar(data.week_start, data.week_end);
+          renderMonthlyScheduleCalendar();
         } else {
           alert('시간표를 불러오는데 실패했습니다.');
         }
@@ -1746,20 +1741,21 @@
       });
   }
 
-  // 캘린더 렌더링 (주 단위)
-  function renderScheduleCalendar(weekStart, weekEnd) {
-    const startDate = new Date(weekStart + 'T00:00:00');
-    const endDate = new Date(weekEnd + 'T00:00:00');
+  function renderMonthlyScheduleCalendar() {
+    const currentMonth = window.scheduleModalData.currentMonth;
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
 
-    const year = startDate.getFullYear();
-    const month = startDate.getMonth() + 1;
-
-    document.getElementById('schedule-calendar-month').textContent = `${year}년 ${month}월 (${weekStart} ~ ${weekEnd})`;
+    document.getElementById('schedule-calendar-month').textContent = `${year}년 ${month + 1}월`;
 
     const scheduleData = window.scheduleModalData.scheduleData;
     const teacherHolidays = window.scheduleModalData.teacherHolidays[window.scheduleModalData.currentTeacher] || [];
-    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     let html = '<table style="width: 100%; border-collapse: collapse;">';
     html += '<thead><tr>';
@@ -1768,24 +1764,24 @@
     });
     html += '</tr></thead><tbody><tr>';
 
-    // 7일간의 날짜 렌더링
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
+    for (let i = 0; i < firstDay; i++) {
+      html += '<td style="padding: 20px; border: 1px solid #e5e7eb; background: #f9fafb;"></td>';
+    }
 
-      const dateStr = currentDate.getFullYear() + '-' +
-                      String(currentDate.getMonth() + 1).padStart(2, '0') + '-' +
-                      String(currentDate.getDate()).padStart(2, '0');
+    for (let date = 1; date <= lastDate; date++) {
+      const currentDate = new Date(year, month, date);
+      currentDate.setHours(0, 0, 0, 0);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
 
       const dayOfWeek = currentDate.getDay();
-      const dayKey = dayKeys[dayOfWeek];
       const isHoliday = teacherHolidays.includes(dayOfWeek);
+      const isPast = currentDate < today;
 
       let isFull = false;
-      if (!isHoliday && scheduleData[dayKey]) {
+      if (!isHoliday && scheduleData[dateStr]) {
         isFull = true;
         for (const timeSlot of timeSlots) {
-          const students = scheduleData[dayKey][timeSlot] || [];
+          const students = scheduleData[dateStr][timeSlot] || [];
           if (students.length < 3) {
             isFull = false;
             break;
@@ -1793,48 +1789,67 @@
         }
       }
 
-      let style = 'padding: 20px; text-align: center; cursor: pointer; border: 1px solid #e5e7eb; vertical-align: top;';
+      let style = 'height: 100px; padding: 15px; text-align: center; border: 1px solid #e5e7eb; vertical-align: top;';
       let bgColor = 'white';
 
-      if (isHoliday) {
-        bgColor = '#fef3c7'; // 연노랑 (휴무일)
+      if (isPast) {
+        bgColor = '#f3f4f6';
+        style += ' cursor: not-allowed;';
+      } else if (isHoliday) {
+        bgColor = '#fef3c7';
         style += ' cursor: not-allowed;';
       } else if (isFull) {
-        bgColor = '#fee2e2'; // 연붉은색 (꽉 참)
+        bgColor = '#fee2e2';
         style += ' cursor: not-allowed;';
       } else {
         bgColor = 'white';
+        style += ' cursor: pointer;';
       }
 
       style += ` background: ${bgColor};`;
 
-      const onclick = (isHoliday || isFull) ? '' : `onclick="selectScheduleDate('${dateStr}')"`;
-      const onmouseover = (isHoliday || isFull) ? '' : `onmouseover="this.style.background='#dbeafe'"`;
-      const onmouseout = (isHoliday || isFull) ? '' : `onmouseout="this.style.background='${bgColor}'"`;
+      const canSelect = !isPast && !isHoliday && !isFull;
+      const onclick = canSelect ? `onclick="selectScheduleDate('${dateStr}')"` : '';
+      const onmouseover = canSelect ? `onmouseover="this.style.background='#dbeafe'"` : '';
+      const onmouseout = canSelect ? `onmouseout="this.style.background='${bgColor}'"` : '';
 
       html += `<td style="${style}" ${onclick} ${onmouseover} ${onmouseout}>`;
-      html += `<div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 5px;">${currentDate.getDate()}</div>`;
+      html += `<div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 5px;">${date}</div>`;
 
-      if (isHoliday) {
-        html += '<div style="font-size: 0.8rem; color: #f59e0b;">휴무</div>';
+      if (isPast) {
+        html += '<div style="font-size: 0.75rem; color: #9ca3af;">지난 날짜</div>';
+      } else if (isHoliday) {
+        html += '<div style="font-size: 0.75rem; color: #f59e0b;">휴무</div>';
       } else if (isFull) {
-        html += '<div style="font-size: 0.8rem; color: #dc2626;">예약 불가</div>';
+        html += '<div style="font-size: 0.75rem; color: #dc2626;">예약 불가</div>';
       }
 
       html += '</td>';
+
+      if ((firstDay + date) % 7 === 0 && date !== lastDate) {
+        html += '</tr><tr>';
+      }
+    }
+
+    const lastDayOfWeek = (firstDay + lastDate) % 7;
+    if (lastDayOfWeek !== 0) {
+      for (let i = lastDayOfWeek; i < 7; i++) {
+        html += '<td style="padding: 20px; border: 1px solid #e5e7eb; background: #f9fafb;"></td>';
+      }
     }
 
     html += '</tr></tbody></table>';
     document.getElementById('schedule-calendar-content').innerHTML = html;
   }
 
-  // 주 변경
   window.changeScheduleMonth = function(delta) {
-    const newWeekOffset = window.scheduleModalData.selectedWeekOffset + delta;
-    loadScheduleAndRenderCalendar(newWeekOffset);
+    window.scheduleModalData.currentMonth.setMonth(window.scheduleModalData.currentMonth.getMonth() + delta);
+    window.scheduleModalData.selectedDate = null;
+    document.getElementById('selected-date-info').style.display = 'none';
+    document.getElementById('schedule-select-content').innerHTML = '<p style="text-align: center; color: #9ca3af;">날짜를 선택해주세요.</p>';
+    loadScheduleForMonthAndRenderCalendar();
   };
 
-  // 날짜 선택
   window.selectScheduleDate = function(dateStr) {
     window.scheduleModalData.selectedDate = dateStr;
 
@@ -1845,28 +1860,30 @@
 
     const selectedDay = dayKeys[dayOfWeek];
 
-    // 선택된 날짜 정보 표시
     const infoDiv = document.getElementById('selected-date-info');
     infoDiv.style.display = 'block';
     infoDiv.querySelector('p').textContent = `선택된 날짜: ${dateStr} (${dayNames[dayOfWeek]})`;
 
-    // 해당 요일의 시간표 표시
     const scheduleData = window.scheduleModalData.scheduleData;
     const teacherHolidays = window.scheduleModalData.teacherHolidays[window.scheduleModalData.currentTeacher] || [];
     const isHoliday = teacherHolidays.includes(dayOfWeek);
 
-    renderScheduleForDay(selectedDay, scheduleData[selectedDay] || {}, isHoliday);
+    renderScheduleForDate(dateStr, scheduleData[dateStr] || {}, isHoliday);
   };
 
-  // 특정 요일의 시간표 렌더링
-  function renderScheduleForDay(day, daySchedule, isHoliday) {
+  function renderScheduleForDate(dateStr, dateSchedule, isHoliday) {
     const modalContent = document.getElementById('schedule-select-content');
     const timeSlots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22'];
+
+    const date = new Date(dateStr + 'T00:00:00');
+    const dayOfWeek = date.getDay();
+    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const day = dayKeys[dayOfWeek];
 
     let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">';
 
     timeSlots.forEach(timeSlot => {
-      const students = daySchedule[timeSlot] || [];
+      const students = dateSchedule[timeSlot] || [];
       const currentCount = students.length;
       const isFull = currentCount >= 3;
 
@@ -1903,7 +1920,6 @@
     modalContent.innerHTML = html;
   }
 
-  // 시간대 선택
   window.selectScheduleSlot = function(day, timeSlot) {
     const modalData = window.scheduleModalData;
     const selectedDate = modalData.selectedDate;
