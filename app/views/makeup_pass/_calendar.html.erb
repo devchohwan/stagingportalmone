@@ -64,7 +64,7 @@
           css_classes << "lesson-day" if (is_next_lesson || is_following_lesson) && !is_teacher_closed
           css_classes << "between-lessons" if is_between_lessons && !is_teacher_closed && !is_blocked
 
-          is_clickable = is_current_month && !is_past && !is_teacher_closed && !is_blocked && (is_between_lessons || is_next_lesson || is_following_lesson)
+          is_clickable = is_current_month && !is_past && !is_teacher_closed && !is_blocked && (is_between_lessons || is_next_lesson)
         %>
         
         <div class="<%= css_classes.join(' ') %>" 
