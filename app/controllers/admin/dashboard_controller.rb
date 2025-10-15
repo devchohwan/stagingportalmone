@@ -2421,18 +2421,20 @@ class Admin::DashboardController < ApplicationController
                                        .joins(:user_enrollment)
                                        .order(:lesson_date)
                                        .select('teacher_schedules.*, user_enrollments.subject')
-                                       .map.with_index { |s, idx|
-        week_number = idx + 1
-        
-        {
-          week_number: week_number,
-          lesson_date: s.lesson_date&.strftime('%Y.%m.%d'),
-          day: s.day,
-          time_slot: s.time_slot,
-          teacher: s.teacher,
-          subject: s.subject
+                                       .group_by { |s| s.subject }
+                                       .flat_map { |subject, records|
+        records.map.with_index { |s, idx|
+          {
+            week_number: idx + 1,
+            lesson_date: s.lesson_date&.strftime('%Y.%m.%d'),
+            day: s.day,
+            time_slot: s.time_slot,
+            teacher: s.teacher,
+            subject: s.subject
+          }
         }
       }
+                                       .sort_by { |r| r[:lesson_date] }
     }
   rescue ActiveRecord::RecordNotFound
     render json: { success: false, error: '회원을 찾을 수 없습니다.' }, status: :not_found
