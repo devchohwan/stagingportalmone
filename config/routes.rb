@@ -107,6 +107,7 @@ Rails.application.routes.draw do
     post 'user_enrollments', to: 'dashboard#create_user_enrollment'
     delete 'user_enrollments/:id', to: 'dashboard#delete_user_enrollment'
     patch 'user_enrollments/:id/toggle_status', to: 'dashboard#toggle_enrollment_status'
+    get 'user_existing_schedules/:user_id', to: 'dashboard#user_existing_schedules'
     get 'teacher_available_slots', to: 'dashboard#teacher_available_slots'
     get 'teacher_schedule_availability', to: 'dashboard#get_teacher_schedule_availability'
 

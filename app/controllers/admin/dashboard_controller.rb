@@ -1401,6 +1401,43 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, message: e.message }, status: :internal_server_error
   end
 
+  def user_existing_schedules
+    user = User.find(params[:user_id])
+    selected_teacher = params[:teacher]
+    
+    clean_teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또']
+    special_teachers = ['지명', '도현']
+    
+    filter_teachers = if special_teachers.include?(selected_teacher)
+      clean_teachers + (special_teachers - [selected_teacher])
+    else
+      special_teachers
+    end
+    
+    schedules = user.teacher_schedules
+                    .joins(:user_enrollment)
+                    .where(user_enrollments: { teacher: filter_teachers })
+                    .where('lesson_date >= ?', Date.current)
+                    .select('teacher_schedules.*, user_enrollments.subject')
+                    .group_by { |s| s.lesson_date }
+    
+    schedule_data = schedules.transform_values do |day_schedules|
+      day_schedules.map do |schedule|
+        {
+          teacher: schedule.teacher,
+          subject: schedule.subject,
+          time_slot: schedule.time_slot,
+          time_display: schedule.time_slot.split('-').join(':00-') + ':00'
+        }
+      end
+    end
+    
+    render json: { success: true, schedules: schedule_data }
+  rescue => e
+    Rails.logger.error "User schedules error: #{e.message}"
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
   # 시간표 뷰어 페이지
   def schedule_viewer
     @teachers = User::TEACHERS - ['온라인']
