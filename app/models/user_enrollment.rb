@@ -218,27 +218,26 @@ class UserEnrollment < ApplicationRecord
 
   # 스케줄 변경 추적 (요일/시간)
   def track_schedule_change
-    if (day_changed? || time_slot_changed?) && (day_was.present? || time_slot_was.present?)
-      # 변경 전 스케줄 기록 (아직 이력이 없는 경우)
-      if enrollment_schedule_histories.empty? && first_lesson_date.present?
-        enrollment_schedule_histories.create!(
-          day: day_was || day,
-          time_slot: time_slot_was || time_slot,
-          changed_at: created_at || Time.current,
-          effective_from: first_lesson_date
-        )
-      end
+    return unless (day_changed? || time_slot_changed?) && (day_was.present? || time_slot_was.present?)
+    return unless day.present? && time_slot.present? # 스케줄 해제는 기록하지 않음
 
-      # 새 스케줄 기록 (스케줄 해제가 아닌 경우만)
-      if day.present? && time_slot.present?
-        enrollment_schedule_histories.create!(
-          day: day,
-          time_slot: time_slot,
-          changed_at: Time.current,
-          effective_from: Date.current
-        )
-      end
+    # 첫 변경인 경우: 변경 전 스케줄도 함께 기록
+    if enrollment_schedule_histories.empty? && first_lesson_date.present?
+      enrollment_schedule_histories.create!(
+        day: day_was,
+        time_slot: time_slot_was,
+        changed_at: created_at || Time.current,
+        effective_from: first_lesson_date
+      )
     end
+
+    # 새 스케줄 기록
+    enrollment_schedule_histories.create!(
+      day: day,
+      time_slot: time_slot,
+      changed_at: Time.current,
+      effective_from: Date.current
+    )
   end
 
   # 상태 변경 추적 (휴원/복귀)
