@@ -3,11 +3,11 @@
     <% room = room_data[:room] %>
     <% available = room_data[:available] %>
     
-    <div class="room-btn <%= 'unavailable' unless available %>" 
+    <div class="room-btn <%= 'unavailable' unless available %>"
          <% if available %>
            data-room-id="<%= room.id %>"
            data-room-number="<%= room.number %>"
-           onclick="window.selectRoom(this)"
+           data-action="click->reservation#selectRoom"
          <% end %>>
       <span class="room-name"><%= room.number %>번 연습실</span>
       <div class="room-info">
