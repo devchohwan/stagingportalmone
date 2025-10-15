@@ -733,7 +733,8 @@
                            data-teacher="<%= enrollment.teacher %>"
                            data-day="<%= enrollment.day_korean %>"
                            data-time="<%= enrollment.time_slot %>"
-                           data-status="<%= enrollment.status %>">
+                           data-status="<%= enrollment.status %>"
+                           data-schedule-history="<%= enrollment.enrollment_schedule_histories.order(:effective_from).map { |h| { date: h.effective_from.strftime('%Y.%m.%d'), day: h.day, time: h.time_slot } }.to_json %>">
                       </div>
                     <% end %>
                   </div>
@@ -1584,6 +1585,11 @@
     const items = enrollmentData.querySelectorAll('.enrollment-item');
     let html = '';
 
+    const dayNames = {
+      'sun': '일요일', 'mon': '월요일', 'tue': '화요일', 'wed': '수요일',
+      'thu': '목요일', 'fri': '금요일', 'sat': '토요일'
+    };
+
     items.forEach(item => {
       const id = item.getAttribute('data-id');
       const subject = item.getAttribute('data-subject');
@@ -1591,11 +1597,30 @@
       const day = item.getAttribute('data-day');
       const time = item.getAttribute('data-time');
       const status = item.getAttribute('data-status');
+      const scheduleHistory = JSON.parse(item.getAttribute('data-schedule-history') || '[]');
 
       html += '<div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0;">';
       html += '<div style="font-weight: 600; margin-bottom: 8px;">' + subject + ' - ' + teacher + '</div>';
       html += '<div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 10px;">' + day + ' ' + time + '</div>';
-      html += '<button onclick="toggleEnrollmentStatus(' + id + ', \'' + status + '\', \'' + teacher + '\')" style="padding: 8px 16px; background: ' + (status === 'on_leave' ? '#f59e0b' : '#10b981') + '; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">';
+
+      // 스케줄 변경 이력 표시
+      if (scheduleHistory.length > 0) {
+        html += '<div style="margin-top: 10px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">';
+        html += '<div style="font-size: 0.8rem; font-weight: 600; color: #4a5568; margin-bottom: 8px;">📅 스케줄 변경 이력</div>';
+        scheduleHistory.forEach((history, idx) => {
+          const dayKorean = dayNames[history.day] || history.day;
+          const isLast = idx === scheduleHistory.length - 1;
+          const textColor = isLast ? '#667eea' : '#6b7280';
+          const fontWeight = isLast ? '600' : 'normal';
+          html += '<div style="font-size: 0.75rem; color: ' + textColor + '; font-weight: ' + fontWeight + '; padding: 4px 0;">';
+          html += history.date + ': ' + dayKorean + ' ' + history.time;
+          if (isLast) html += ' <span style="color: #10b981;">(현재)</span>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      html += '<button onclick="toggleEnrollmentStatus(' + id + ', \'' + status + '\', \'' + teacher + '\')" style="padding: 8px 16px; margin-top: 10px; background: ' + (status === 'on_leave' ? '#f59e0b' : '#10b981') + '; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">';
       html += (status === 'on_leave' ? '휴원 해제' : '휴원 처리') + '</button>';
       html += '</div>';
     });
