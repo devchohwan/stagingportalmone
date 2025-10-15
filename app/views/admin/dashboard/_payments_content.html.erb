@@ -864,8 +864,9 @@
 
   let currentUserId = null;
   let currentUserName = null;
-  let enrollments = []; // 추가할 과목 목록
-  let selectedTeacher = null; // 현재 선택된 선생님
+  let enrollments = [];
+  let selectedTeacher = null;
+  let selectedUserId = null;
 
   // 결제 모달 열기
   window.openPaymentModal = function(userId) {
@@ -904,6 +905,7 @@
 
   // 새 과목 추가 모달 열기
   window.addNewEnrollment = function() {
+    selectedUserId = currentUserId;
     document.getElementById('add-enrollment-modal').style.display = 'flex';
     initializeEnrollmentForm();
   };
