@@ -1952,31 +1952,55 @@ class Admin::DashboardController < ApplicationController
       total_paid_lessons = Payment.where(enrollment_id: enrollment.id).sum(:lessons)
       total_paid_lessons = enrollment.remaining_lessons if total_paid_lessons == 0
 
-      TeacherSchedule.where(user_id: user_id).destroy_all
+      # 과거 스케줄 유지, 미래만 삭제
+      TeacherSchedule.where(user_id: user_id)
+                     .where('lesson_date >= ?', Date.current)
+                     .destroy_all
 
-      enrollment.skip_schedule_tracking = true
-      enrollment.update!(
-        day: day,
-        time_slot: time_slot,
-        first_lesson_date: first_lesson_date
-      )
+      # first_lesson_date 계산: 기존 유지 or 새로 설정
+      if enrollment.first_lesson_date.nil?
+        # 신규 등록
+        enrollment.skip_schedule_tracking = true
+        enrollment.update!(
+          day: day,
+          time_slot: time_slot,
+          first_lesson_date: first_lesson_date
+        )
 
-      enrollment.enrollment_schedule_histories.create!(
-        day: day,
-        time_slot: time_slot,
-        changed_at: Time.current,
-        effective_from: first_lesson_date
-      )
+        enrollment.enrollment_schedule_histories.create!(
+          day: day,
+          time_slot: time_slot,
+          changed_at: Time.current,
+          effective_from: first_lesson_date
+        )
+      else
+        # 기존 enrollment, first_lesson_date 유지
+        enrollment.skip_schedule_tracking = true
+        enrollment.update!(
+          day: day,
+          time_slot: time_slot
+        )
 
+        enrollment.enrollment_schedule_histories.create!(
+          day: day,
+          time_slot: time_slot,
+          changed_at: Time.current,
+          effective_from: first_lesson_date
+        )
+      end
+
+      # 시작 주차 계산
+      start_week_number = enrollment.calculate_week_number(first_lesson_date)
+      
       current_date = first_lesson_date
       lessons_created = 0
       max_iterations = total_paid_lessons * 10
       iteration = 0
 
-      while lessons_created < total_paid_lessons && iteration < max_iterations
+      while lessons_created < enrollment.remaining_lessons && iteration < max_iterations
         iteration += 1
         
-        if current_date.wday == day_index
+        if current_date.wday == day_index && current_date >= first_lesson_date
           TeacherSchedule.create!(
             user_id: user_id,
             teacher: target_teacher,
@@ -2021,13 +2045,13 @@ class Admin::DashboardController < ApplicationController
         return
       end
 
-      # TeacherSchedule 모두 삭제 (모든 주차)
+      # TeacherSchedule 중 미래 스케줄만 삭제 (과거 이력 유지)
       TeacherSchedule.where(
         user_id: user_id,
         teacher: teacher,
         day: day,
         time_slot: time_slot
-      ).destroy_all
+      ).where('lesson_date >= ?', Date.current).destroy_all
 
       # UserEnrollment는 유지하되 day, time_slot만 null로 (결제 정보 유지)
       enrollment.update!(

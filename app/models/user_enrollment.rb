@@ -49,6 +49,29 @@ class UserEnrollment < ApplicationRecord
     "#{teacher_history} -> #{teacher}"
   end
 
+  def current_week_number
+    return 0 unless first_lesson_date
+    
+    last_schedule = TeacherSchedule.where(user_id: user_id)
+                                   .order(:lesson_date)
+                                   .last
+    
+    return 0 unless last_schedule
+    
+    ((last_schedule.lesson_date - first_lesson_date).to_i / 7) + 1
+  end
+
+  def next_week_number
+    current_week_number + 1
+  end
+
+  def calculate_week_number(target_date)
+    return 0 unless first_lesson_date
+    return 0 if target_date < first_lesson_date
+    
+    ((target_date - first_lesson_date).to_i / 7) + 1
+  end
+
   def self.process_lesson_deductions
     active_enrollments = where(is_paid: true, status: 'active').where('remaining_lessons > 0')
 
