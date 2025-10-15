@@ -2021,14 +2021,13 @@ class Admin::DashboardController < ApplicationController
         return
       end
 
-      # TeacherSchedule 삭제
-      schedule = TeacherSchedule.find_by(
+      # TeacherSchedule 모두 삭제 (모든 주차)
+      TeacherSchedule.where(
         user_id: user_id,
         teacher: teacher,
         day: day,
         time_slot: time_slot
-      )
-      schedule&.destroy
+      ).destroy_all
 
       # UserEnrollment는 유지하되 day, time_slot만 null로 (결제 정보 유지)
       enrollment.update!(
