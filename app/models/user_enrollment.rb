@@ -229,13 +229,15 @@ class UserEnrollment < ApplicationRecord
         )
       end
 
-      # 새 스케줄 기록
-      enrollment_schedule_histories.create!(
-        day: day,
-        time_slot: time_slot,
-        changed_at: Time.current,
-        effective_from: Date.current
-      )
+      # 새 스케줄 기록 (스케줄 해제가 아닌 경우만)
+      if day.present? && time_slot.present?
+        enrollment_schedule_histories.create!(
+          day: day,
+          time_slot: time_slot,
+          changed_at: Time.current,
+          effective_from: Date.current
+        )
+      end
     end
   end
 
