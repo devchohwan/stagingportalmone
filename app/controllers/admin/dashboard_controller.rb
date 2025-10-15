@@ -546,7 +546,8 @@ class Admin::DashboardController < ApplicationController
   # 스케줄 저장 API
   def save_schedule
     teacher = params[:teacher]
-    schedules = params[:schedules] # { day: { time_slot: [user_ids] } }
+    schedules = params[:schedules]
+    week_offset = params[:week_offset].to_i || 0
 
     if teacher.blank?
       render json: { success: false, message: '담당 정보가 누락되었습니다.' }, status: :bad_request
@@ -554,7 +555,6 @@ class Admin::DashboardController < ApplicationController
     end
 
     begin
-      # 3명 제한 검증
       if schedules.present?
         schedules.each do |day, time_slots|
           time_slots.each do |time_slot, user_ids|
@@ -566,20 +566,41 @@ class Admin::DashboardController < ApplicationController
         end
       end
 
-      ActiveRecord::Base.transaction do
-        # 해당 담당의 기존 스케줄 삭제
-        TeacherSchedule.where(teacher: teacher).destroy_all
+      today = Date.current
+      start_of_current_week = today.beginning_of_week(:sunday)
+      target_week_start = start_of_current_week + week_offset.weeks
+      target_week_end = target_week_start + 6.days
 
-        # 새로운 스케줄 저장 (schedules가 비어있으면 모두 삭제만 됨)
+      ActiveRecord::Base.transaction do
+        TeacherSchedule.where(
+          teacher: teacher,
+          lesson_date: target_week_start..target_week_end
+        ).destroy_all
+
         if schedules.present?
           schedules.each do |day, time_slots|
             time_slots.each do |time_slot, user_ids|
               user_ids.each do |user_id|
+                user = User.find(user_id)
+                enrollment = user.user_enrollments.find_by(
+                  teacher: teacher,
+                  is_paid: true
+                )
+                
+                next unless enrollment
+                
+                day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+                target_wday = day_to_wday[day]
+                lesson_date = target_week_start
+                lesson_date += 1.day until lesson_date.wday == target_wday
+                
                 TeacherSchedule.create!(
                   teacher: teacher,
                   day: day,
                   time_slot: time_slot,
-                  user_id: user_id
+                  user_id: user_id,
+                  lesson_date: lesson_date,
+                  user_enrollment_id: enrollment.id
                 )
               end
             end
