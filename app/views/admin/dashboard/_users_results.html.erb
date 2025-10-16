@@ -201,22 +201,19 @@
             <td style="text-align: center; font-weight: 600; color: #2d3748;">
               <% if user['enrollments']&.any? %>
                 <% user['enrollments'].each do |enrollment| %>
+                  <% next if enrollment[:subject] == '믹싱' %>
                   <div style="margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <div>
                       <span style="font-size: 0.85rem; color: #667eea;"><%= enrollment[:teacher] %> <%= enrollment[:subject] %>:</span>
                       <span><%= enrollment[:remaining_passes] %>회</span>
                     </div>
-                    <% if enrollment[:subject] == '믹싱' %>
-                      <span style="font-size: 0.7rem; color: #9ca3af; padding: 2px 8px;">패스없음</span>
-                    <% else %>
-                      <button onclick="grantPass(<%= user['id'] %>, <%= enrollment[:enrollment_id] %>, '<%= enrollment[:teacher] %>', '<%= enrollment[:subject] %>')"
-                              class="action-btn"
-                              style="padding: 2px 8px; font-size: 0.75rem; background: #48bb78; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                              onmouseover="this.style.background='#38a169'"
-                              onmouseout="this.style.background='#48bb78'">
-                        +1
-                      </button>
-                    <% end %>
+                    <button onclick="grantPass(<%= user['id'] %>, <%= enrollment[:enrollment_id] %>, '<%= enrollment[:teacher] %>', '<%= enrollment[:subject] %>')"
+                            class="action-btn"
+                            style="padding: 2px 8px; font-size: 0.75rem; background: #48bb78; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                            onmouseover="this.style.background='#38a169'"
+                            onmouseout="this.style.background='#48bb78'">
+                      +1
+                    </button>
                   </div>
                 <% end %>
               <% else %>

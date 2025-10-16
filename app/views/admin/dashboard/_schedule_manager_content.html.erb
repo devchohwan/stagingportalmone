@@ -1007,7 +1007,9 @@
         html += `<div style="background: white; border: 1px solid ${statusColor}40; border-radius: 6px; padding: 10px; min-width: 150px;">`;
         html += `<div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 3px;">${enrollment.teacher} - ${enrollment.subject}</div>`;
         html += `<div style="font-size: 1.1rem; font-weight: 700; color: ${statusColor};">수업 ${enrollment.remaining_lessons}회</div>`;
-        html += `<div style="font-size: 1.1rem; font-weight: 700; color: #f59e0b; margin-top: 5px;">패스 ${enrollment.remaining_passes || 0}회</div>`;
+        if (enrollment.subject !== '믹싱') {
+          html += `<div style="font-size: 1.1rem; font-weight: 700; color: #f59e0b; margin-top: 5px;">패스 ${enrollment.remaining_passes || 0}회</div>`;
+        }
         html += `</div>`;
       });
       html += '</div></div>';
