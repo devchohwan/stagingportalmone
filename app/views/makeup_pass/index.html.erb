@@ -176,6 +176,7 @@
           <% enrollments = current_user.user_enrollments.where(is_paid: true).where('remaining_lessons > 0') %>
           <% if enrollments.any? %>
             <% enrollments.each do |enrollment| %>
+              <% next if enrollment.subject == '믹싱' %>
               <div class="enrollment-detail">
                 <span class="enrollment-label"><%= enrollment.teacher %> <%= enrollment.subject %>:</span>
                 <span><%= enrollment.remaining_passes %>회</span>
