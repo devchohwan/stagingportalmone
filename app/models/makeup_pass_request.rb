@@ -1,6 +1,7 @@
 class MakeupPassRequest < ApplicationRecord
   belongs_to :user
   belongs_to :user_enrollment, optional: true
+  belongs_to :group_makeup_slot, optional: true
 
   validates :request_type, presence: true, inclusion: { in: %w[makeup pass] }
   validates :request_date, presence: true

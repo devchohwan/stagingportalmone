@@ -217,12 +217,39 @@ class MakeupPassController < ApplicationController
 
   def available_time_slots
     date = Date.parse(params[:date])
+    enrollment_id = params[:enrollment_id]&.to_i
+    week_number = params[:week_number]&.to_i
+
+    # 지명 믹싱이면 그룹 보강 슬롯만 조회
+    if enrollment_id
+      enrollment = current_user.user_enrollments.find_by(id: enrollment_id)
+      if enrollment && enrollment.teacher == '지명' && enrollment.subject == '믹싱'
+        unless week_number
+          render json: { error: '주차를 선택해주세요.' }, status: :unprocessable_entity
+          return
+        end
+
+        slots = GroupMakeupSlot.available_for(date, '믹싱', week_number)
+
+        render json: slots.map { |slot|
+          {
+            time_slot: slot.time_slot,
+            display_time: slot.display_time,
+            teacher: slot.teacher,
+            week_number: slot.week_number,
+            available_slots: slot.remaining_slots,
+            group_makeup_slot_id: slot.id
+          }
+        }
+        return
+      end
+    end
+
+    # 일반 보강 로직 (기존 코드)
     day_of_week = date.strftime('%a').downcase
     selected_teacher = params[:teacher]
-
     all_time_slots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22']
     teachers = User::TEACHERS - ['온라인']
-
     available_slots = []
 
     if selected_teacher.present?
@@ -235,14 +262,14 @@ class MakeupPassController < ApplicationController
 
         # 정규 수업 학생 수
         current_count = TeacherSchedule.where(
-          teacher: teacher, 
-          day: day_of_week, 
+          teacher: teacher,
+          day: day_of_week,
           time_slot: time_slot,
           lesson_date: date,
           is_on_leave: false,
           is_absent: false
         ).count
-        
+
         # 보강으로 빠진 학생 수 (원래 이 시간대에 있던 학생이 보강으로 이동)
         makeup_away_count = MakeupPassRequest
           .joins('INNER JOIN teacher_schedules ON makeup_pass_requests.user_id = teacher_schedules.user_id')
@@ -276,6 +303,9 @@ class MakeupPassController < ApplicationController
     end
 
     render json: available_slots
+  rescue => e
+    Rails.logger.error("시간대 조회 오류: #{e.message}")
+    render json: { error: e.message }, status: :internal_server_error
   end
 
   def available_teachers
@@ -367,6 +397,34 @@ class MakeupPassController < ApplicationController
     unless logged_in?
       redirect_to login_path, alert: '로그인이 필요합니다'
     end
+  end
+
+  # 결석한 주차 조회 (지명 믹싱 전용)
+  def get_absent_weeks
+    enrollment = current_user.user_enrollments.find(params[:enrollment_id])
+
+    # 지명 믹싱만 해당
+    unless enrollment.teacher == '지명' && enrollment.subject == '믹싱'
+      render json: []
+      return
+    end
+
+    # 결석한 주차 찾기
+    absent_schedules = TeacherSchedule
+      .where(
+        user_id: current_user.id,
+        user_enrollment_id: enrollment.id,
+        is_absent: true
+      )
+
+    absent_weeks = absent_schedules.map { |schedule|
+      enrollment.calculate_week_number(schedule.lesson_date)
+    }.uniq.compact.sort
+
+    render json: absent_weeks
+  rescue => e
+    Rails.logger.error("결석 주차 조회 오류: #{e.message}")
+    render json: { error: e.message }, status: :internal_server_error
   end
 
 end

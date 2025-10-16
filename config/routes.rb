@@ -57,6 +57,7 @@ Rails.application.routes.draw do
   get "makeup_pass/available_time_slots", to: "makeup_pass#available_time_slots"
   get "makeup_pass/available_teachers", to: "makeup_pass#available_teachers"
   get "makeup_pass/calculate_week", to: "makeup_pass#calculate_week"
+  get "makeup_pass/absent_weeks", to: "makeup_pass#get_absent_weeks"
 
   # 음정수업 페이지
   get "pitch", to: "pitch#index"
@@ -130,6 +131,11 @@ Rails.application.routes.draw do
     patch 'makeup_pass_requests/:id/reject', to: 'dashboard#reject_makeup_pass_request'
     delete 'makeup_pass_requests/:id', to: 'dashboard#delete_makeup_pass_request'
     post 'cancel_absence_and_reschedule', to: 'dashboard#cancel_absence_and_reschedule'
+
+    # 그룹 보강 슬롯 관리
+    post 'group_makeup_slots', to: 'dashboard#create_group_makeup_slot'
+    delete 'group_makeup_slots/:id', to: 'dashboard#delete_group_makeup_slot'
+    get 'group_makeup_slots', to: 'dashboard#group_makeup_slots'
 
     # 시간표 관리
     get 'schedule_manager', to: 'dashboard#schedule_manager'

@@ -2641,4 +2641,94 @@ class Admin::DashboardController < ApplicationController
       'enrollments' => enrollments_by_subject
     }
   end
+
+  # 그룹 보강 슬롯 생성
+  def create_group_makeup_slot
+    # 화/토만 허용
+    day = params[:day]
+    unless GroupMakeupSlot::ALLOWED_DAYS.include?(day)
+      render json: {
+        success: false,
+        message: '믹싱 보강은 화요일과 토요일만 생성 가능합니다.'
+      }, status: :unprocessable_entity
+      return
+    end
+
+    slot = GroupMakeupSlot.new(
+      teacher: '오또',
+      subject: '믹싱',
+      week_number: params[:week_number].to_i,
+      lesson_date: Date.parse(params[:lesson_date]),
+      day: day,
+      time_slot: params[:time_slot],
+      max_capacity: params[:capacity]&.to_i || 3
+    )
+
+    if slot.save
+      render json: {
+        success: true,
+        message: "#{params[:week_number]}주차 믹싱 그룹 보강이 생성되었습니다.",
+        slot: {
+          id: slot.id,
+          week_number: slot.week_number,
+          current_count: 0,
+          max_capacity: slot.max_capacity
+        }
+      }
+    else
+      render json: {
+        success: false,
+        message: slot.errors.full_messages.join(', ')
+      }, status: :unprocessable_entity
+    end
+  rescue => e
+    Rails.logger.error("그룹 보강 슬롯 생성 오류: #{e.message}")
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  # 그룹 보강 슬롯 삭제
+  def delete_group_makeup_slot
+    slot = GroupMakeupSlot.find(params[:id])
+
+    if slot.current_count > 0
+      render json: {
+        success: false,
+        message: "#{slot.current_count}명이 예약 중입니다. 삭제할 수 없습니다."
+      }, status: :unprocessable_entity
+      return
+    end
+
+    slot.destroy
+    render json: { success: true }
+  rescue ActiveRecord::RecordNotFound
+    render json: { success: false, message: '슬롯을 찾을 수 없습니다.' }, status: :not_found
+  rescue => e
+    Rails.logger.error("그룹 보강 슬롯 삭제 오류: #{e.message}")
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
+  # 특정 날짜/선생님의 그룹 보강 슬롯 목록
+  def group_makeup_slots
+    date = Date.parse(params[:date])
+    teacher = params[:teacher]
+
+    slots = GroupMakeupSlot
+      .where(lesson_date: date, teacher: teacher)
+      .active
+      .order(:time_slot)
+
+    render json: slots.map { |slot|
+      {
+        id: slot.id,
+        time_slot: slot.time_slot,
+        week_number: slot.week_number,
+        current_count: slot.current_count,
+        max_capacity: slot.max_capacity,
+        available: slot.available?
+      }
+    }
+  rescue => e
+    Rails.logger.error("그룹 보강 슬롯 조회 오류: #{e.message}")
+    render json: { error: e.message }, status: :internal_server_error
+  end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_16_070720) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_16_122911) do
   create_table "enrollment_schedule_histories", force: :cascade do |t|
     t.integer "user_enrollment_id", null: false
     t.string "day", null: false
@@ -32,6 +32,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_070720) do
     t.datetime "updated_at", null: false
     t.index ["user_enrollment_id", "changed_at"], name: "idx_on_user_enrollment_id_changed_at_94e3488428"
     t.index ["user_enrollment_id"], name: "index_enrollment_status_histories_on_user_enrollment_id"
+  end
+
+  create_table "group_makeup_slots", force: :cascade do |t|
+    t.string "teacher", null: false
+    t.string "subject", null: false
+    t.integer "week_number", null: false
+    t.date "lesson_date", null: false
+    t.string "day", null: false
+    t.string "time_slot", null: false
+    t.integer "max_capacity", default: 3, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["lesson_date", "teacher", "time_slot"], name: "idx_on_lesson_date_teacher_time_slot_e346b4d656"
+    t.index ["subject", "week_number", "lesson_date"], name: "idx_on_subject_week_number_lesson_date_f57038a5c5"
   end
 
   create_table "lesson_deductions", force: :cascade do |t|
@@ -92,6 +107,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_070720) do
     t.date "makeup_date"
     t.datetime "cancelled_at"
     t.integer "user_enrollment_id"
+    t.integer "group_makeup_slot_id"
+    t.index ["group_makeup_slot_id"], name: "index_makeup_pass_requests_on_group_makeup_slot_id"
     t.index ["makeup_date"], name: "index_makeup_pass_requests_on_makeup_date"
     t.index ["request_date"], name: "index_makeup_pass_requests_on_request_date"
     t.index ["user_enrollment_id"], name: "index_makeup_pass_requests_on_user_enrollment_id"
@@ -340,6 +357,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_070720) do
   add_foreign_key "enrollment_schedule_histories", "user_enrollments"
   add_foreign_key "enrollment_status_histories", "user_enrollments"
   add_foreign_key "makeup_lessons", "users"
+  add_foreign_key "makeup_pass_requests", "group_makeup_slots"
   add_foreign_key "makeup_pass_requests", "users"
   add_foreign_key "makeup_quota", "users"
   add_foreign_key "makeup_reservations", "makeup_rooms"
