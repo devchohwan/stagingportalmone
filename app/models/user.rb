@@ -110,12 +110,45 @@ class User < ApplicationRecord
 
   # 이번 수업일 계산 (오늘 기준 다음에 오는 수업일)
   def next_lesson_date
-    TeacherSchedule.where(user_id: id)
-                   .where('lesson_date >= ?', Date.current)
-                   .where(is_absent: false)
-                   .order(:lesson_date)
-                   .first
-                   &.lesson_date
+    now = Time.current
+    kst_zone = ActiveSupport::TimeZone['Seoul']
+    
+    schedules = TeacherSchedule.where(user_id: id)
+                               .where('lesson_date >= ?', Date.current)
+                               .where(is_absent: false)
+                               .order(:lesson_date)
+    
+    schedules.each do |schedule|
+      end_hour = schedule.time_slot.split('-').last.to_i
+      lesson_end_time = kst_zone.local(schedule.lesson_date.year, schedule.lesson_date.month, schedule.lesson_date.day, end_hour, 0, 0)
+      
+      if lesson_end_time > now
+        return schedule.lesson_date
+      end
+    end
+    
+    nil
+  end
+
+  def prev_lesson_date
+    now = Time.current
+    kst_zone = ActiveSupport::TimeZone['Seoul']
+    
+    schedules = TeacherSchedule.where(user_id: id)
+                               .where('lesson_date <= ?', Date.current)
+                               .where(is_absent: false)
+                               .order(lesson_date: :desc)
+    
+    schedules.each do |schedule|
+      end_hour = schedule.time_slot.split('-').last.to_i
+      lesson_end_time = kst_zone.local(schedule.lesson_date.year, schedule.lesson_date.month, schedule.lesson_date.day, end_hour, 0, 0)
+      
+      if lesson_end_time <= now
+        return schedule.lesson_date
+      end
+    end
+    
+    nil
   end
 
   def following_lesson_date

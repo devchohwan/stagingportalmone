@@ -9,9 +9,11 @@ class UserEnrollment < ApplicationRecord
 
   SUBJECTS_WITHOUT_PASS = ['믹싱'].freeze
 
+  after_create :generate_schedules
   before_update :track_teacher_change
   before_update :track_schedule_change, unless: :skip_schedule_tracking?
   after_update :track_status_change
+  after_update :regenerate_schedules_if_needed
 
   attr_accessor :skip_schedule_tracking
 
@@ -74,7 +76,9 @@ class UserEnrollment < ApplicationRecord
     return 0 unless first_lesson_date
     return 0 if target_date < first_lesson_date
     
-    ((target_date - first_lesson_date).to_i / 7) + 1
+    # 해당 날짜 이전까지 차감된 수업 횟수 + 1
+    deductions_before_date = lesson_deductions.where('deduction_date < ?', target_date).count
+    deductions_before_date + 1
   end
 
   def self.process_lesson_deductions
@@ -231,6 +235,91 @@ class UserEnrollment < ApplicationRecord
 
   def pass_enabled?
     !SUBJECTS_WITHOUT_PASS.include?(subject)
+  end
+  
+  def generate_schedules(lessons_to_create = nil)
+    return unless day.present? && time_slot.present? && first_lesson_date.present?
+    
+    lessons_count = lessons_to_create || total_lessons || remaining_lessons
+    return if lessons_count <= 0
+    
+    day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
+    target_wday = day_to_wday[day]
+    return unless target_wday
+    
+    current_date = first_lesson_date
+    if current_date.wday != target_wday
+      current_date += 1.day until current_date.wday == target_wday
+    end
+    
+    created_count = 0
+    lessons_count.times do
+      existing = TeacherSchedule.exists?(
+        user_id: user_id,
+        user_enrollment_id: id,
+        lesson_date: current_date
+      )
+      
+      unless existing
+        TeacherSchedule.create!(
+          user_id: user_id,
+          teacher: teacher,
+          day: day,
+          time_slot: time_slot,
+          lesson_date: current_date,
+          is_on_leave: false,
+          user_enrollment_id: id
+        )
+        created_count += 1
+      end
+      
+      current_date += 7.days
+    end
+    
+    Rails.logger.info "Generated #{created_count} schedules for enrollment ##{id}"
+    created_count
+  end
+  
+  def validate_schedule_consistency
+    return { valid: true } unless first_lesson_date.present?
+    
+    expected_count = total_lessons || 0
+    actual_count = teacher_schedules.count
+    
+    if expected_count != actual_count
+      {
+        valid: false,
+        expected: expected_count,
+        actual: actual_count,
+        missing: expected_count - actual_count,
+        message: "Expected #{expected_count} schedules but found #{actual_count}"
+      }
+    else
+      { valid: true, count: actual_count }
+    end
+  end
+  
+  def fix_schedule_consistency
+    validation = validate_schedule_consistency
+    return validation if validation[:valid]
+    
+    if validation[:missing] > 0
+      generate_schedules
+      { fixed: true, created: validation[:missing] }
+    else
+      { fixed: false, message: "Too many schedules, manual intervention needed" }
+    end
+  end
+  
+  def regenerate_schedules_if_needed
+    return if skip_schedule_tracking?
+    
+    if saved_change_to_total_lessons? || saved_change_to_day? || saved_change_to_time_slot?
+      missing_schedules_count = total_lessons - teacher_schedules.count
+      if missing_schedules_count > 0
+        generate_schedules
+      end
+    end
   end
 
   private

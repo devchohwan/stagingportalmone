@@ -1,3 +1,4 @@
+<%# Calendar partial - updated with time-based lesson checking %>
 <%
   start_date = date.beginning_of_month
   end_date = date.end_of_month
@@ -9,17 +10,54 @@
   
   if local_assigns[:enrollment]
     user_teacher = enrollment.teacher
-    next_schedule = TeacherSchedule.where(user_enrollment_id: enrollment.id)
+    
+    now = Time.current
+    kst_zone = ActiveSupport::TimeZone['Seoul']
+    
+    # 다음 수업 찾기 (시간 체크)
+    upcoming_schedules = TeacherSchedule.where(user_enrollment_id: enrollment.id)
       .where('lesson_date >= ?', today)
       .where(is_absent: false)
       .order(:lesson_date)
-      .limit(2)
-    next_lesson = next_schedule.first&.lesson_date
-    following_lesson = next_schedule.second&.lesson_date
+    
+    next_lesson = nil
+    following_lesson = nil
+    
+    upcoming_schedules.each do |schedule|
+      end_hour = schedule.time_slot.split('-').last.to_i
+      lesson_end_time = kst_zone.local(schedule.lesson_date.year, schedule.lesson_date.month, schedule.lesson_date.day, end_hour, 0, 0)
+      
+      if lesson_end_time > now
+        if next_lesson.nil?
+          next_lesson = schedule.lesson_date
+        elsif following_lesson.nil?
+          following_lesson = schedule.lesson_date
+          break
+        end
+      end
+    end
+    
+    # 이전 수업 찾기 (시간 체크)
+    past_schedules = TeacherSchedule.where(user_enrollment_id: enrollment.id)
+      .where('lesson_date <= ?', today)
+      .where(is_absent: false)
+      .order(lesson_date: :desc)
+    
+    prev_lesson = nil
+    past_schedules.each do |schedule|
+      end_hour = schedule.time_slot.split('-').last.to_i
+      lesson_end_time = kst_zone.local(schedule.lesson_date.year, schedule.lesson_date.month, schedule.lesson_date.day, end_hour, 0, 0)
+      
+      if lesson_end_time <= now
+        prev_lesson = schedule.lesson_date
+        break
+      end
+    end
   else
     user_teacher = current_user&.primary_teacher || ''
     next_lesson = current_user&.next_lesson_date
     following_lesson = current_user&.following_lesson_date
+    prev_lesson = current_user&.prev_lesson_date
   end
 %>
 
@@ -50,26 +88,26 @@
           is_sunday = day.wday == 0  # 일요일 체크
 
           # 이번/다음 수업일 체크
+          is_prev_lesson = prev_lesson && day == prev_lesson
           is_next_lesson = next_lesson && day == next_lesson
           is_following_lesson = following_lesson && day == following_lesson
 
-          # 이번 수업일과 다음 수업일 사이 기간 체크 (다음 수업일 전날까지만)
-          is_between_lessons = false
-          if next_lesson && following_lesson && day > next_lesson && day < following_lesson
-            is_between_lessons = true
+          is_makeup_available = false
+          if following_lesson && day >= today && day < following_lesson
+            is_makeup_available = true
           end
 
-          is_teacher_closed = if is_clean_subject
-            day_key = %w[sun mon tue wed thu fri sat][day.wday]
-            is_monday = day.wday == 1
-            is_monday || (clean_teachers_by_day[day_key] || []).empty?
+          is_teacher_closed = if day.wday == 1
+            true
+          elsif is_clean_subject
+            clean_teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또']
+            clean_teachers.all? { |teacher| Teacher.closed_on?(teacher, day) }
           elsif user_teacher.present?
             Teacher.closed_on?(user_teacher, day)
           else
-            day.wday == 1
+            false
           end
 
-          # 2025년 10월 2-10일 비활성화
           blocked_dates = (Date.new(2025, 10, 2)..Date.new(2025, 10, 10)).to_a
           is_blocked = blocked_dates.include?(day)
 
@@ -78,12 +116,17 @@
           css_classes << "not-current-month" unless is_current_month
           css_classes << "past-day" if is_past
           css_classes << "today" if is_today
-          css_classes << "monday-closed" if is_teacher_closed
           css_classes << "blocked-day" if is_blocked
-          css_classes << "lesson-day" if (is_next_lesson || is_following_lesson) && !is_teacher_closed
-          css_classes << "between-lessons" if is_between_lessons && !is_teacher_closed && !is_blocked
+          
+          if is_prev_lesson || is_next_lesson || is_following_lesson
+            css_classes << "lesson-day" unless is_blocked
+          elsif is_teacher_closed
+            css_classes << "monday-closed"
+          end
+          
+          css_classes << "between-lessons" if is_makeup_available && !is_teacher_closed && !is_blocked
 
-          is_clickable = is_current_month && !is_past && !is_teacher_closed && !is_blocked && (is_between_lessons || is_next_lesson)
+          is_clickable = is_current_month && !is_blocked && is_makeup_available && !is_teacher_closed && !is_prev_lesson
         %>
         
         <div class="<%= css_classes.join(' ') %>" 
@@ -94,15 +137,17 @@
              <% end %>>
           <div class="day-number"><%= day.day %></div>
           <div class="day-label">
-            <% if is_teacher_closed && is_current_month %>
-              휴무
-            <% elsif is_next_lesson && is_current_month && !is_teacher_closed %>
+            <% if is_prev_lesson && is_current_month %>
+              저번수업
+            <% elsif is_next_lesson && is_current_month %>
               이번수업
-            <% elsif is_following_lesson && is_current_month && !is_teacher_closed %>
+            <% elsif is_following_lesson && is_current_month %>
               다음수업
-            <% elsif is_today && !is_next_lesson %>
-              예약불가
+            <% elsif is_teacher_closed && is_current_month %>
+              휴무
             <% elsif is_blocked && is_current_month %>
+              예약불가
+            <% elsif is_today && !is_makeup_available %>
               예약불가
             <% else %>
               &nbsp;

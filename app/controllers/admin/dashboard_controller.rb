@@ -1690,8 +1690,14 @@ class Admin::DashboardController < ApplicationController
           # 남은 수업 횟수 증가
           user_enrollment.update!(
             remaining_lessons: user_enrollment.remaining_lessons + enrollment['lessons'],
+            total_lessons: user_enrollment.total_lessons + enrollment['lessons'],
             remaining_passes: (user_enrollment.remaining_passes || 0) + (user_enrollment.pass_enabled? ? enrollment['months'].to_i : 0)
           )
+          
+          # 추가 스케줄 생성
+          if first_lesson_date.present?
+            user_enrollment.generate_schedules(enrollment['lessons'])
+          end
         else
           # 신규 등록 모드
           payment = Payment.create!(
@@ -1716,6 +1722,7 @@ class Admin::DashboardController < ApplicationController
             day: day_string,
             time_slot: enrollment['time_slot'],
             remaining_lessons: enrollment['lessons'],
+            total_lessons: enrollment['lessons'],
             remaining_passes: UserEnrollment::SUBJECTS_WITHOUT_PASS.include?(enrollment['subject']) ? 0 : enrollment['months'].to_i,
             first_lesson_date: first_lesson_date,
             end_date: end_date,
@@ -1726,41 +1733,9 @@ class Admin::DashboardController < ApplicationController
           # Payment에 enrollment_id 연결
           payment.update!(enrollment_id: user_enrollment.id)
 
+          # 스케줄 생성
           if first_lesson_date.present?
-            day_to_wday = { 'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6 }
-            target_wday = day_to_wday[day_string]
-            
-            if target_wday
-              current_date = first_lesson_date
-              
-              if current_date.wday != target_wday
-                current_date += 1.day until current_date.wday == target_wday
-              end
-              
-              enrollment['lessons'].times do
-                existing = TeacherSchedule.exists?(
-                  teacher: enrollment['teacher'],
-                  day: day_string,
-                  time_slot: enrollment['time_slot'],
-                  user_id: user_id,
-                  lesson_date: current_date
-                )
-                
-                unless existing
-                  TeacherSchedule.create!(
-                    teacher: enrollment['teacher'],
-                    day: day_string,
-                    time_slot: enrollment['time_slot'],
-                    user_id: user_id,
-                    lesson_date: current_date,
-                    is_on_leave: false,
-                    user_enrollment_id: user_enrollment.id
-                  )
-                end
-                
-                current_date += 7.days
-              end
-            end
+            user_enrollment.generate_schedules(enrollment['lessons'])
           end
         end
 
@@ -2495,22 +2470,16 @@ class Admin::DashboardController < ApplicationController
     target_date = params[:target_date] ? Date.parse(params[:target_date]) : nil
     Rails.logger.info "target_date: #{target_date}"
 
-    # 과거 수업일은 처리 불가 (target_date가 있는 경우에만 체크)
-    if target_date && target_date < Date.current
-      Rails.logger.info "REJECT: past date"
+    # 과거 수업일은 결석 처리만 불가, 결석 취소는 가능
+    if target_date && target_date < Date.current && !schedule.is_absent
+      Rails.logger.info "REJECT: past date (new absence)"
       render json: { success: false, message: '과거 수업은 결석 처리할 수 없습니다.' }, status: :unprocessable_entity
       return
     end
 
     # enrollment 찾기
-    Rails.logger.info "Finding enrollment: user_id=#{schedule.user_id}, teacher=#{schedule.teacher}, day=#{schedule.day}, time_slot=#{schedule.time_slot}"
-    enrollment = UserEnrollment.find_by(
-      user_id: schedule.user_id,
-      teacher: schedule.teacher,
-      day: schedule.day,
-      time_slot: schedule.time_slot,
-      is_paid: true
-    )
+    Rails.logger.info "Finding enrollment by user_enrollment_id: #{schedule.user_enrollment_id}"
+    enrollment = UserEnrollment.find_by(id: schedule.user_enrollment_id, is_paid: true)
     Rails.logger.info "enrollment found: #{enrollment.inspect}"
 
     unless enrollment

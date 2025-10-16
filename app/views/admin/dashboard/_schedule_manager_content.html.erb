@@ -1137,7 +1137,6 @@
       };
       
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
       
       Object.values(recordsByEnrollment).forEach(group => {
         html += `<div style="margin-bottom: 15px; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">`;
@@ -1147,7 +1146,16 @@
         group.records.forEach((record, idx) => {
           const dateParts = record.lesson_date.split('.');
           const lessonDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-          const isPast = lessonDate < today;
+          
+          let isPast = false;
+          if (record.time_slot) {
+            const endHour = parseInt(record.time_slot.split('-')[1]);
+            const lessonEndTime = new Date(lessonDate);
+            lessonEndTime.setHours(endHour, 0, 0, 0);
+            isPast = lessonEndTime < today;
+          } else {
+            isPast = lessonDate < today;
+          }
           
           const bgColor = isPast ? '#e5e7eb' : '#f3f4f6';
           const textOpacity = isPast ? '0.6' : '1';

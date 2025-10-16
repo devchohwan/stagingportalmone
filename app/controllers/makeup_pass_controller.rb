@@ -210,31 +210,47 @@ class MakeupPassController < ApplicationController
   end
 
   def available_time_slots
-    # 선택한 날짜에 예약 가능한 시간대 반환
     date = Date.parse(params[:date])
-    day_of_week = date.strftime('%a').downcase # 'mon', 'tue', etc.
+    day_of_week = date.strftime('%a').downcase
+    selected_teacher = params[:teacher]
 
-    # 모든 시간대
     all_time_slots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22']
-
-    # 모든 선생님
-    teachers = User::TEACHERS
+    teachers = User::TEACHERS - ['온라인']
 
     available_slots = []
 
-    all_time_slots.each do |time_slot|
-      # 이 시간대에 자리가 있는 선생님이 있는지 확인
-      has_availability = teachers.any? do |teacher|
-        count = TeacherSchedule.where(teacher: teacher, day: day_of_week, time_slot: time_slot).count
-        count < 3
-      end
+    if selected_teacher.present?
+      teachers = [selected_teacher]
+    end
 
-      # 하나라도 자리가 있으면 시간대 추가
-      if has_availability
-        available_slots << {
+    all_time_slots.each do |time_slot|
+      teachers.each do |teacher|
+        next if Teacher.closed_on?(teacher, date)
+
+        current_count = TeacherSchedule.where(
+          teacher: teacher, 
+          day: day_of_week, 
           time_slot: time_slot,
-          display_time: time_slot.split('-').first + ':00-' + time_slot.split('-').last + ':00'
-        }
+          lesson_date: date,
+          is_on_leave: false,
+          is_absent: false
+        ).count
+
+        makeup_count = MakeupPassRequest
+          .where(status: 'active', request_type: 'makeup')
+          .where(makeup_date: date, time_slot: time_slot, teacher: teacher)
+          .count
+
+        total_count = current_count + makeup_count
+
+        if total_count < 3
+          available_slots << {
+            time_slot: time_slot,
+            teacher: teacher,
+            display_time: time_slot.split('-').first + ':00-' + time_slot.split('-').last + ':00',
+            available_slots: 3 - total_count
+          }
+        end
       end
     end
 
@@ -243,23 +259,45 @@ class MakeupPassController < ApplicationController
 
   def available_teachers
     date = Date.parse(params[:date])
-    time_slot = params[:time_slot]
-
-    teachers = Teacher.available_for_student(current_user.primary_teacher)
+    day_of_week = date.strftime('%a').downcase
+    enrollment_id = params[:enrollment_id]&.to_i
+    
+    teachers = User::TEACHERS - ['온라인']
+    
+    if enrollment_id
+      enrollment = current_user.user_enrollments.find_by(id: enrollment_id)
+      if enrollment && enrollment.subject == '클린'
+        teachers = teachers - ['지명', '도현']
+      end
+    end
 
     available_teachers = []
 
     teachers.each do |teacher|
       next if Teacher.closed_on?(teacher, date)
 
-      current_count = TeacherSchedule.current_count(date, time_slot, teacher)
-      available_slots = TeacherSchedule.available_slots(date, time_slot, teacher)
+      all_time_slots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22']
+      has_any_slot = all_time_slots.any? do |time_slot|
+        current_count = TeacherSchedule.where(
+          teacher: teacher, 
+          day: day_of_week, 
+          time_slot: time_slot,
+          lesson_date: date,
+          is_on_leave: false,
+          is_absent: false
+        ).count
 
-      if available_slots > 0
+        makeup_count = MakeupPassRequest
+          .where(status: 'active', request_type: 'makeup')
+          .where(makeup_date: date, time_slot: time_slot, teacher: teacher)
+          .count
+
+        (current_count + makeup_count) < 3
+      end
+
+      if has_any_slot
         available_teachers << {
-          teacher: teacher,
-          current_count: current_count,
-          available_slots: available_slots
+          teacher: teacher
         }
       end
     end
@@ -287,7 +325,7 @@ class MakeupPassController < ApplicationController
     clean_teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또']
     teachers_by_day = {}
     
-    %w[tue wed thu fri sat sun].each do |day|
+    %w[mon tue wed thu fri sat sun].each do |day|
       teachers_by_day[day] = UserEnrollment
         .where(teacher: clean_teachers, day: day, is_paid: true)
         .where('remaining_lessons > 0')
