@@ -605,17 +605,17 @@ function changePage(page) {
 
 function resetPenalty(userId, month, year, system) {
   if(confirm(`${month}월 페널티를 초기화하시겠습니까?`)) {
-    const endpoint = system === 'makeup' ? 
-      `/admin/makeup/penalties/reset` : 
+    const endpoint = system === 'makeup' ?
+      `/admin/makeup/penalties/reset` :
       `/admin/penalties/reset`;
-      
+
     fetch(endpoint, {
       method: 'POST',
       headers: {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         user_id: userId,
         month: month,
         year: year,
@@ -627,6 +627,34 @@ function resetPenalty(userId, month, year, system) {
       } else {
         alert('페널티 초기화에 실패했습니다.');
       }
+    });
+  }
+}
+
+function grantPass(userId, enrollmentId, teacher, subject) {
+  if(confirm(`${teacher} ${subject} 보강패스를 1회 지급하시겠습니까?`)) {
+    fetch(`/admin/users/${userId}/grant_pass`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        enrollment_id: enrollmentId
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if(data.success) {
+        alert('보강패스가 지급되었습니다.');
+        window.location.reload();
+      } else {
+        alert('패스 지급에 실패했습니다: ' + (data.message || '알 수 없는 오류'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('패스 지급 중 오류가 발생했습니다.');
     });
   }
 }

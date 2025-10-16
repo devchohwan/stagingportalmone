@@ -90,6 +90,7 @@ Rails.application.routes.draw do
     patch 'users/:id/update_status', to: 'dashboard#update_user_status'
     patch 'users/:id/toggle_all_enrollments', to: 'dashboard#toggle_all_enrollments'
     patch 'users/:id/toggle_all_enrollments_auto', to: 'dashboard#toggle_all_enrollments_auto'
+    post 'users/:id/grant_pass', to: 'dashboard#grant_pass'
 
     # 결제 관리
     get 'payments/calendar_data', to: 'dashboard#payment_calendar_data'

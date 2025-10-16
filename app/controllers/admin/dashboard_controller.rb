@@ -1331,6 +1331,35 @@ class Admin::DashboardController < ApplicationController
     render json: { success: false, message: e.message }, status: :internal_server_error
   end
 
+  def grant_pass
+    user = User.find(params[:id])
+    enrollment_id = params[:enrollment_id]
+
+    unless enrollment_id.present?
+      render json: { success: false, message: '수강 정보가 필요합니다.' }, status: :unprocessable_entity
+      return
+    end
+
+    enrollment = UserEnrollment.find(enrollment_id)
+
+    unless enrollment.user_id == user.id
+      render json: { success: false, message: '잘못된 요청입니다.' }, status: :forbidden
+      return
+    end
+
+    # remaining_passes를 1 증가
+    enrollment.increment!(:remaining_passes)
+
+    render json: {
+      success: true,
+      message: "#{enrollment.teacher} #{enrollment.subject} 보강패스 1회 지급 완료",
+      new_count: enrollment.remaining_passes
+    }
+  rescue => e
+    Rails.logger.error("Pass grant error: #{e.message}")
+    render json: { success: false, message: e.message }, status: :internal_server_error
+  end
+
   def user_enrollments
     user = User.find(params[:user_id])
     # 미결제 항목만 가져오기

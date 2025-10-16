@@ -200,13 +200,29 @@
             <td style="text-align: center; font-weight: 600; color: #2d3748;">
               <% if user['enrollments']&.any? %>
                 <% user['enrollments'].each do |enrollment| %>
-                  <div style="margin-bottom: 4px;">
-                    <span style="font-size: 0.85rem; color: #667eea;"><%= enrollment[:teacher] %> <%= enrollment[:subject] %>:</span>
-                    <span><%= enrollment[:remaining_passes] %>회</span>
+                  <div style="margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <div>
+                      <span style="font-size: 0.85rem; color: #667eea;"><%= enrollment[:teacher] %> <%= enrollment[:subject] %>:</span>
+                      <span><%= enrollment[:remaining_passes] %>회</span>
+                    </div>
+                    <button onclick="grantPass(<%= user['id'] %>, <%= enrollment[:enrollment_id] %>, '<%= enrollment[:teacher] %>', '<%= enrollment[:subject] %>')"
+                            class="action-btn"
+                            style="padding: 2px 8px; font-size: 0.75rem; background: #48bb78; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                            onmouseover="this.style.background='#38a169'"
+                            onmouseout="this.style.background='#48bb78'">
+                      +1
+                    </button>
                   </div>
                 <% end %>
               <% else %>
-                <%= user['remaining_passes'] || 0 %>회
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <span><%= user['remaining_passes'] || 0 %>회</span>
+                  <button onclick="alert('등록된 수강이 없습니다. 스케줄 매니저에서 수업을 추가해주세요.')"
+                          class="action-btn"
+                          style="padding: 2px 8px; font-size: 0.75rem; background: #cbd5e0; color: #4a5568; border: none; border-radius: 4px; cursor: not-allowed;">
+                    +1
+                  </button>
+                </div>
               <% end %>
             </td>
             <td>
