@@ -7,6 +7,8 @@ class UserEnrollment < ApplicationRecord
   has_many :enrollment_schedule_histories, dependent: :destroy
   has_many :teacher_schedules, dependent: :nullify
 
+  SUBJECTS_WITHOUT_PASS = ['믹싱'].freeze
+
   before_update :track_teacher_change
   before_update :track_schedule_change, unless: :skip_schedule_tracking?
   after_update :track_status_change
@@ -225,6 +227,10 @@ class UserEnrollment < ApplicationRecord
     return status == 'on_leave' unless last_status_change
 
     last_status_change.status == 'on_leave'
+  end
+
+  def pass_enabled?
+    !SUBJECTS_WITHOUT_PASS.include?(subject)
   end
 
   private

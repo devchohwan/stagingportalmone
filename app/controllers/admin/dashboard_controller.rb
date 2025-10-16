@@ -1126,13 +1126,6 @@ class Admin::DashboardController < ApplicationController
       user.first_lesson_date = Date.parse(params[:first_lesson_date])
     end
 
-    days_to_add = period * 30
-    new_expire_date = payment_date + days_to_add.days
-
-    if user.passes_expire_date.nil? || new_expire_date > user.passes_expire_date
-      user.passes_expire_date = new_expire_date
-    end
-
     Payment.create!(
       user_id: user.id,
       subject: params[:subject],
@@ -1644,7 +1637,7 @@ class Admin::DashboardController < ApplicationController
       username: user.username,
       teacher: user.teacher,
       remaining_lessons: user.remaining_lessons || 0,
-      remaining_passes: user.remaining_passes || 0
+      remaining_passes: user.current_remaining_passes
     }
   rescue ActiveRecord::RecordNotFound
     render json: { error: '회원을 찾을 수 없습니다.' }, status: :not_found
@@ -1697,7 +1690,7 @@ class Admin::DashboardController < ApplicationController
           # 남은 수업 횟수 증가
           user_enrollment.update!(
             remaining_lessons: user_enrollment.remaining_lessons + enrollment['lessons'],
-            remaining_passes: (user_enrollment.remaining_passes || 0) + enrollment['months'].to_i
+            remaining_passes: (user_enrollment.remaining_passes || 0) + (user_enrollment.pass_enabled? ? enrollment['months'].to_i : 0)
           )
         else
           # 신규 등록 모드
@@ -1723,7 +1716,7 @@ class Admin::DashboardController < ApplicationController
             day: day_string,
             time_slot: enrollment['time_slot'],
             remaining_lessons: enrollment['lessons'],
-            remaining_passes: enrollment['months'].to_i,
+            remaining_passes: UserEnrollment::SUBJECTS_WITHOUT_PASS.include?(enrollment['subject']) ? 0 : enrollment['months'].to_i,
             first_lesson_date: first_lesson_date,
             end_date: end_date,
             status: 'active',
@@ -2644,6 +2637,7 @@ class Admin::DashboardController < ApplicationController
       .where(is_paid: true)
       .where('remaining_lessons > 0')
       .map { |e| { 
+        enrollment_id: e.id,
         teacher: e.teacher, 
         subject: e.subject, 
         remaining_lessons: e.remaining_lessons,

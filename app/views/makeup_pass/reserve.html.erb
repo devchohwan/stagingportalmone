@@ -852,6 +852,12 @@ window.selectType = function(element, type) {
     return;
   }
 
+  if (type === 'pass' && selectedEnrollment.subject === '믹싱') {
+    alert('믹싱 과목은 패스를 사용할 수 없습니다.\n보강 신청만 가능합니다.');
+    element.classList.remove('selected');
+    return;
+  }
+
   selectedType = type;
   console.log('타입 선택:', type);
 
