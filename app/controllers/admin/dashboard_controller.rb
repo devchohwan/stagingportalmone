@@ -2440,13 +2440,23 @@ class Admin::DashboardController < ApplicationController
                                        .group_by { |s| s.subject }
                                        .flat_map { |subject, records|
         records.map.with_index { |s, idx|
+          # 해당 날짜에 보강이 완료되었는지 확인
+          has_completed_makeup = MakeupPassRequest.exists?(
+            user_id: user.id,
+            request_date: s.lesson_date,
+            request_type: 'makeup',
+            status: 'completed'
+          )
+          
           {
             week_number: idx + 1,
             lesson_date: s.lesson_date&.strftime('%Y.%m.%d'),
             day: s.day,
             time_slot: s.time_slot,
             teacher: s.teacher,
-            subject: s.subject
+            subject: s.subject,
+            is_absent: s.is_absent,
+            has_completed_makeup: has_completed_makeup
           }
         }
       }

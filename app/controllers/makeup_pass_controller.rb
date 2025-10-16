@@ -72,15 +72,21 @@ class MakeupPassController < ApplicationController
         return
       end
 
-      # 이번 수업일 = 해당 enrollment의 다음 수업일
+      # 이번 수업일 = 해당 enrollment의 다음 수업일 (결석 처리된 수업 포함)
       next_schedule = TeacherSchedule.where(
-        user_enrollment_id: enrollment.id,
-        is_absent: false
+        user_enrollment_id: enrollment.id
       ).where('lesson_date >= ?', Date.current)
         .order(:lesson_date)
         .first
       
       request_date = next_schedule&.lesson_date || Date.current
+
+      # 해당 날짜가 이미 결석 처리되어 있다면, 결석 취소 및 수업 횟수 복구
+      if next_schedule && next_schedule.is_absent
+        next_schedule.update!(is_absent: false)
+        enrollment.increment!(:remaining_lessons)
+        Rails.logger.info "보강 신청으로 결석 취소: #{current_user.name} / #{request_date} / 남은 수업: #{enrollment.remaining_lessons}"
+      end
 
       makeup_pass_request = current_user.makeup_pass_requests.new(
         user_enrollment_id: enrollment.id,
@@ -227,6 +233,7 @@ class MakeupPassController < ApplicationController
       teachers.each do |teacher|
         next if Teacher.closed_on?(teacher, date)
 
+        # 정규 수업 학생 수
         current_count = TeacherSchedule.where(
           teacher: teacher, 
           day: day_of_week, 
@@ -235,13 +242,27 @@ class MakeupPassController < ApplicationController
           is_on_leave: false,
           is_absent: false
         ).count
+        
+        # 보강으로 빠진 학생 수 (원래 이 시간대에 있던 학생이 보강으로 이동)
+        makeup_away_count = MakeupPassRequest
+          .joins('INNER JOIN teacher_schedules ON makeup_pass_requests.user_id = teacher_schedules.user_id')
+          .where('teacher_schedules.teacher = ?', teacher)
+          .where('teacher_schedules.day = ?', day_of_week)
+          .where('teacher_schedules.time_slot = ?', time_slot)
+          .where('teacher_schedules.lesson_date = ?', date)
+          .where('makeup_pass_requests.request_type = ?', 'makeup')
+          .where('makeup_pass_requests.request_date = ?', date)
+          .where('makeup_pass_requests.status IN (?)', ['active', 'completed'])
+          .count
 
+        # 이 시간대로 보강 오는 학생 수
         makeup_count = MakeupPassRequest
           .where(status: 'active', request_type: 'makeup')
           .where(makeup_date: date, time_slot: time_slot, teacher: teacher)
           .count
 
-        total_count = current_count + makeup_count
+        # 실제 차지하는 자리 = 정규 수업 - 보강 빠짐 + 보강 오는 사람
+        total_count = current_count - makeup_away_count + makeup_count
 
         if total_count < 3
           available_slots << {

@@ -1051,7 +1051,8 @@ function renderTimeSlots(slots) {
     btn.setAttribute('data-teacher', slot.teacher);
     btn.onclick = function() { selectTimeSlot(this, slot.time_slot, slot.teacher); };
 
-    btn.innerHTML = '<div class="time-slot-time">' + slot.display_time + '</div>';
+    var availableText = slot.available_slots ? ' (' + slot.available_slots + '석)' : '';
+    btn.innerHTML = '<div class="time-slot-time">' + slot.display_time + availableText + '</div>';
 
     container.appendChild(btn);
   });

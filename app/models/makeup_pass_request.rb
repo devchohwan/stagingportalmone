@@ -38,9 +38,13 @@ class MakeupPassRequest < ApplicationRecord
           lesson_date: request_date
         )
 
-        if schedule && !schedule.is_absent
-          schedule.update!(is_absent: true)
+        if schedule
+          # 이미 결석 처리되어 있지 않으면 결석 처리
+          if !schedule.is_absent
+            schedule.update!(is_absent: true)
+          end
           
+          # 보강 취소 시는 항상 수업 횟수 차감 (원래 자리가 결석 처리되어 있더라도)
           enrollment = user.user_enrollments.find_by(
             is_paid: true,
             teacher: schedule.teacher

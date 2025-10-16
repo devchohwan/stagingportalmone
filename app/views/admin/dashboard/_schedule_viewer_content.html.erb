@@ -657,7 +657,11 @@
       .then(data => {
         if (data.success) {
           alert(data.message);
-          loadScheduleViewer(); // 시간표 새로고침
+          loadScheduleViewer();
+          if (typeof window.loadUsersTab === 'function') {
+            const currentTab = window.getCurrentTab ? window.getCurrentTab() : 'active';
+            window.loadUsersTab(currentTab);
+          }
         } else {
           alert(data.message || '처리에 실패했습니다.');
         }

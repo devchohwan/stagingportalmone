@@ -748,9 +748,9 @@
 
     // 휴원 상태 표시
     if (student.is_on_leave) {
-      usernameDiv.textContent = student.username + ' (휴원)';
+      usernameDiv.textContent = student.name + ' (휴원)';
     } else {
-      usernameDiv.textContent = student.username;
+      usernameDiv.textContent = student.name;
     }
 
     card.appendChild(usernameDiv);
@@ -825,7 +825,7 @@
             infoDiv.style.fontSize = '0.75rem';
             infoDiv.style.color = '#6b7280';
             infoDiv.style.marginTop = '0.25rem';
-            infoDiv.textContent = `${student.username} - ${student.teacher}`;
+            infoDiv.textContent = `${student.name} - ${student.teacher}`;
 
             item.appendChild(nameDiv);
             item.appendChild(infoDiv);
@@ -1148,7 +1148,9 @@
           const lessonDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
           
           let isPast = false;
-          if (record.time_slot) {
+          if (record.has_completed_makeup) {
+            isPast = true;
+          } else if (record.time_slot) {
             const endHour = parseInt(record.time_slot.split('-')[1]);
             const lessonEndTime = new Date(lessonDate);
             lessonEndTime.setHours(endHour, 0, 0, 0);
@@ -1157,17 +1159,24 @@
             isPast = lessonDate < today;
           }
           
-          const bgColor = isPast ? '#e5e7eb' : '#f3f4f6';
-          const textOpacity = isPast ? '0.6' : '1';
+          // 결석 또는 과거 수업은 회색 배경
+          const isGrayed = record.is_absent || isPast;
+          const bgColor = isGrayed ? '#e5e7eb' : '#f3f4f6';
+          const textOpacity = isGrayed ? '0.6' : '1';
           
           html += `<div style="display: inline-block; margin: 4px; padding: 6px 10px; background: ${bgColor}; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.8rem; opacity: ${textOpacity};">`;
           if (record.week_number) {
-            html += `<span style="font-weight: 600; color: ${isPast ? '#6b7280' : '#667eea'};">${record.week_number}주차 : </span>`;
+            html += `<span style="font-weight: 600; color: ${isGrayed ? '#6b7280' : '#667eea'};">${record.week_number}주차 : </span>`;
           }
-          html += `<span style="font-weight: 600; color: ${isPast ? '#6b7280' : '#374151'};">${record.lesson_date}</span> `;
+          html += `<span style="font-weight: 600; color: ${isGrayed ? '#6b7280' : '#374151'};">${record.lesson_date}</span> `;
           html += `<span style="color: #6b7280;">${dayNames[record.day] || record.day} ${record.time_slot}</span>`;
-          if (isPast) {
+          if (record.is_absent) {
+            html += ' <span style="color: #dc2626; font-size: 0.7rem; font-weight: 600; opacity: 1;">✘ 결석</span>';
+          } else if (isPast) {
             html += ' <span style="color: #9ca3af; font-size: 0.7rem;">✓</span>';
+          }
+          if (record.has_completed_makeup) {
+            html += ' <span style="color: #3b82f6; font-size: 0.7rem;">보강</span>';
           }
           html += '</div>';
         });
@@ -1468,7 +1477,7 @@
     usernameDiv.style.fontWeight = '600';
     usernameDiv.style.textAlign = 'center';
     usernameDiv.style.pointerEvents = 'none';
-    usernameDiv.textContent = student.username;
+    usernameDiv.textContent = student.name;
 
     const teachersDiv = document.createElement('div');
     teachersDiv.style.fontSize = '0.7rem';
@@ -1513,6 +1522,13 @@
       unscheduleZone.addEventListener('drop', handleUnscheduleDropZoneDrop);
     }
   }
+
+  // SPA 환경에서 다른 페이지에서 돌아오면 가드 초기화
+  if (window.scheduleManagerInitialized) {
+    console.log('Schedule manager re-initializing (page revisit)');
+    window.scheduleManagerInitialized = false;
+  }
+  window.scheduleManagerInitialized = true;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
