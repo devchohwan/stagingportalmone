@@ -31,7 +31,7 @@
             <td>
               <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
                       class="teacher-select">
-                <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인'].each do |teacher| %>
+                <% User::TEACHERS.each do |teacher| %>
                   <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                 <% end %>
               </select>
@@ -102,7 +102,7 @@
             <td>
               <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')" 
                       class="teacher-select">
-                <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인'].each do |teacher| %>
+                <% User::TEACHERS.each do |teacher| %>
                   <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
                 <% end %>
               </select>
@@ -174,18 +174,40 @@
                       class="phone-update-btn">확인</button>
             </td>
             <td>
-              <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')"
-                      class="teacher-select">
-                <% ['무성', '성균', '노네임', '로한', '범석', '두박', '오또', '지명', '도현', '리아', '성환', '온라인'].each do |teacher| %>
-                  <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+              <% if user['teacher'].to_s.include?(',') %>
+                <span style="font-weight: 600; color: #4a5568;"><%= user['teacher'] %></span>
+              <% else %>
+                <select onchange="updateTeacher(<%= user['id'] %>, this.value, '<%= user['system'] %>')"
+                        class="teacher-select">
+                  <% User::TEACHERS.each do |teacher| %>
+                    <option value="<%= teacher %>" <%= 'selected' if user['teacher'] == teacher %>><%= teacher %></option>
+                  <% end %>
+                </select>
+              <% end %>
+            </td>
+            <td style="text-align: center; font-weight: 600; color: #2d3748;">
+              <% if user['enrollments']&.any? %>
+                <% user['enrollments'].each do |enrollment| %>
+                  <div style="margin-bottom: 4px;">
+                    <span style="font-size: 0.85rem; color: #667eea;"><%= enrollment[:teacher] %> <%= enrollment[:subject] %>:</span>
+                    <span><%= enrollment[:remaining_lessons] %>회</span>
+                  </div>
                 <% end %>
-              </select>
+              <% else %>
+                <%= user['remaining_lessons'] || 0 %>회
+              <% end %>
             </td>
             <td style="text-align: center; font-weight: 600; color: #2d3748;">
-              <%= user['remaining_lessons'] || 0 %>회
-            </td>
-            <td style="text-align: center; font-weight: 600; color: #2d3748;">
-              <%= user['remaining_passes'] || 0 %>회
+              <% if user['enrollments']&.any? %>
+                <% user['enrollments'].each do |enrollment| %>
+                  <div style="margin-bottom: 4px;">
+                    <span style="font-size: 0.85rem; color: #667eea;"><%= enrollment[:teacher] %> <%= enrollment[:subject] %>:</span>
+                    <span><%= enrollment[:remaining_passes] %>회</span>
+                  </div>
+                <% end %>
+              <% else %>
+                <%= user['remaining_passes'] || 0 %>회
+              <% end %>
             </td>
             <td>
               <button onclick="resetPassword('<%= user['id'] %>', '<%= user['username'] %>', '<%= user['system'] %>')"

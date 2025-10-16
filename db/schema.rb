@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_15_132629) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_15_150648) do
   create_table "enrollment_schedule_histories", force: :cascade do |t|
     t.integer "user_enrollment_id", null: false
     t.string "day", null: false
@@ -91,8 +91,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_132629) do
     t.datetime "updated_at", null: false
     t.date "makeup_date"
     t.datetime "cancelled_at"
+    t.integer "user_enrollment_id"
     t.index ["makeup_date"], name: "index_makeup_pass_requests_on_makeup_date"
     t.index ["request_date"], name: "index_makeup_pass_requests_on_request_date"
+    t.index ["user_enrollment_id"], name: "index_makeup_pass_requests_on_user_enrollment_id"
     t.index ["user_id", "status"], name: "index_makeup_pass_requests_on_user_id_and_status"
     t.index ["user_id"], name: "index_makeup_pass_requests_on_user_id"
   end
@@ -288,7 +290,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_132629) do
     t.date "lesson_date"
     t.boolean "is_on_leave", default: false, null: false
     t.integer "user_enrollment_id"
-    t.index ["lesson_date", "user_id", "teacher", "time_slot"], name: "index_ts_on_date_user_teacher_time", unique: true
+    t.index ["lesson_date", "user_id", "time_slot"], name: "index_ts_on_date_user_time", unique: true
     t.index ["user_enrollment_id"], name: "index_teacher_schedules_on_user_enrollment_id"
     t.index ["user_id"], name: "index_teacher_schedules_on_user_id"
   end
@@ -307,6 +309,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_132629) do
     t.datetime "updated_at", null: false
     t.boolean "is_paid", default: false
     t.text "teacher_history"
+    t.integer "remaining_passes", default: 0, null: false
     t.index ["user_id", "teacher", "subject"], name: "index_user_enrollments_on_user_id_and_teacher_and_subject"
     t.index ["user_id"], name: "index_user_enrollments_on_user_id"
   end

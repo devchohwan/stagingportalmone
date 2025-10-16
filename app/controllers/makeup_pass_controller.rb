@@ -15,21 +15,44 @@ class MakeupPassController < ApplicationController
   end
 
   def reserve
-    # 예약 페이지
+    @enrollments = current_user.user_enrollments
+      .where(is_paid: true, status: 'active')
+      .where('remaining_lessons > 0')
+      .order(first_lesson_date: :asc)
+    
+    @has_clean_enrollment = @enrollments.any? { |e| e.subject == '클린' }
+    @clean_teachers_by_day = get_clean_teachers_by_day if @has_clean_enrollment
+    
+    @enrollment_id = params[:enrollment_id]&.to_i
+    if @enrollment_id
+      @selected_enrollment = @enrollments.find_by(id: @enrollment_id)
+    end
+    
     @date = params[:date] ? Date.parse(params[:date]) : Date.current
     @has_cancelled_makeup = current_user.has_cancelled_makeup_before_next_lesson?
     @next_lesson_datetime = current_user.next_lesson_datetime if @has_cancelled_makeup
     @remaining_passes = current_user.current_remaining_passes
 
-    # AJAX 요청인 경우 달력만 렌더링
     if request.xhr?
-      render partial: 'calendar', locals: { date: @date, selected_date: nil }
+      render partial: 'calendar', locals: { 
+        date: @date, 
+        selected_date: nil,
+        enrollment: @selected_enrollment,
+        clean_teachers_by_day: @clean_teachers_by_day
+      }
     end
   end
 
   def create_request
     request_type = params[:makeup_pass_request][:type]
     selected_date = Date.parse(params[:makeup_pass_request][:date])
+    enrollment_id = params[:makeup_pass_request][:user_enrollment_id]&.to_i
+
+    enrollment = current_user.user_enrollments.find_by(id: enrollment_id) if enrollment_id
+    unless enrollment
+      redirect_to makeup_pass_reserve_path, alert: '과목을 선택해주세요.'
+      return
+    end
 
     # 보강인 경우:
     #   - request_date: 이번 수업일 (연노랑 영역의 시작일)
@@ -49,42 +72,48 @@ class MakeupPassController < ApplicationController
         return
       end
 
-      # 이번 수업일 = 연노랑 영역의 시작일
-      request_date = next_lesson_date
+      # 이번 수업일 = 해당 enrollment의 다음 수업일
+      next_schedule = TeacherSchedule.where(
+        user_enrollment_id: enrollment.id,
+        is_absent: false
+      ).where('lesson_date >= ?', Date.current)
+        .order(:lesson_date)
+        .first
+      
+      request_date = next_schedule&.lesson_date || Date.current
 
       makeup_pass_request = current_user.makeup_pass_requests.new(
+        user_enrollment_id: enrollment.id,
         request_type: request_type,
-        request_date: request_date,      # 이번 수업일 (취소할 원래 수업일)
-        makeup_date: selected_date,      # 선택한 날짜 (보강받을 날짜)
+        request_date: request_date,
+        makeup_date: selected_date,
         time_slot: params[:makeup_pass_request][:time_slot],
         teacher: params[:makeup_pass_request][:teacher],
         week_number: params[:makeup_pass_request][:week_number],
         content: params[:makeup_pass_request][:content],
         status: 'active'
       )
-    else  # pass
-      # 패스권 확인
-      if current_user.current_remaining_passes <= 0
-        redirect_to makeup_pass_reserve_path, alert: '남은 패스권이 없습니다.'
+    else
+      if enrollment.remaining_passes <= 0
+        redirect_to makeup_pass_reserve_path, alert: '해당 과목의 남은 패스권이 없습니다.'
         return
       end
 
       makeup_pass_request = current_user.makeup_pass_requests.new(
+        user_enrollment_id: enrollment.id,
         request_type: request_type,
-        request_date: selected_date,     # 선택한 날짜 (이번수업일)
+        request_date: selected_date,
         makeup_date: nil,
         time_slot: nil,
         teacher: nil,
         week_number: params[:makeup_pass_request][:week_number],
         content: params[:makeup_pass_request][:content],
-        status: 'completed'  # 패스는 즉시 완료 처리
+        status: 'completed'
       )
 
       if makeup_pass_request.save
-        # 패스권 1회 차감
-        current_user.remaining_passes = (current_user.remaining_passes || 0) - 1
-        current_user.save!
-
+        enrollment.decrement!(:remaining_passes)
+        Rails.logger.info "패스 신청: #{current_user.name} / #{enrollment.teacher} #{enrollment.subject} / 남은 패스권: #{enrollment.remaining_passes}"
         redirect_to makeup_pass_path, notice: '패스 신청이 완료되었습니다. 패스권이 차감되었습니다.'
         return
       else
@@ -213,20 +242,16 @@ class MakeupPassController < ApplicationController
   end
 
   def available_teachers
-    # 선택한 날짜와 시간대에 예약 가능한 선생님 반환
     date = Date.parse(params[:date])
     time_slot = params[:time_slot]
 
-    # 학생이 선택 가능한 선생님 목록
     teachers = Teacher.available_for_student(current_user.primary_teacher)
 
     available_teachers = []
 
     teachers.each do |teacher|
-      # 선생님 휴무일 체크
       next if Teacher.closed_on?(teacher, date)
 
-      # 자리가 있는지 확인
       current_count = TeacherSchedule.current_count(date, time_slot, teacher)
       available_slots = TeacherSchedule.available_slots(date, time_slot, teacher)
 
@@ -242,7 +267,36 @@ class MakeupPassController < ApplicationController
     render json: available_teachers
   end
 
+  def calculate_week
+    enrollment_id = params[:enrollment_id]&.to_i
+    date = Date.parse(params[:date])
+
+    enrollment = current_user.user_enrollments.find_by(id: enrollment_id)
+    unless enrollment
+      render json: { error: '수강권을 찾을 수 없습니다.' }, status: :not_found
+      return
+    end
+
+    week_number = enrollment.calculate_week_number(date)
+    render json: { week_number: week_number }
+  end
+
   private
+
+  def get_clean_teachers_by_day
+    clean_teachers = ['무성', '성균', '노네임', '로한', '범석', '두박', '오또']
+    teachers_by_day = {}
+    
+    %w[tue wed thu fri sat sun].each do |day|
+      teachers_by_day[day] = UserEnrollment
+        .where(teacher: clean_teachers, day: day, is_paid: true)
+        .where('remaining_lessons > 0')
+        .pluck(:teacher)
+        .uniq
+    end
+    
+    teachers_by_day
+  end
 
   def check_on_leave
     if current_user.on_leave?

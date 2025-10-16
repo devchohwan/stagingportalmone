@@ -3,9 +3,24 @@
   end_date = date.end_of_month
   weeks = (start_date.beginning_of_week(:sunday)..end_date.end_of_week(:sunday)).to_a.each_slice(7)
   today = Date.current
-  user_teacher = current_user&.primary_teacher || ''
-  next_lesson = current_user&.next_lesson_date
-  following_lesson = current_user&.following_lesson_date
+  
+  is_clean_subject = local_assigns[:enrollment] && enrollment.subject == '클린'
+  clean_teachers_by_day = local_assigns[:clean_teachers_by_day] || {}
+  
+  if local_assigns[:enrollment]
+    user_teacher = enrollment.teacher
+    next_schedule = TeacherSchedule.where(user_enrollment_id: enrollment.id)
+      .where('lesson_date >= ?', today)
+      .where(is_absent: false)
+      .order(:lesson_date)
+      .limit(2)
+    next_lesson = next_schedule.first&.lesson_date
+    following_lesson = next_schedule.second&.lesson_date
+  else
+    user_teacher = current_user&.primary_teacher || ''
+    next_lesson = current_user&.next_lesson_date
+    following_lesson = current_user&.following_lesson_date
+  end
 %>
 
 <div class="calendar" data-month="<%= date.strftime('%Y-%m') %>">
@@ -44,7 +59,11 @@
             is_between_lessons = true
           end
 
-          is_teacher_closed = if user_teacher.present?
+          is_teacher_closed = if is_clean_subject
+            day_key = %w[sun mon tue wed thu fri sat][day.wday]
+            is_monday = day.wday == 1
+            is_monday || (clean_teachers_by_day[day_key] || []).empty?
+          elsif user_teacher.present?
             Teacher.closed_on?(user_teacher, day)
           else
             day.wday == 1

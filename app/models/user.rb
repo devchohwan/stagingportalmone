@@ -192,26 +192,9 @@ class User < ApplicationRecord
     latest_end_time
   end
 
-  # 패스 만료 체크 및 자동 초기화 (마지막 수업 시간 기준)
-  def check_passes_expiration!
-    return if remaining_passes.nil? || remaining_passes == 0
-
-    last_end_time = last_lesson_end_time
-    return unless last_end_time.present?
-
-    # 마지막 수업 시간이 지나면 패스 소멸
-    if Time.current > last_end_time
-      Rails.logger.info "패스 만료: #{name} (마지막 수업: #{last_end_time})"
-      self.remaining_passes = 0
-      self.passes_expire_date = nil
-      save!
-    end
-  end
-
-  # 남은 패스 횟수 (만료 체크 포함)
+  # 남은 패스 횟수 (UserEnrollment 기반 - Single Source of Truth)
   def current_remaining_passes
-    check_passes_expiration!
-    remaining_passes || 0
+    user_enrollments.where(is_paid: true).sum(:remaining_passes)
   end
 
   # 비밀번호 업데이트 메서드

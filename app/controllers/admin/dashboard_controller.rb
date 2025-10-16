@@ -693,6 +693,7 @@ class Admin::DashboardController < ApplicationController
           name: user.name,
           username: user.username,
           teacher: user.teacher,
+          subject: enrollment.subject,
           is_on_leave: is_on_leave
         }
       else
@@ -1117,8 +1118,6 @@ class Admin::DashboardController < ApplicationController
 
     user.remaining_lessons = params[:new_total_lessons].to_i
     user.remaining_lessons = params[:lessons].to_i if user.remaining_lessons == 0
-    
-    user.remaining_passes = (user.remaining_passes || 0) + period
 
     payment_date = Date.parse(params[:payment_date])
     user.last_payment_date = payment_date
@@ -1275,20 +1274,6 @@ class Admin::DashboardController < ApplicationController
           first_lesson_date: first_lesson_date,
           first_lesson_time: first_lesson_time
         )
-      end
-
-      # User 레벨의 패스 업데이트 (전체 등록 과목 기준)
-      total_passes = params[:payments].sum { |p| p[:period].to_i }
-
-      user.remaining_passes = (user.remaining_passes || 0) + total_passes
-
-      # 패스 만료일 연장
-      max_period = params[:payments].map { |p| p[:period].to_i }.max
-      days_to_add = max_period * 30
-      new_expire_date = payment_date + days_to_add.days
-
-      if user.passes_expire_date.nil? || new_expire_date > user.passes_expire_date
-        user.passes_expire_date = new_expire_date
       end
 
       user.last_payment_date = payment_date
@@ -1682,7 +1667,8 @@ class Admin::DashboardController < ApplicationController
 
           # 남은 수업 횟수 증가
           user_enrollment.update!(
-            remaining_lessons: user_enrollment.remaining_lessons + enrollment['lessons']
+            remaining_lessons: user_enrollment.remaining_lessons + enrollment['lessons'],
+            remaining_passes: (user_enrollment.remaining_passes || 0) + enrollment['months'].to_i
           )
         else
           # 신규 등록 모드
@@ -1708,6 +1694,7 @@ class Admin::DashboardController < ApplicationController
             day: day_string,
             time_slot: enrollment['time_slot'],
             remaining_lessons: enrollment['lessons'],
+            remaining_passes: enrollment['months'].to_i,
             first_lesson_date: first_lesson_date,
             end_date: end_date,
             status: 'active',
@@ -1756,11 +1743,8 @@ class Admin::DashboardController < ApplicationController
         end
 
         current_lessons = user.remaining_lessons || 0
-        current_passes = user.remaining_passes || 0
-        months = enrollment['months'].to_i
         user.update!(
-          remaining_lessons: current_lessons + enrollment['lessons'],
-          remaining_passes: current_passes + months
+          remaining_lessons: current_lessons + enrollment['lessons']
         )
       end
     end
@@ -2128,8 +2112,8 @@ class Admin::DashboardController < ApplicationController
         user_id: user_id
       ).where('lesson_date < ?', Date.current).count
 
-      # 과거 스케줄 유지, 미래만 삭제
-      TeacherSchedule.where(user_id: user_id)
+      # 과거 스케줄 유지, 미래만 삭제 (해당 enrollment만)
+      TeacherSchedule.where(user_enrollment_id: enrollment.id)
                      .where('lesson_date >= ?', Date.current)
                      .destroy_all
 
@@ -2265,29 +2249,42 @@ class Admin::DashboardController < ApplicationController
     day = params[:day]
     time_slot = params[:time_slot]
     teacher = params[:teacher]
+    subject = params[:subject]
 
     ActiveRecord::Base.transaction do
-      # UserEnrollment 찾기
-      enrollment = UserEnrollment.find_by(
-        user_id: user_id,
-        teacher: teacher,
-        day: day,
-        time_slot: time_slot,
-        is_paid: true
-      )
+      enrollment = if subject.present?
+        UserEnrollment.find_by(
+          user_id: user_id,
+          teacher: teacher,
+          subject: subject,
+          day: day,
+          time_slot: time_slot,
+          is_paid: true
+        )
+      else
+        UserEnrollment.find_by(
+          user_id: user_id,
+          teacher: teacher,
+          day: day,
+          time_slot: time_slot,
+          is_paid: true
+        )
+      end
 
       unless enrollment
+        user_enrollments = UserEnrollment.where(user_id: user_id, teacher: teacher, is_paid: true)
+        Rails.logger.error "스케줄 해제 실패 - 요청: user_id=#{user_id}, teacher=#{teacher}, subject=#{subject}, day=#{day}, time_slot=#{time_slot}"
+        Rails.logger.error "등록된 수강: #{user_enrollments.map { |e| "subject=#{e.subject}, day=#{e.day}, time_slot=#{e.time_slot}" }.join(', ')}"
         render json: { success: false, error: '수강 정보를 찾을 수 없습니다.' }, status: :not_found
         return
       end
 
-      # UserEnrollment는 유지하되 day, time_slot만 null로 (결제 정보와 스케줄 레코드 유지)
       enrollment.update!(
         day: nil,
         time_slot: nil
       )
 
-      Rails.logger.info "스케줄 해제: #{User.find(user_id).name} / #{day} #{time_slot} (스케줄 레코드 유지)"
+      Rails.logger.info "스케줄 해제: #{User.find(user_id).name} / #{enrollment.subject} / #{day} #{time_slot} (스케줄 레코드 유지)"
     end
 
     render json: { success: true }
@@ -2346,6 +2343,7 @@ class Admin::DashboardController < ApplicationController
         day: enrollment.day_korean,
         time_slot: enrollment.time_slot,
         remaining_lessons: enrollment.remaining_lessons,
+        remaining_passes: enrollment.remaining_passes || 0,
         first_lesson_date: enrollment.first_lesson_date&.strftime('%Y-%m-%d'),
         end_date: enrollment.end_date&.strftime('%Y-%m-%d'),
         status: enrollment.status,
@@ -2423,7 +2421,7 @@ class Admin::DashboardController < ApplicationController
 
     # 남은 수업/패스 횟수
     total_remaining_lessons = UserEnrollment.where(user_id: user.id, is_paid: true).sum(:remaining_lessons)
-    remaining_passes = user.remaining_passes || 0
+    total_remaining_passes = UserEnrollment.where(user_id: user.id, is_paid: true).sum(:remaining_passes)
 
     render json: {
       success: true,
@@ -2437,7 +2435,7 @@ class Admin::DashboardController < ApplicationController
       payments: payments,
       enrollments: enrollments,
       remaining_lessons: total_remaining_lessons,
-      remaining_passes: remaining_passes,
+      remaining_passes: total_remaining_passes,
       schedule_records: TeacherSchedule.where(user_id: user.id)
                                        .joins(:user_enrollment)
                                        .order(:lesson_date)
@@ -2609,6 +2607,19 @@ class Admin::DashboardController < ApplicationController
 
   def user_to_hash(user)
     total_remaining_lessons = user.user_enrollments.sum(:remaining_lessons)
+    total_remaining_passes = user.user_enrollments.sum(:remaining_passes)
+    all_teachers = user.teachers.join(', ') if user.teachers.any?
+    all_teachers ||= user.primary_teacher
+
+    enrollments_by_subject = user.user_enrollments
+      .where(is_paid: true)
+      .where('remaining_lessons > 0')
+      .map { |e| { 
+        teacher: e.teacher, 
+        subject: e.subject, 
+        remaining_lessons: e.remaining_lessons,
+        remaining_passes: e.remaining_passes || 0
+      } }
 
     {
       'id' => user.id,
@@ -2616,15 +2627,16 @@ class Admin::DashboardController < ApplicationController
       'name' => user.name,
       'email' => user.email,
       'phone' => user.respond_to?(:phone) ? user.phone : nil,
-      'teacher' => user.primary_teacher,
+      'teacher' => all_teachers,
       'status' => user.status,
       'created_at' => user.created_at.to_s,
       'online_verification_image' => user.respond_to?(:online_verification_image) ? user.online_verification_image : nil,
       'no_show_count' => 0,
       'cancel_count' => 0,
       'is_blocked' => false,
-      'remaining_passes' => user.respond_to?(:current_remaining_passes) ? user.current_remaining_passes : 0,
-      'remaining_lessons' => total_remaining_lessons
+      'remaining_passes' => total_remaining_passes,
+      'remaining_lessons' => total_remaining_lessons,
+      'enrollments' => enrollments_by_subject
     }
   end
 end

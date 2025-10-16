@@ -56,6 +56,7 @@ Rails.application.routes.draw do
   get "makeup_pass/calendar", to: "makeup_pass#calendar"
   get "makeup_pass/available_time_slots", to: "makeup_pass#available_time_slots"
   get "makeup_pass/available_teachers", to: "makeup_pass#available_teachers"
+  get "makeup_pass/calculate_week", to: "makeup_pass#calculate_week"
 
   # 음정수업 페이지
   get "pitch", to: "pitch#index"

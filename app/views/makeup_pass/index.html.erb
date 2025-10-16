@@ -127,6 +127,19 @@
     color: #2d3748;
     font-weight: 600;
   }
+
+  .enrollment-detail {
+    margin-bottom: 4px;
+  }
+
+  .enrollment-detail:last-child {
+    margin-bottom: 0;
+  }
+
+  .enrollment-label {
+    font-size: 0.85rem;
+    color: #667eea;
+  }
 </style>
 
 <div class="makeup-pass-container">
@@ -143,8 +156,8 @@
         <span class="info-value"><%= current_user.name %></span>
       </div>
       <div class="info-row">
-        <span class="info-label">담당</span>
-        <span class="info-value"><%= current_user.primary_teacher %></span>
+        <span class="info-label">담당 선생님</span>
+        <span class="info-value"><%= current_user.teachers.any? ? current_user.teachers.join(', ') : (current_user.teacher || '미배정') %></span>
       </div>
       <div class="info-row">
         <span class="info-label">수업일시</span>
@@ -159,7 +172,19 @@
       </div>
       <div class="info-row">
         <span class="info-label">남은 패스권</span>
-        <span class="info-value"><%= current_user.current_remaining_passes %>회</span>
+        <span class="info-value">
+          <% enrollments = current_user.user_enrollments.where(is_paid: true).where('remaining_lessons > 0') %>
+          <% if enrollments.any? %>
+            <% enrollments.each do |enrollment| %>
+              <div class="enrollment-detail">
+                <span class="enrollment-label"><%= enrollment.teacher %> <%= enrollment.subject %>:</span>
+                <span><%= enrollment.remaining_passes %>회</span>
+              </div>
+            <% end %>
+          <% else %>
+            <%= current_user.current_remaining_passes %>회
+          <% end %>
+        </span>
       </div>
     </div>
 

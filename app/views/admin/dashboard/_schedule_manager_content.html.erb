@@ -727,6 +727,7 @@
     card.dataset.currentDay = day;
     card.dataset.currentTimeSlot = timeSlot;
     card.dataset.teacher = window.currentScheduleTeacher;
+    card.dataset.subject = student.subject || '';
     card.draggable = true;
 
     // 휴원 상태에 따른 배경색 설정
@@ -1005,18 +1006,14 @@
         const statusColor = enrollment.status === 'active' ? '#10b981' : '#9ca3af';
         html += `<div style="background: white; border: 1px solid ${statusColor}40; border-radius: 6px; padding: 10px; min-width: 150px;">`;
         html += `<div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 3px;">${enrollment.teacher} - ${enrollment.subject}</div>`;
-        html += `<div style="font-size: 1.3rem; font-weight: 700; color: ${statusColor};">${enrollment.remaining_lessons}회</div>`;
+        html += `<div style="font-size: 1.1rem; font-weight: 700; color: ${statusColor};">수업 ${enrollment.remaining_lessons}회</div>`;
+        html += `<div style="font-size: 1.1rem; font-weight: 700; color: #f59e0b; margin-top: 5px;">패스 ${enrollment.remaining_passes || 0}회</div>`;
         html += `</div>`;
       });
       html += '</div></div>';
     }
     
-    html += '<div style="display: flex; justify-content: space-around; text-align: center; padding-top: 10px; border-top: 1px solid #bae6fd;">';
-    html += '<div><div style="font-size: 0.85rem; color: #0369a1; margin-bottom: 5px;">총 남은 수업</div>';
-    html += `<div style="font-size: 1.5rem; font-weight: 700; color: #0369a1;">${remaining_lessons}회</div></div>`;
-    html += '<div><div style="font-size: 0.85rem; color: #0369a1; margin-bottom: 5px;">남은 패스</div>';
-    html += `<div style="font-size: 1.5rem; font-weight: 700; color: #0369a1;">${remaining_passes}회</div></div>`;
-    html += '</div></div></div>';
+    html += '</div></div>';
 
     // 수강 정보
     html += '<div style="margin-bottom: 20px;"><h4 style="font-weight: 700; margin-bottom: 10px; color: #374151;">📚 수강 정보</h4>';
@@ -1037,7 +1034,7 @@
         if (enrollment.teacher_history !== enrollment.teacher) {
           html += `<div style="font-size: 0.75rem; color: #f59e0b; margin-bottom: 3px;">담당 이력: ${enrollment.teacher_history}</div>`;
         }
-        html += `<div style="font-size: 0.85rem; color: #6b7280;">${enrollment.day} ${enrollment.time_slot} | 남은 수업: ${enrollment.remaining_lessons}회</div>`;
+        html += `<div style="font-size: 0.85rem; color: #6b7280;">${enrollment.day} ${enrollment.time_slot} | 남은 수업: ${enrollment.remaining_lessons}회 | 남은 패스: ${enrollment.remaining_passes || 0}회</div>`;
         html += `<div style="font-size: 0.75rem; color: #9ca3af; margin-top: 3px;">첫 수업: ${enrollment.first_lesson_date || '-'} | 종료: ${enrollment.end_date || '-'}</div>`;
 
         // 스케줄 변경 이력 표시
@@ -1321,15 +1318,14 @@
       const userId = draggedCard.dataset.userId;
       const currentDay = draggedCard.dataset.currentDay;
       const currentTimeSlot = draggedCard.dataset.currentTimeSlot;
+      const subject = draggedCard.dataset.subject;
 
-      // 이미 미배치 회원인 경우 아무것도 하지 않음
       if (!currentDay && !currentTimeSlot) {
         return false;
       }
 
       if (confirm('스케줄을 해제하시겠습니까? (결제 및 수업 정보는 유지됩니다)')) {
-        // 서버에 스케줄 해제 요청
-        unscheduleStudent(userId, currentDay, currentTimeSlot);
+        unscheduleStudent(userId, currentDay, currentTimeSlot, subject);
       }
     }
 
@@ -1376,7 +1372,7 @@
   }
 
   // 학생 스케줄 해제
-  function unscheduleStudent(userId, day, timeSlot) {
+  function unscheduleStudent(userId, day, timeSlot, subject) {
     showScheduleLoading(true);
 
     fetch('/admin/unschedule_student', {
@@ -1389,7 +1385,8 @@
         user_id: userId,
         day: day,
         time_slot: timeSlot,
-        teacher: window.currentScheduleTeacher
+        teacher: window.currentScheduleTeacher,
+        subject: subject
       })
     })
     .then(response => response.json())

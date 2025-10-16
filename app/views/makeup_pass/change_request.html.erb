@@ -927,7 +927,7 @@ function showConfirmation() {
     if (selectedType === 'makeup' && selectedTimeSlot && selectedTeacher) {
       var timeDisplay = selectedTimeSlot.split('-').join(':00-') + ':00';
       summaryHTML += '<div>시간: ' + timeDisplay + '</div>' +
-                     '<div>담당: ' + selectedTeacher + '</div>';
+                     '<div>담당 선생님: ' + selectedTeacher + '</div>';
     }
 
     summaryHTML += '<div>주차: ' + weekNumber + '주차</div>' +
@@ -1121,7 +1121,7 @@ window.confirmMakeupPassRequest = function() {
 
     if (selectedType === 'makeup') {
       var timeDisplay = selectedTimeSlot.split('-').join(':00-') + ':00';
-      confirmMessage += '\n시간: ' + timeDisplay + '\n담당: ' + selectedTeacher;
+      confirmMessage += '\n시간: ' + timeDisplay + '\n담당 선생님: ' + selectedTeacher;
     }
 
     confirmMessage += '\n주차: ' + weekNumber + '주차\n내용: ' + (lessonContent.length > 30 ? lessonContent.substring(0, 30) + '...' : lessonContent);

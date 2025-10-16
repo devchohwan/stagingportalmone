@@ -301,6 +301,36 @@ function navigateMonth(direction) {
     color: #9ca3af;
   }
   
+  /* Enrollment selection styles */
+  .enrollment-grid {
+    display: grid;
+    gap: 15px;
+  }
+
+  .enrollment-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+  }
+
+  .enrollment-card:hover {
+    border-color: #34d399;
+    background: rgba(52, 211, 153, 0.03);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 211, 153, 0.15);
+  }
+
+  .enrollment-card.selected {
+    border-color: #34d399;
+    background: rgba(52, 211, 153, 0.05);
+    transform: translateY(-2px);
+  }
+  
   /* Type selection styles */
   .type-selection-container {
     display: flex;
@@ -622,9 +652,63 @@ function navigateMonth(direction) {
     <% end %>
 
     <div>
-      <!-- Step 1: 보강/패스 선택 -->
-      <div class="step-section" data-reservation-target="typeSection">
-        <h3 class="step-title">1. 보강 / 패스 선택</h3>
+      <!-- Step 1: 과목 선택 -->
+      <div class="step-section" data-reservation-target="enrollmentSection">
+        <h3 class="step-title">1. 수강 과목 선택</h3>
+        <% if @enrollments.any? %>
+          <div class="enrollment-grid" style="display: grid; gap: 15px;">
+            <% @enrollments.each do |enrollment| %>
+              <button type="button" 
+                      class="enrollment-card" 
+                      data-enrollment-id="<%= enrollment.id %>"
+                      data-teacher="<%= enrollment.teacher %>"
+                      data-subject="<%= enrollment.subject %>"
+                      data-day="<%= enrollment.day %>"
+                      data-time="<%= enrollment.time_slot %>"
+                      data-passes="<%= enrollment.remaining_passes %>"
+                      style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: white; cursor: pointer; transition: all 0.3s ease; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                  <div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #2d3748; margin-bottom: 4px;">
+                      <%= enrollment.subject %>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #667eea; font-weight: 600;">
+                      <%= enrollment.teacher %> 선생님
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 0.85rem; color: #718096; margin-bottom: 4px;">
+                      <%= enrollment.day_korean %> <%= enrollment.time_slot.gsub('-', ':00-') %>:00
+                    </div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 15px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                  <div style="flex: 1;">
+                    <div style="font-size: 0.75rem; color: #718096; margin-bottom: 4px;">남은 수업</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #2d3748;"><%= enrollment.remaining_lessons %>회</div>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="font-size: 0.75rem; color: #718096; margin-bottom: 4px;">패스권</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: <%= enrollment.remaining_passes > 0 ? '#10b981' : '#dc2626' %>;"><%= enrollment.remaining_passes %>회</div>
+                  </div>
+                </div>
+              </button>
+            <% end %>
+          </div>
+        <% else %>
+          <div style="text-align: center; padding: 40px; color: #9ca3af;">
+            수강 중인 과목이 없습니다.
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Step 2: 보강/패스 선택 -->
+      <div class="step-section hidden" data-reservation-target="typeSection">
+        <h3 class="step-title">2. 보강 / 패스 선택</h3>
+        <div id="selected-enrollment-info" style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: none;">
+          <div style="font-size: 0.85rem; color: #1e40af; font-weight: 600; margin-bottom: 4px;">선택한 과목</div>
+          <div style="font-size: 1rem; color: #1e3a8a; font-weight: 700;" id="selected-enrollment-display"></div>
+        </div>
         <div class="type-selection-container">
           <button type="button" class="type-btn" data-type="makeup" onclick="selectType(this, 'makeup')">
             <div class="type-icon">📚</div>
@@ -639,9 +723,9 @@ function navigateMonth(direction) {
         </div>
       </div>
 
-      <!-- Step 2: 날짜 선택 -->
+      <!-- Step 3: 날짜 선택 -->
       <div class="step-section hidden" data-reservation-target="dateSection">
-        <h3 class="step-title">2. 날짜 선택</h3>
+        <h3 class="step-title">3. 날짜 선택</h3>
         <% if @has_cancelled_makeup %>
           <div style="background: #fee2e2; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 15px;">
             <p style="color: #991b1b; font-weight: 600; margin: 0;">⚠️ 보강 취소 페널티</p>
@@ -653,40 +737,31 @@ function navigateMonth(direction) {
         </div>
       </div>
 
-      <!-- Step 3: 시간 선택 (보강일 때만) -->
+      <!-- Step 4: 시간 선택 (보강일 때만) -->
       <div class="step-section hidden" data-reservation-target="timeSection">
-        <h3 class="step-title">3. 시간 선택</h3>
+        <h3 class="step-title">4. 시간 선택</h3>
         <div id="time-slots-container" class="time-slots-grid">
           <!-- 시간대가 여기에 동적으로 추가됩니다 -->
         </div>
       </div>
 
-      <!-- Step 4: 선생님 선택 (보강일 때만) -->
-      <div class="step-section hidden" data-reservation-target="teacherSection">
-        <h3 class="step-title">4. 선생님 선택</h3>
-        <div id="teachers-container" class="teachers-grid">
-          <!-- 선생님이 여기에 동적으로 추가됩니다 -->
-        </div>
-      </div>
-
-      <!-- Step 5 (보강) / Step 3 (패스): 신청 정보 입력 -->
+      <!-- Step 5 (보강) / Step 4 (패스): 신청 정보 입력 -->
       <div class="step-section hidden" data-reservation-target="contentSection">
         <h3 class="step-title"><span id="content-step-number">5</span>. <span id="content-section-title">신청 정보</span></h3>
 
         <div style="margin-bottom: 20px;">
           <label style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">주차</label>
-          <input type="number"
+          <input type="text"
                  id="week-number"
-                 placeholder="몇 주차인지 입력해주세요 (예: 1, 2, 3...)"
-                 style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;"
-                 min="1" max="20"
-                 oninput="updateConfirmationIfReady()">
+                 readonly
+                 style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background-color: #f7fafc; cursor: not-allowed;"
+                 placeholder="자동 입력됩니다">
         </div>
 
         <div style="margin-bottom: 15px;">
-          <label id="content-label" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">신청 내용</label>
+          <label id="content-label" style="display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px;">보강/패스 원하는 이유</label>
           <textarea id="lesson-content"
-                    placeholder="보강/패스 신청 내용을 적어주세요😊"
+                    placeholder="보강/패스를 원하는 이유를 적어주세요😊"
                     style="width: 100%; min-height: 120px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"
                     oninput="updateConfirmationIfReady()"></textarea>
         </div>
@@ -697,6 +772,7 @@ function navigateMonth(direction) {
         <%= form_with url: "#", method: :post, local: true, data: { reservation_target: "form", turbo: false } do |f| %>
           <%= hidden_field_tag "makeup_pass_request[date]", nil, id: "hidden-date" %>
           <%= hidden_field_tag "makeup_pass_request[type]", nil, id: "hidden-type" %>
+          <%= hidden_field_tag "makeup_pass_request[user_enrollment_id]", nil, id: "hidden-enrollment-id" %>
           <%= hidden_field_tag "makeup_pass_request[time_slot]", nil, id: "hidden-time-slot" %>
           <%= hidden_field_tag "makeup_pass_request[teacher]", nil, id: "hidden-teacher" %>
           <%= hidden_field_tag "makeup_pass_request[content]", nil, data: { reservation_target: "lessonContent" } %>
@@ -717,32 +793,75 @@ function navigateMonth(direction) {
 </div>
 
 <script>
-// 보강/패스 신청 JavaScript - 전역 스코프로 수정
+var selectedEnrollment = null;
 var selectedDate = null;
-var selectedType = null; // 'makeup' 또는 'pass'
+var selectedType = null;
 var selectedTimeSlot = null;
 var selectedTeacher = null;
 var hasCancelledMakeup = <%= @has_cancelled_makeup ? 'true' : 'false' %>;
 var remainingPasses = <%= @remaining_passes || 0 %>;
+var cleanTeachersByDay = <%= raw(@clean_teachers_by_day.to_json) if @clean_teachers_by_day %>;
 <% if @next_lesson_datetime %>
 var nextLessonDatetime = '<%= @next_lesson_datetime.strftime('%y.%m.%d %H:%M') %>';
 <% else %>
 var nextLessonDatetime = null;
 <% end %>
 
-function selectType(element, type) {
+window.selectEnrollment = function(element) {
+  document.querySelectorAll('.enrollment-card').forEach(card => {
+    card.style.borderColor = '#e2e8f0';
+    card.style.background = 'white';
+    card.style.transform = 'none';
+  });
+
+  element.style.borderColor = '#34d399';
+  element.style.background = 'rgba(52, 211, 153, 0.05)';
+  element.style.transform = 'translateY(-2px)';
+
+  selectedEnrollment = {
+    id: element.dataset.enrollmentId,
+    teacher: element.dataset.teacher,
+    subject: element.dataset.subject,
+    day: element.dataset.day,
+    time: element.dataset.time,
+    passes: parseInt(element.dataset.passes)
+  };
+
+  console.log('과목 선택:', selectedEnrollment);
+
+  document.querySelector('[data-reservation-target="typeSection"]').classList.remove('hidden');
+  document.getElementById('selected-enrollment-info').style.display = 'block';
+  document.getElementById('selected-enrollment-display').textContent = 
+    selectedEnrollment.subject + ' - ' + selectedEnrollment.teacher + ' 선생님';
+
+  selectedType = null;
+  selectedDate = null;
+  selectedTimeSlot = null;
+  selectedTeacher = null;
+
+  document.querySelector('[data-reservation-target="dateSection"]').classList.add('hidden');
+  document.querySelector('[data-reservation-target="timeSection"]').classList.add('hidden');
+  document.querySelector('[data-reservation-target="teacherSection"]').classList.add('hidden');
+  document.querySelector('[data-reservation-target="contentSection"]').classList.add('hidden');
+  document.querySelector('[data-reservation-target="confirmSection"]').classList.add('hidden');
+}
+
+window.selectType = function(element, type) {
+  if (!selectedEnrollment) {
+    alert('먼저 과목을 선택해주세요.');
+    return;
+  }
+
   selectedType = type;
   console.log('타입 선택:', type);
 
-  // 패스를 선택했는데 남은 패스가 0회인 경우
-  if (type === 'pass' && remainingPasses <= 0) {
-    alert('남은 패스권이 없습니다.\n보강 신청만 가능합니다.');
+  if (type === 'pass' && selectedEnrollment.passes <= 0) {
+    alert('해당 과목의 남은 패스권이 없습니다.\n보강 신청만 가능합니다.');
     element.classList.remove('selected');
     selectedType = null;
     return;
   }
 
-  // 보강 취소 이력이 있고 보강을 선택한 경우
   if (hasCancelledMakeup && type === 'makeup') {
     var message = '보강을 취소하신 이력이 있어 ';
     if (nextLessonDatetime) {
@@ -786,15 +905,38 @@ function selectType(element, type) {
   hideSection('contentSection');
   hideSection('confirmSection');
 
-  // 타입에 따라 캘린더 스타일 업데이트
-  updateCalendarForType(type);
+  if (selectedEnrollment && selectedEnrollment.id) {
+    var currentMonth = new Date();
+    var year = currentMonth.getFullYear();
+    var month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+    var dateStr = year + '-' + month + '-01';
+    
+    fetch('/makeup_pass/reserve?date=' + dateStr + '&enrollment_id=' + selectedEnrollment.id, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+      .then(function(response) { return response.text(); })
+      .then(function(html) {
+        document.getElementById('calendar-container').innerHTML = html;
+        selectedDate = null;
+        
+        if (selectedType) {
+          updateCalendarForType(selectedType);
+        }
+      })
+      .catch(function(error) {
+        console.error('달력 로드 오류:', error);
+      });
+  } else {
+    updateCalendarForType(type);
+  }
 }
 
-function selectDate(element) {
+window.selectDate = function(element) {
   selectedDate = element.getAttribute('data-date');
   console.log('날짜 선택:', selectedDate);
 
-  // 시각적 선택 업데이트
   var dateElements = document.querySelectorAll('[data-date]');
   for (var i = 0; i < dateElements.length; i++) {
     dateElements[i].classList.remove('selected');
@@ -802,28 +944,23 @@ function selectDate(element) {
   element.classList.add('selected');
 
   if (selectedType === 'makeup') {
-    // 보강: 시간 선택 섹션 표시
     loadTimeSlots(selectedDate);
     var timeSection = document.querySelector('[data-reservation-target="timeSection"]');
     if (timeSection) {
       timeSection.classList.remove('hidden');
       console.log('시간 선택 섹션 표시');
     }
-    hideSection('teacherSection');
     hideSection('contentSection');
     hideSection('confirmSection');
 
-    // Step 번호 및 타이틀 업데이트 (보강용)
     var stepNumber = document.getElementById('content-step-number');
     var sectionTitle = document.getElementById('content-section-title');
     var contentLabel = document.getElementById('content-label');
     if (stepNumber) stepNumber.textContent = '5';
     if (sectionTitle) sectionTitle.textContent = '신청 정보';
-    if (contentLabel) contentLabel.textContent = '신청 내용';
+    if (contentLabel) contentLabel.textContent = '보강/패스 원하는 이유';
   } else {
-    // 패스: 바로 신청 정보 입력 섹션 표시
     hideSection('timeSection');
-    hideSection('teacherSection');
     var contentSection = document.querySelector('[data-reservation-target="contentSection"]');
     if (contentSection) {
       contentSection.classList.remove('hidden');
@@ -831,13 +968,14 @@ function selectDate(element) {
     }
     hideSection('confirmSection');
 
-    // Step 번호 및 타이틀 업데이트 (패스용)
     var stepNumber = document.getElementById('content-step-number');
     var sectionTitle = document.getElementById('content-section-title');
     var contentLabel = document.getElementById('content-label');
-    if (stepNumber) stepNumber.textContent = '3';
+    if (stepNumber) stepNumber.textContent = '4';
     if (sectionTitle) sectionTitle.textContent = '패스 신청 사유';
-    if (contentLabel) contentLabel.textContent = '신청 사유';
+    if (contentLabel) contentLabel.textContent = '보강/패스 원하는 이유';
+
+    calculateAndSetWeekNumber();
   }
 }
 
@@ -886,41 +1024,55 @@ function selectTimeSlot(element, timeSlot) {
   selectedTimeSlot = timeSlot;
   console.log('시간 선택:', timeSlot);
 
-  // 시각적 선택 업데이트
   var timeButtons = document.querySelectorAll('.time-slot-btn');
   for (var i = 0; i < timeButtons.length; i++) {
     timeButtons[i].classList.remove('selected');
   }
   element.classList.add('selected');
 
-  // 선생님 선택 섹션 표시
-  loadTeachers(selectedDate, selectedTimeSlot);
-  var teacherSection = document.querySelector('[data-reservation-target="teacherSection"]');
-  if (teacherSection) {
-    teacherSection.classList.remove('hidden');
-    console.log('선생님 선택 섹션 표시');
+  if (selectedEnrollment.subject === '클린' && cleanTeachersByDay && selectedDate) {
+    var dateObj = new Date(selectedDate);
+    var dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dateObj.getDay()];
+    var availableTeachers = cleanTeachersByDay[dayKey] || [];
+    
+    if (availableTeachers.length > 0 && availableTeachers.indexOf(selectedEnrollment.teacher) >= 0) {
+      selectedTeacher = selectedEnrollment.teacher;
+    } else if (availableTeachers.length > 0) {
+      selectedTeacher = availableTeachers[0];
+    } else {
+      selectedTeacher = selectedEnrollment.teacher;
+    }
+    console.log('클린 과목 - 요일별 선생님 선택:', selectedTeacher, '이용 가능:', availableTeachers);
+  } else {
+    selectedTeacher = selectedEnrollment.teacher;
+    console.log('선생님 자동 선택:', selectedTeacher);
   }
-  hideSection('contentSection');
-  hideSection('confirmSection');
+
+  document.querySelector('[data-reservation-target="contentSection"]').classList.remove('hidden');
+  document.getElementById('content-step-number').textContent = '5';
+  document.getElementById('content-section-title').textContent = '신청 정보';
+  document.querySelector('[data-reservation-target="confirmSection"]').classList.add('hidden');
+
+  calculateAndSetWeekNumber();
 }
 
 function loadTeachers(date, timeSlot) {
   console.log('선생님 로딩:', date, timeSlot);
 
-  fetch('/makeup_pass/available_teachers?date=' + date + '&time_slot=' + timeSlot, {
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(teachers) {
-      console.log('사용 가능한 선생님:', teachers);
-      renderTeachers(teachers);
-    })
-    .catch(function(error) {
-      console.error('선생님 로드 오류:', error);
-      alert('선생님 목록을 불러오는데 실패했습니다.');
-    });
+  if (!selectedEnrollment || !selectedEnrollment.teacher) {
+    console.error('선택된 과목이 없습니다.');
+    return;
+  }
+
+  selectedTeacher = selectedEnrollment.teacher;
+  console.log('선생님 자동 선택:', selectedTeacher);
+
+  document.querySelector('[data-reservation-target="contentSection"]').classList.remove('hidden');
+  document.getElementById('content-step-number').textContent = '5';
+  document.getElementById('content-section-title').textContent = '신청 정보';
+  document.querySelector('[data-reservation-target="confirmSection"]').classList.add('hidden');
+
+  calculateAndSetWeekNumber();
 }
 
 function renderTeachers(teachers) {
@@ -951,14 +1103,12 @@ function selectTeacher(element, teacher) {
   selectedTeacher = teacher;
   console.log('선생님 선택:', teacher);
 
-  // 시각적 선택 업데이트
   var teacherButtons = document.querySelectorAll('.teacher-btn');
   for (var i = 0; i < teacherButtons.length; i++) {
     teacherButtons[i].classList.remove('selected');
   }
   element.classList.add('selected');
 
-  // 신청 정보 입력 섹션 표시
   var contentSection = document.querySelector('[data-reservation-target="contentSection"]');
   if (contentSection) {
     contentSection.classList.remove('hidden');
@@ -966,11 +1116,12 @@ function selectTeacher(element, teacher) {
   }
   hideSection('confirmSection');
 
-  // 보강이므로 타이틀을 "신청 정보"로 유지
   var sectionTitle = document.getElementById('content-section-title');
   var contentLabel = document.getElementById('content-label');
   if (sectionTitle) sectionTitle.textContent = '신청 정보';
-  if (contentLabel) contentLabel.textContent = '신청 내용';
+  if (contentLabel) contentLabel.textContent = '보강/패스 원하는 이유';
+
+  calculateAndSetWeekNumber();
 }
 
 
@@ -978,21 +1129,37 @@ function updateConfirmationIfReady() {
   var weekNumber = document.getElementById('week-number').value;
   var lessonContent = document.getElementById('lesson-content').value.trim();
   
-  // 주차와 내용이 모두 입력되면 자동으로 확인 섹션 표시
   if (weekNumber && lessonContent) {
     showConfirmation();
   } else {
-    // 하나라도 비어있으면 확인 섹션 숨김
     hideSection('confirmSection');
   }
 }
 
-function showConfirmation() {
-  // lesson content와 week number 가져오기
-  var lessonContent = document.getElementById('lesson-content').value;
-  var weekNumber = document.getElementById('week-number').value;
+function calculateAndSetWeekNumber() {
+  if (!selectedEnrollment || !selectedDate) {
+    return;
+  }
 
-  // 폼 필드 설정
+  fetch('/makeup_pass/calculate_week?enrollment_id=' + selectedEnrollment.id + '&date=' + selectedDate)
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var weekNumberInput = document.getElementById('week-number');
+      if (weekNumberInput && data.week_number) {
+        weekNumberInput.value = data.week_number + '주차';
+        console.log('주차 자동 설정:', data.week_number);
+      }
+    })
+    .catch(function(error) {
+      console.error('주차 계산 오류:', error);
+    });
+}
+
+function showConfirmation() {
+  var lessonContent = document.getElementById('lesson-content').value;
+  var weekNumberText = document.getElementById('week-number').value;
+  var weekNumber = parseInt(weekNumberText.replace(/[^0-9]/g, ''));
+
   var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
   var weekNumberField = document.querySelector('[data-reservation-target="weekNumber"]');
 
@@ -1006,7 +1173,6 @@ function showConfirmation() {
     weekNumber: weekNumberField.value
   });
 
-  // 요약 정보 업데이트
   var dateObj = new Date(selectedDate);
   var weekdays = ['일', '월', '화', '수', '목', '금', '토'];
   var weekday = weekdays[dateObj.getDay()];
@@ -1020,11 +1186,10 @@ function showConfirmation() {
     var summaryHTML = '<div>날짜: ' + formattedDate + '</div>' +
                       '<div>유형: ' + typeText + '</div>';
 
-    // 보강일 경우 시간과 선생님 정보 추가
     if (selectedType === 'makeup' && selectedTimeSlot && selectedTeacher) {
       var timeDisplay = selectedTimeSlot.split('-').join(':00-') + ':00';
       summaryHTML += '<div>시간: ' + timeDisplay + '</div>' +
-                     '<div>담당: ' + selectedTeacher + '</div>';
+                     '<div>담당 선생님: ' + selectedTeacher + '</div>';
     }
 
     summaryHTML += '<div>주차: ' + weekNumber + '주차</div>' +
@@ -1048,73 +1213,54 @@ function hideSection(target) {
 }
 
 function updateCalendarForType(type) {
+  console.log('updateCalendarForType 호출:', type);
   var allDayCells = document.querySelectorAll('.calendar-day-cell');
+  console.log('총 날짜 셀 개수:', allDayCells.length);
 
+  var clickableCount = 0;
   for (var i = 0; i < allDayCells.length; i++) {
     var cell = allDayCells[i];
     var dayLabel = cell.querySelector('.day-label');
 
     var isNextLesson = dayLabel && dayLabel.textContent.trim() === '이번수업';
     var isFollowingLesson = dayLabel && dayLabel.textContent.trim() === '다음수업';
+    var isBetweenLessons = cell.classList.contains('between-lessons');
 
-    // 첫 실행 시 원래 클릭 가능 상태 저장
-    if (!cell.hasAttribute('data-original-clickable') && !cell.hasAttribute('data-original-not-clickable')) {
-      if (cell.getAttribute('data-clickable') === 'true') {
-        cell.setAttribute('data-original-clickable', 'true');
-      } else {
-        cell.setAttribute('data-original-not-clickable', 'true');
-      }
-    }
-
-    // between-lessons 원래 상태 저장
-    if (!cell.hasAttribute('data-original-between')) {
-      if (cell.classList.contains('between-lessons')) {
-        cell.setAttribute('data-original-between', 'true');
-      }
-    }
-
-    // 원래 상태 정보를 data 속성에서 가져오기 (속성 설정 후에 확인)
-    var originalClickable = cell.hasAttribute('data-original-clickable');
-    var isBetweenLessons = cell.hasAttribute('data-original-between');
+    cell.onclick = null;
+    cell.removeAttribute('data-clickable');
 
     if (type === 'makeup') {
-      // 보강: 이번수업부터 다음수업 전날까지 연노랑 표시하고 모두 클릭 가능
       if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
-      // 중간 날짜는 연노랑으로 표시
       if (isBetweenLessons) {
         cell.classList.add('between-lessons');
       }
-      // 다음수업일은 연노랑 제거
       if (isFollowingLesson) {
         cell.classList.remove('lesson-day');
         cell.style.backgroundColor = '';
         cell.style.borderColor = '';
       }
 
-      // 스타일 복원 (다음수업일 제외)
       if (!isFollowingLesson) {
         cell.style.backgroundColor = '';
         cell.style.borderColor = '';
       }
 
-      // 이번수업일 ~ 다음수업 전날까지 모두 클릭 가능
-      if (originalClickable) {
-        if (isNextLesson || isBetweenLessons) {
-          cell.setAttribute('data-clickable', 'true');
-          cell.setAttribute('onclick', 'selectDate(this)');
-          cell.style.cursor = 'pointer';
-          cell.style.opacity = '';
-        } else {
-          cell.removeAttribute('data-clickable');
-          cell.removeAttribute('onclick');
-          cell.style.cursor = 'not-allowed';
-          cell.style.opacity = '0.4';
-        }
+      if (isNextLesson || isBetweenLessons) {
+        cell.setAttribute('data-clickable', 'true');
+        cell.style.cursor = 'pointer';
+        cell.style.opacity = '';
+        cell.addEventListener('click', function() {
+          selectDate(this);
+        });
+        clickableCount++;
+        console.log('클릭 가능 설정:', cell.getAttribute('data-date'));
+      } else {
+        cell.style.cursor = 'not-allowed';
+        cell.style.opacity = '0.4';
       }
     } else if (type === 'pass') {
-      // 패스: between-lessons와 다음수업 연노랑 제거, 이번수업만 유지
       if (isBetweenLessons || isFollowingLesson) {
         cell.classList.remove('between-lessons');
         cell.classList.remove('lesson-day');
@@ -1122,27 +1268,25 @@ function updateCalendarForType(type) {
         cell.style.borderColor = '';
       }
 
-      // 이번수업만 유지
       if (isNextLesson) {
         cell.classList.add('lesson-day');
       }
 
-      // 이번수업만 클릭 가능
-      if (originalClickable) {
-        if (isNextLesson) {
-          cell.setAttribute('data-clickable', 'true');
-          cell.setAttribute('onclick', 'selectDate(this)');
-          cell.style.cursor = 'pointer';
-          cell.style.opacity = '';
-        } else {
-          cell.removeAttribute('data-clickable');
-          cell.removeAttribute('onclick');
-          cell.style.cursor = 'not-allowed';
-          cell.style.opacity = '0.4';
-        }
+      if (isNextLesson) {
+        cell.setAttribute('data-clickable', 'true');
+        cell.style.cursor = 'pointer';
+        cell.style.opacity = '';
+        cell.addEventListener('click', function() {
+          selectDate(this);
+        });
+        clickableCount++;
+      } else {
+        cell.style.cursor = 'not-allowed';
+        cell.style.opacity = '0.4';
       }
     }
   }
+  console.log('총 클릭 가능 셀 개수:', clickableCount);
 }
 
 window.confirmMakeupPassRequest = function() {
@@ -1159,7 +1303,6 @@ window.confirmMakeupPassRequest = function() {
       return false;
     }
 
-    // 보강일 경우 시간과 선생님 필수
     if (selectedType === 'makeup' && (!selectedTimeSlot || !selectedTeacher)) {
       alert('시간과 선생님을 선택해주세요.');
       return false;
@@ -1171,43 +1314,46 @@ window.confirmMakeupPassRequest = function() {
     var formattedDate = (dateObj.getMonth() + 1) + '월 ' + dateObj.getDate() + '일(' + weekday + ')';
 
     var lessonContent = document.getElementById('lesson-content').value.trim();
-    var weekNumber = document.getElementById('week-number').value;
+    var weekNumberText = document.getElementById('week-number').value;
 
     console.log('입력값 확인:', {
-      weekNumber: weekNumber,
+      weekNumberText: weekNumberText,
       lessonContent: lessonContent
     });
 
-    // 주차와 내용 확인
-    if (!weekNumber || !lessonContent) {
+    if (!weekNumberText || !lessonContent) {
       alert('주차와 신청 내용을 입력해주세요.');
       return false;
     }
 
-    // 폼 제출 전 필수 필드 최종 검증
+    var weekNumber = parseInt(weekNumberText.replace(/[^0-9]/g, ''));
+    if (!weekNumber || isNaN(weekNumber)) {
+      alert('주차 정보가 유효하지 않습니다.');
+      return false;
+    }
+
     var form = document.querySelector('[data-reservation-target="form"]');
     var lessonContentField = document.querySelector('[data-reservation-target="lessonContent"]');
     var weekNumberField = document.querySelector('[data-reservation-target="weekNumber"]');
 
-    // 필드 존재 확인
     if (!form || !lessonContentField || !weekNumberField) {
       console.error('Form validation failed: Missing form elements');
       alert('신청 폼 오류가 발생했습니다.\n페이지를 새로고침 후 다시 시도해주세요.');
       return false;
     }
 
-    // 값 설정
     lessonContentField.value = lessonContent;
     weekNumberField.value = weekNumber;
 
-    // hidden field에 값 설정
     var dateField = document.getElementById('hidden-date');
     var typeField = document.getElementById('hidden-type');
+    var enrollmentIdField = document.getElementById('hidden-enrollment-id');
     var timeSlotField = document.getElementById('hidden-time-slot');
     var teacherField = document.getElementById('hidden-teacher');
 
     if (dateField) dateField.value = selectedDate;
     if (typeField) typeField.value = selectedType;
+    if (enrollmentIdField && selectedEnrollment) enrollmentIdField.value = selectedEnrollment.id;
     if (timeSlotField) timeSlotField.value = selectedTimeSlot || '';
     if (teacherField) teacherField.value = selectedTeacher || '';
 
@@ -1233,7 +1379,7 @@ window.confirmMakeupPassRequest = function() {
 
       if (selectedType === 'makeup') {
         var timeDisplay = selectedTimeSlot.split('-').join(':00-') + ':00';
-        confirmMessage += '\n시간: ' + timeDisplay + '\n담당: ' + selectedTeacher;
+        confirmMessage += '\n시간: ' + timeDisplay + '\n담당 선생님: ' + selectedTeacher;
       }
 
       confirmMessage += '\n주차: ' + weekNumber + '주차\n내용: ' + (lessonContent.length > 30 ? lessonContent.substring(0, 30) + '...' : lessonContent);
@@ -1333,6 +1479,31 @@ function navigateMakeupPassMonth(direction) {
 
 // 전역 함수로 등록
 window.navigateMakeupPassMonth = navigateMakeupPassMonth;
+
+window.initializeEventListeners = function() {
+  document.querySelectorAll('.enrollment-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      if (window.selectEnrollment) {
+        window.selectEnrollment(this);
+      }
+    });
+  });
+  
+  document.querySelectorAll('.type-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (window.selectType) {
+        const type = this.dataset.type;
+        window.selectType(this, type);
+      }
+    });
+  });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initializeEventListeners);
+} else {
+  window.initializeEventListeners();
+}
 
 console.log('보강/패스 신청 JavaScript 로드 완료');
 </script>
