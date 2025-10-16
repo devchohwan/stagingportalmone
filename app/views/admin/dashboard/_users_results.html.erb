@@ -165,12 +165,13 @@
             </td>
             <td><%= user['username'] %></td>
             <td>
-              <input type="tel" 
+              <input type="tel"
                      id="phone-approved-<%= user['id'] %>"
-                     value="<%= user['phone'] || '' %>" 
+                     value="<%= user['phone'] || '' %>"
                      placeholder="미등록"
-                     class="phone-input">
-              <button onclick="updatePhone(<%= user['id'] %>, 'approved', '<%= user['system'] %>')" 
+                     class="phone-input"
+                     style="width: 100px;">
+              <button onclick="updatePhone(<%= user['id'] %>, 'approved', '<%= user['system'] %>')"
                       class="phone-update-btn">확인</button>
             </td>
             <td>
