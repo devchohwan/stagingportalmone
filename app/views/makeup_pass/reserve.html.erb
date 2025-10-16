@@ -687,10 +687,12 @@ function navigateMonth(direction) {
                     <div style="font-size: 0.75rem; color: #718096; margin-bottom: 4px;">남은 수업</div>
                     <div style="font-size: 1.1rem; font-weight: 700; color: #2d3748;"><%= enrollment.remaining_lessons %>회</div>
                   </div>
-                  <div style="flex: 1;">
-                    <div style="font-size: 0.75rem; color: #718096; margin-bottom: 4px;">패스권</div>
-                    <div style="font-size: 1.1rem; font-weight: 700; color: <%= enrollment.remaining_passes > 0 ? '#10b981' : '#dc2626' %>;"><%= enrollment.remaining_passes %>회</div>
-                  </div>
+                  <% unless enrollment.subject == '믹싱' %>
+                    <div style="flex: 1;">
+                      <div style="font-size: 0.75rem; color: #718096; margin-bottom: 4px;">패스권</div>
+                      <div style="font-size: 1.1rem; font-weight: 700; color: <%= enrollment.remaining_passes > 0 ? '#10b981' : '#dc2626' %>;"><%= enrollment.remaining_passes %>회</div>
+                    </div>
+                  <% end %>
                 </div>
               </button>
             <% end %>
