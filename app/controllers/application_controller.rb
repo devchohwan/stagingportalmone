@@ -26,7 +26,7 @@ class ApplicationController < ActionController::Base
 
   def after_login_path
     if current_user.is_admin
-      admin_dashboard_path
+      admin_root_path
     else
       root_path
     end
