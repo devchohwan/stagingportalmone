@@ -1105,14 +1105,14 @@ function updateCalendarForMixingMakeup() {
     var dateObj = new Date(date);
     var dayOfWeek = dateObj.getDay();
 
-    var isTueOrSat = dayOfWeek === 2 || dayOfWeek === 6;
+    var isSaturday = dayOfWeek === 6;
     var isPast = cell.classList.contains('past-day');
     var isNotCurrentMonth = cell.classList.contains('not-current-month');
 
     cell.onclick = null;
     cell.removeAttribute('data-clickable');
 
-    if (isTueOrSat && !isPast && !isNotCurrentMonth) {
+    if (isSaturday && !isPast && !isNotCurrentMonth) {
       cell.setAttribute('data-clickable', 'true');
       cell.style.cursor = 'pointer';
       cell.style.opacity = '';

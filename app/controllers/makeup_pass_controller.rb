@@ -267,7 +267,7 @@ class MakeupPassController < ApplicationController
         day_of_week = date.strftime('%a').downcase
         
         empty_slots = []
-        if day_of_week == 'tue' || day_of_week == 'sat'
+        if day_of_week == 'sat'
           teachers = ['오또']
           
           all_time_slots.each do |time_slot|
