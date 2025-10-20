@@ -1130,14 +1130,20 @@ function updateCalendarForMixingMakeup() {
 
     cell.onclick = null;
     cell.removeAttribute('data-clickable');
+    cell.classList.remove('between-lessons');
+    cell.classList.remove('monday-closed');
+    
+    var dayLabel = cell.querySelector('.day-label');
 
     if (isSaturday && !isPast && !isNotCurrentMonth) {
       cell.setAttribute('data-clickable', 'true');
+      cell.classList.add('between-lessons');
       cell.style.cursor = 'pointer';
       cell.style.opacity = '';
       cell.addEventListener('click', function() {
         selectDate(this);
       });
+      if (dayLabel) dayLabel.textContent = '\u00a0';
     } else {
       cell.style.cursor = 'not-allowed';
       cell.style.opacity = '0.4';
