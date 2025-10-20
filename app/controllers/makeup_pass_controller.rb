@@ -29,8 +29,6 @@ class MakeupPassController < ApplicationController
     end
     
     @date = params[:date] ? Date.parse(params[:date]) : Date.current
-    @has_cancelled_makeup = current_user.has_cancelled_makeup_before_next_lesson?
-    @next_lesson_datetime = current_user.next_lesson_datetime if @has_cancelled_makeup
     @remaining_passes = current_user.current_remaining_passes
 
     if request.xhr?
@@ -167,9 +165,7 @@ class MakeupPassController < ApplicationController
     end
 
     @date = @request.makeup? && @request.makeup_date ? @request.makeup_date : @request.request_date
-    @initial_type = @request.request_type  # 'makeup' or 'pass'
-    @has_cancelled_makeup = current_user.has_cancelled_makeup_before_next_lesson?
-    @next_lesson_datetime = current_user.next_lesson_datetime if @has_cancelled_makeup
+    @initial_type = @request.request_type
   end
 
   def update_request
