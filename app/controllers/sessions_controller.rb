@@ -28,9 +28,7 @@ class SessionsController < ApplicationController
         Rails.logger.info "사용자 ID: #{user.id}"
         Rails.logger.info "전화번호: #{user.phone}"
         
-        if user.teacher?
-          redirect_to teacher_dashboard_path
-        elsif user.is_admin
+        if user.is_admin
           redirect_to admin_dashboard_path
         else
           redirect_to services_path
