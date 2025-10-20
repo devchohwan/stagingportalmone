@@ -836,6 +836,31 @@
         </div>
       <% end %>
     <% end %>
+
+    <!-- 이번 달 통계 -->
+    <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <!-- 이번 달 매출 -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 25px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+        <div style="font-size: 0.85rem; font-weight: 600; opacity: 0.9; margin-bottom: 8px;">💰 이번 달 매출</div>
+        <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">
+          <%= number_to_currency(@total_revenue, unit: '₩', precision: 0, delimiter: ',') %>
+        </div>
+        <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 8px;">
+          <%= Date.current.strftime('%Y년 %m월') %> 기준
+        </div>
+      </div>
+
+      <!-- 이번 달 사용된 패스 -->
+      <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; padding: 25px; color: white; box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);">
+        <div style="font-size: 0.85rem; font-weight: 600; opacity: 0.9; margin-bottom: 8px;">🎫 이번 달 패스 사용</div>
+        <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;">
+          <%= @total_passes_used %>회
+        </div>
+        <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 8px;">
+          <%= Date.current.strftime('%Y년 %m월') %> 기준
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

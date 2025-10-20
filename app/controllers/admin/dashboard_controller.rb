@@ -1608,6 +1608,20 @@ class Admin::DashboardController < ApplicationController
     # 결제 캘린더용 데이터
     @payment_calendar_data = calculate_payment_calendar_data
 
+    # 이번 달 통계 계산
+    current_month_start = Date.current.beginning_of_month
+    current_month_end = Date.current.end_of_month
+
+    # 1. 이번 달 매출 (Payment 테이블의 amount 합계)
+    @total_revenue = Payment.where(created_at: current_month_start..current_month_end)
+                            .sum(:amount)
+
+    # 2. 이번 달 사용된 패스 개수 (MakeupPassRequest 중 패스 타입)
+    @total_passes_used = MakeupPassRequest
+      .where(request_type: 'pass', status: 'active')
+      .where(created_at: current_month_start..current_month_end)
+      .count
+
     render partial: 'admin/dashboard/payments_content', layout: false
   end
 
