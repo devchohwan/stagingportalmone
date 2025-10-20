@@ -370,6 +370,42 @@ class MakeupPassController < ApplicationController
     render json: { week_number: week_number }
   end
 
+  def get_absent_weeks
+    enrollment = current_user.user_enrollments.find(params[:enrollment_id])
+
+    unless enrollment.teacher == '지명' && enrollment.subject == '믹싱'
+      render json: []
+      return
+    end
+
+    absent_schedules = TeacherSchedule
+      .where(
+        user_id: current_user.id,
+        user_enrollment_id: enrollment.id,
+        is_absent: true
+      )
+
+    absent_weeks = absent_schedules.map { |schedule|
+      enrollment.calculate_week_number(schedule.lesson_date)
+    }.uniq.compact.sort
+
+    render json: absent_weeks
+  rescue => e
+    Rails.logger.error("결석 주차 조회 오류: #{e.message}")
+    render json: { error: e.message }, status: :internal_server_error
+  end
+
+  def check_cancelled_makeup
+    enrollment_id = params[:enrollment_id]
+    has_cancelled = current_user.has_cancelled_makeup_before_next_lesson?(enrollment_id)
+    next_lesson_datetime = current_user.next_lesson_datetime
+
+    render json: {
+      has_cancelled: has_cancelled,
+      next_lesson_datetime: next_lesson_datetime&.strftime('%y.%m.%d %H:%M')
+    }
+  end
+
   private
 
   def get_clean_teachers_by_day
@@ -397,46 +433,6 @@ class MakeupPassController < ApplicationController
     unless logged_in?
       redirect_to login_path, alert: '로그인이 필요합니다'
     end
-  end
-
-  # 결석한 주차 조회 (지명 믹싱 전용)
-  def get_absent_weeks
-    enrollment = current_user.user_enrollments.find(params[:enrollment_id])
-
-    # 지명 믹싱만 해당
-    unless enrollment.teacher == '지명' && enrollment.subject == '믹싱'
-      render json: []
-      return
-    end
-
-    # 결석한 주차 찾기
-    absent_schedules = TeacherSchedule
-      .where(
-        user_id: current_user.id,
-        user_enrollment_id: enrollment.id,
-        is_absent: true
-      )
-
-    absent_weeks = absent_schedules.map { |schedule|
-      enrollment.calculate_week_number(schedule.lesson_date)
-    }.uniq.compact.sort
-
-    render json: absent_weeks
-  rescue => e
-    Rails.logger.error("결석 주차 조회 오류: #{e.message}")
-    render json: { error: e.message }, status: :internal_server_error
-  end
-
-  # 특정 enrollment의 보강 취소 이력 확인
-  def check_cancelled_makeup
-    enrollment_id = params[:enrollment_id]
-    has_cancelled = current_user.has_cancelled_makeup_before_next_lesson?(enrollment_id)
-    next_lesson_datetime = current_user.next_lesson_datetime
-
-    render json: {
-      has_cancelled: has_cancelled,
-      next_lesson_datetime: next_lesson_datetime&.strftime('%y.%m.%d %H:%M')
-    }
   end
 
 end
