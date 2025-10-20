@@ -23,6 +23,16 @@ class ApplicationController < ActionController::Base
   def authenticate_user!
     require_login
   end
+
+  def after_login_path
+    if current_user.teacher?
+      teacher_dashboard_path
+    elsif current_user.is_admin
+      admin_dashboard_path
+    else
+      root_path
+    end
+  end
   
   def require_login
     unless logged_in?

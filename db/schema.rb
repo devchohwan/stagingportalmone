@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_16_122911) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_20_135933) do
   create_table "enrollment_schedule_histories", force: :cascade do |t|
     t.integer "user_enrollment_id", null: false
     t.string "day", null: false
@@ -349,6 +349,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_122911) do
     t.integer "remaining_passes", default: 0, null: false
     t.date "passes_expire_date"
     t.date "first_lesson_date"
+    t.string "teacher_name"
+    t.boolean "sms_enabled", default: true
     t.index ["email"], name: "index_users_on_email"
     t.index ["status"], name: "index_users_on_status"
     t.index ["username"], name: "index_users_on_username", unique: true

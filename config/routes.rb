@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get "teacher/dashboard"
+  post "teacher/toggle_sms", to: "teacher#toggle_sms", as: :teacher_toggle_sms
   # Health check endpoint for Kamal
   get "up", to: proc { [200, {}, ["OK"]] }
   
@@ -83,6 +85,10 @@ Rails.application.routes.draw do
   
   # Admin routes
   namespace :admin do
+    get "teachers/index", to: "teachers#index", as: :teachers
+    patch "teachers/:id", to: "teachers#update", as: :teacher
+    post "teachers/:id/toggle_sms", to: "teachers#toggle_sms", as: :teacher_toggle_sms
+    post "teachers/:id/reset_password", to: "teachers#reset_password", as: :teacher_reset_password
     root "dashboard#index"
     resources :dashboard, only: [:index]
     

@@ -1,0 +1,55 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold"><%= current_user.name %> 대시보드</h1>
+    <%= link_to teacher_toggle_sms_path, method: :post, class: "px-4 py-2 rounded #{current_user.sms_enabled ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 hover:bg-gray-500'} text-white" do %>
+      SMS 알림: <%= current_user.sms_enabled ? 'ON' : 'OFF' %>
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold mb-4">오늘 수업 목록 (<%= Date.current.strftime('%Y-%m-%d') %>)</h2>
+      
+      <% if @schedules.any? %>
+        <div class="space-y-3">
+          <% @schedules.each do |schedule| %>
+            <div class="border-l-4 border-blue-500 pl-4 py-2">
+              <div class="font-semibold"><%= schedule.time_slot %></div>
+              <div class="text-gray-600">
+                <%= schedule.user&.name || '학생명 없음' %> - <%= schedule.subject %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-gray-500">오늘 예정된 수업이 없습니다.</p>
+      <% end %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold mb-4">보강 신청 내역</h2>
+      
+      <% if @makeup_requests.any? %>
+        <div class="space-y-3">
+          <% @makeup_requests.each do |request| %>
+            <div class="border-l-4 border-yellow-500 pl-4 py-2">
+              <div class="font-semibold"><%= request.user.name %></div>
+              <div class="text-gray-600">
+                <%= request.makeup_date&.strftime('%m/%d') %> <%= request.time_slot %>
+              </div>
+              <div class="text-sm text-gray-500 mt-1">
+                신청: <%= request.created_at.strftime('%m/%d %H:%M') %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-gray-500">보강 신청 내역이 없습니다.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="mt-6 text-center">
+    <%= link_to '로그아웃', destroy_user_session_path, method: :delete, class: 'text-blue-500 hover:underline' %>
+  </div>
+</div>

@@ -3,10 +3,32 @@ class MakeupPassController < ApplicationController
   before_action :check_on_leave, except: [:index, :my_requests]
 
   def index
-    # 메인 페이지
-    @has_active_makeup = current_user.makeup_pass_requests.where(status: 'active', request_type: 'makeup').exists?
+    @enrollments = current_user.user_enrollments
+      .where(is_paid: true, status: 'active')
+      .where('remaining_lessons > 0')
+    
+    active_subjects = @enrollments.pluck(:subject).uniq
+    has_both_subjects = (active_subjects.include?('클린') && active_subjects.include?('믹싱'))
+    
+    if has_both_subjects
+      clean_enrollment = @enrollments.find_by(subject: '클린')
+      mixing_enrollment = @enrollments.find_by(subject: '믹싱')
+      
+      clean_has_active = current_user.makeup_pass_requests
+        .where(status: 'active', request_type: 'makeup', user_enrollment_id: clean_enrollment&.id)
+        .exists?
+      
+      mixing_has_active = current_user.makeup_pass_requests
+        .where(status: 'active', request_type: 'makeup', user_enrollment_id: mixing_enrollment&.id)
+        .exists?
+      
+      @has_active_makeup = clean_has_active && mixing_has_active
+    else
+      @has_active_makeup = current_user.makeup_pass_requests
+        .where(status: 'active', request_type: 'makeup')
+        .exists?
+    end
 
-    # 이번 주에 이미 보강을 받았는지 확인
     last_completed_makeup = current_user.makeup_pass_requests
       .where(request_type: 'makeup', status: 'completed')
       .order(makeup_date: :desc)
@@ -113,7 +135,7 @@ class MakeupPassController < ApplicationController
           ) do |s|
             s.teacher = params[:makeup_pass_request][:teacher] || '오또'
             s.day = selected_date.strftime('%a').downcase
-            s.max_capacity = 4
+            s.max_capacity = 3
             s.status = 'active'
           end
         end
@@ -150,6 +172,7 @@ class MakeupPassController < ApplicationController
     end
 
     if makeup_pass_request.save
+      MakeupNotificationService.on_makeup_created(makeup_pass_request)
       redirect_to makeup_pass_path, notice: '신청이 완료되었습니다.'
     else
       redirect_to makeup_pass_reserve_path, alert: "신청에 실패했습니다: #{makeup_pass_request.errors.full_messages.join(', ')}"
@@ -226,6 +249,7 @@ class MakeupPassController < ApplicationController
     end
 
     request.cancel!
+    MakeupNotificationService.on_makeup_cancelled(request)
     redirect_to makeup_pass_my_requests_path, notice: '신청이 취소되었습니다.'
   end
 
@@ -274,6 +298,11 @@ class MakeupPassController < ApplicationController
             existing_group_slot = existing_slots.find { |s| s[:time_slot] == time_slot }
             next if existing_group_slot
             
+            other_week_slots = GroupMakeupSlot
+              .where(lesson_date: date, time_slot: time_slot, subject: '믹싱')
+              .where.not(week_number: week_number)
+            next if other_week_slots.exists?
+            
             current_count = TeacherSchedule.where(
               teacher: teacher,
               day: day_of_week,
@@ -286,7 +315,16 @@ class MakeupPassController < ApplicationController
             makeup_count = MakeupPassRequest
               .where(status: 'active', request_type: 'makeup')
               .where(makeup_date: date, time_slot: time_slot, teacher: teacher)
+              .where.not(group_makeup_slot_id: nil)
               .count
+            
+            regular_makeup_count = MakeupPassRequest
+              .where(status: 'active', request_type: 'makeup')
+              .where(makeup_date: date, time_slot: time_slot, teacher: teacher)
+              .where(group_makeup_slot_id: nil)
+              .count
+            
+            next if regular_makeup_count > 0
             
             total_count = current_count + makeup_count
             
@@ -297,7 +335,7 @@ class MakeupPassController < ApplicationController
                 teacher: teacher,
                 week_number: week_number,
                 current_count: 0,
-                max_capacity: 4,
+                max_capacity: 3,
                 group_makeup_slot_id: nil
               }
             end
@@ -327,7 +365,23 @@ class MakeupPassController < ApplicationController
       teachers.each do |teacher|
         next if Teacher.closed_on?(teacher, date)
 
-        # 정규 수업 학생 수
+        if teacher == '오또'
+          mixing_slots = GroupMakeupSlot.where(
+            lesson_date: date,
+            time_slot: time_slot,
+            subject: '믹싱'
+          )
+          
+          has_reservations = mixing_slots.any? do |slot|
+            MakeupPassRequest.where(
+              group_makeup_slot_id: slot.id,
+              status: ['active', 'completed']
+            ).exists?
+          end
+          
+          next if has_reservations
+        end
+
         current_count = TeacherSchedule.where(
           teacher: teacher,
           day: day_of_week,
@@ -396,6 +450,23 @@ class MakeupPassController < ApplicationController
 
       all_time_slots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22']
       has_any_slot = all_time_slots.any? do |time_slot|
+        if teacher == '오또'
+          mixing_slots = GroupMakeupSlot.where(
+            lesson_date: date,
+            time_slot: time_slot,
+            subject: '믹싱'
+          )
+          
+          has_reservations = mixing_slots.any? do |slot|
+            MakeupPassRequest.where(
+              group_makeup_slot_id: slot.id,
+              status: ['active', 'completed']
+            ).exists?
+          end
+          
+          next false if has_reservations
+        end
+
         current_count = TeacherSchedule.where(
           teacher: teacher, 
           day: day_of_week, 

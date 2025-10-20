@@ -237,6 +237,34 @@ class SmsService
     end
   end
 
+  def send_message(phone, text)
+    if @api_key.nil? || @api_secret.nil? || @sender.nil?
+      Rails.logger.info "[SMS] #{phone}: #{text}"
+      return { success: true }
+    end
+
+    begin
+      message = {
+        to: phone.gsub('-', ''),
+        from: @sender.gsub('-', ''),
+        text: text
+      }
+
+      result = send_sms(message)
+
+      if result['statusCode'] == '2000'
+        Rails.logger.info "SMS 전송 성공: #{phone}"
+        { success: true }
+      else
+        Rails.logger.error "SMS 전송 실패: #{result['statusMessage'] || result['errorMessage']}"
+        { success: false }
+      end
+    rescue => e
+      Rails.logger.error "SMS 전송 오류: #{e.message}"
+      { success: false }
+    end
+  end
+
   private
 
   def send_sms(message)

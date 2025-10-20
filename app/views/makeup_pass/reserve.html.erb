@@ -1203,20 +1203,17 @@ function renderTimeSlots(slots) {
     btn.type = 'button';
     btn.className = 'time-slot-btn';
 
-    if (isMixingMakeup && slot.group_makeup_slot_id) {
-      // 그룹 보강 슬롯
+    if (isMixingMakeup) {
       btn.setAttribute('data-time-slot', slot.time_slot);
       btn.setAttribute('data-teacher', slot.teacher);
-      btn.setAttribute('data-group-makeup-slot-id', slot.group_makeup_slot_id);
+      btn.setAttribute('data-group-makeup-slot-id', slot.group_makeup_slot_id || '');
       btn.onclick = function() {
         selectGroupMakeupSlot(this, slot.time_slot, slot.teacher, slot.group_makeup_slot_id);
       };
 
       var capacityText = ' (' + slot.current_count + '/' + slot.max_capacity + '명)';
-      btn.innerHTML = '<div class="time-slot-time">' + slot.display_time + capacityText + '</div>' +
-                      '<div class="time-slot-teacher">' + slot.teacher + ' 선생님</div>';
+      btn.innerHTML = '<div class="time-slot-time">' + slot.display_time + capacityText + '</div>';
     } else {
-      // 일반 보강 슬롯
       btn.setAttribute('data-time-slot', slot.time_slot);
       btn.setAttribute('data-teacher', slot.teacher);
       btn.onclick = function() { selectTimeSlot(this, slot.time_slot, slot.teacher); };

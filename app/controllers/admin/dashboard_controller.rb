@@ -970,10 +970,13 @@ class Admin::DashboardController < ApplicationController
         is_paid: true
       )
 
+      subject = request.user_enrollment&.subject || enrollment&.subject || '미지정'
+
       render json: {
         success: true,
         request: {
           user_name: request.user.name,
+          subject: subject,
           original_teacher: enrollment&.teacher || request.user.primary_teacher,
           request_date: request.request_date.strftime('%Y-%m-%d'),
           teacher: request.teacher,

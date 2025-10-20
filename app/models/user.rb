@@ -31,6 +31,10 @@ class User < ApplicationRecord
     is_admin
   end
   
+  def teacher?
+    is_admin && teacher_name.present?
+  end
+  
   # Override enum approved? method to include both 'active' and 'approved' status
   def approved?
     status == 'active' || status == 'approved'
