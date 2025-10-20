@@ -263,28 +263,43 @@ class MakeupPassController < ApplicationController
             }
           }.compact
 
-        all_time_slots = ['19-20', '20-21']
         day_of_week = date.strftime('%a').downcase
         
         empty_slots = []
         if day_of_week == 'sat'
-          teachers = ['오또']
+          teacher = '오또'
+          all_time_slots = ['13-14', '14-15', '15-16', '16-17', '17-18', '19-20', '20-21', '21-22']
           
           all_time_slots.each do |time_slot|
-            existing_slot = existing_slots.find { |s| s[:time_slot] == time_slot }
+            existing_group_slot = existing_slots.find { |s| s[:time_slot] == time_slot }
+            next if existing_group_slot
             
-            unless existing_slot
-              teachers.each do |teacher|
-                empty_slots << {
-                  time_slot: time_slot,
-                  display_time: time_slot.split('-').first + ':00-' + time_slot.split('-').last + ':00',
-                  teacher: teacher,
-                  week_number: week_number,
-                  current_count: 0,
-                  max_capacity: 4,
-                  group_makeup_slot_id: nil
-                }
-              end
+            current_count = TeacherSchedule.where(
+              teacher: teacher,
+              day: day_of_week,
+              time_slot: time_slot,
+              lesson_date: date,
+              is_on_leave: false,
+              is_absent: false
+            ).count
+            
+            makeup_count = MakeupPassRequest
+              .where(status: 'active', request_type: 'makeup')
+              .where(makeup_date: date, time_slot: time_slot, teacher: teacher)
+              .count
+            
+            total_count = current_count + makeup_count
+            
+            if total_count < 3
+              empty_slots << {
+                time_slot: time_slot,
+                display_time: time_slot.split('-').first + ':00-' + time_slot.split('-').last + ':00',
+                teacher: teacher,
+                week_number: week_number,
+                current_count: 0,
+                max_capacity: 4,
+                group_makeup_slot_id: nil
+              }
             end
           end
         end

@@ -848,6 +848,25 @@ window.selectEnrollment = function(element) {
   selectedTimeSlot = null;
   selectedTeacher = null;
 
+  var currentMonth = new Date();
+  var year = currentMonth.getFullYear();
+  var month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+  var dateStr = year + '-' + month + '-01';
+
+  fetch('/makeup_pass/reserve?date=' + dateStr + '&enrollment_id=' + selectedEnrollment.id, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      document.getElementById('calendar-container').innerHTML = html;
+      console.log('달력 로드 완료 (enrollment_id:', selectedEnrollment.id, ')');
+    })
+    .catch(function(error) {
+      console.error('달력 로드 오류:', error);
+    });
+
   document.querySelector('[data-reservation-target="dateSection"]').classList.add('hidden');
   document.querySelector('[data-reservation-target="timeSection"]').classList.add('hidden');
   document.querySelector('[data-reservation-target="teacherSection"]').classList.add('hidden');
