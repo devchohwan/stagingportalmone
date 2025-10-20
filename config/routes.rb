@@ -58,6 +58,7 @@ Rails.application.routes.draw do
   get "makeup_pass/available_teachers", to: "makeup_pass#available_teachers"
   get "makeup_pass/calculate_week", to: "makeup_pass#calculate_week"
   get "makeup_pass/absent_weeks", to: "makeup_pass#get_absent_weeks"
+  get "makeup_pass/check_cancelled_makeup", to: "makeup_pass#check_cancelled_makeup"
 
   # 음정수업 페이지
   get "pitch", to: "pitch#index"

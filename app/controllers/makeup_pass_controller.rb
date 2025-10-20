@@ -427,4 +427,16 @@ class MakeupPassController < ApplicationController
     render json: { error: e.message }, status: :internal_server_error
   end
 
+  # 특정 enrollment의 보강 취소 이력 확인
+  def check_cancelled_makeup
+    enrollment_id = params[:enrollment_id]
+    has_cancelled = current_user.has_cancelled_makeup_before_next_lesson?(enrollment_id)
+    next_lesson_datetime = current_user.next_lesson_datetime
+
+    render json: {
+      has_cancelled: has_cancelled,
+      next_lesson_datetime: next_lesson_datetime&.strftime('%y.%m.%d %H:%M')
+    }
+  end
+
 end

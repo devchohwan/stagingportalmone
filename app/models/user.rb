@@ -177,14 +177,17 @@ class User < ApplicationRecord
   end
 
   # 다음 수업 전까지 취소한 이력이 있는지 확인
-  def has_cancelled_makeup_before_next_lesson?
+  def has_cancelled_makeup_before_next_lesson?(enrollment_id = nil)
     return false unless next_lesson_date
 
     # 가장 최근에 취소된 보강이 있는지 확인
-    last_cancelled = makeup_pass_requests
+    query = makeup_pass_requests
       .where(status: 'cancelled', request_type: 'makeup')
-      .order(updated_at: :desc)
-      .first
+
+    # enrollment_id가 지정되면 해당 과목만 확인
+    query = query.where(user_enrollment_id: enrollment_id) if enrollment_id
+
+    last_cancelled = query.order(updated_at: :desc).first
 
     return false unless last_cancelled
 

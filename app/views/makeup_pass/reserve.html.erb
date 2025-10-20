@@ -832,6 +832,7 @@ var selectedTeacher = null;
 var selectedWeekNumber = null;
 var selectedGroupMakeupSlotId = null;
 var hasCancelledMakeup = <%= @has_cancelled_makeup ? 'true' : 'false' %>;
+var hasCancelledMakeupByEnrollment = {}; // enrollment별 취소 이력
 var remainingPasses = <%= @remaining_passes || 0 %>;
 var cleanTeachersByDay = <%= raw(@clean_teachers_by_day.to_json) if @clean_teachers_by_day %>;
 <% if @next_lesson_datetime %>
@@ -901,19 +902,52 @@ window.selectType = function(element, type) {
     return;
   }
 
-  if (hasCancelledMakeup && type === 'makeup') {
-    var message = '보강을 취소하신 이력이 있어 ';
-    if (nextLessonDatetime) {
-      message += '다음 정규 수업일(' + nextLessonDatetime + ') 전까지 ';
-    } else {
-      message += '다음 정규 수업일 전까지 ';
+  // enrollment별 취소 이력 체크
+  if (type === 'makeup' && selectedEnrollment && selectedEnrollment.id) {
+    // 아직 체크하지 않은 enrollment면 서버에서 확인
+    if (hasCancelledMakeupByEnrollment[selectedEnrollment.id] === undefined) {
+      // 동기적으로 체크 (간단히 하기 위해)
+      fetch('/makeup_pass/check_cancelled_makeup?enrollment_id=' + selectedEnrollment.id, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          hasCancelledMakeupByEnrollment[selectedEnrollment.id] = data.has_cancelled;
+          if (data.has_cancelled) {
+            var message = '이 과목의 보강을 취소하신 이력이 있어 ';
+            if (data.next_lesson_datetime) {
+              message += '다음 정규 수업일(' + data.next_lesson_datetime + ') 전까지 ';
+            } else {
+              message += '다음 정규 수업일 전까지 ';
+            }
+            message += '보강 신청이 제한됩니다.\n패스는 신청 가능합니다.';
+            alert(message);
+            element.classList.remove('selected');
+            selectedType = null;
+            return;
+          } else {
+            // 취소 이력 없으면 계속 진행
+            continueTypeSelection(element, type);
+          }
+        })
+        .catch(function(error) {
+          console.error('취소 이력 확인 오류:', error);
+        });
+      return;
+    } else if (hasCancelledMakeupByEnrollment[selectedEnrollment.id]) {
+      var message = '이 과목의 보강을 취소하신 이력이 있어 다음 정규 수업일 전까지 보강 신청이 제한됩니다.\n패스는 신청 가능합니다.';
+      alert(message);
+      element.classList.remove('selected');
+      selectedType = null;
+      return;
     }
-    message += '보강 신청이 제한됩니다.\n패스는 신청 가능합니다.';
-    alert(message);
-    element.classList.remove('selected');
-    selectedType = null;
-    return;
   }
+
+  continueTypeSelection(element, type);
+}
+
+window.continueTypeSelection = function(element, type) {
+  selectedType = type;
 
   // 시각적 선택 업데이트
   var typeButtons = document.querySelectorAll('.type-btn');
