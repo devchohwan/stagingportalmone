@@ -112,8 +112,8 @@ class MakeupPassController < ApplicationController
             subject: '믹싱'
           ) do |s|
             s.teacher = params[:makeup_pass_request][:teacher] || '오또'
+            s.day = selected_date.strftime('%a').downcase
             s.max_capacity = 4
-            s.current_count = 0
             s.status = 'active'
           end
         end
