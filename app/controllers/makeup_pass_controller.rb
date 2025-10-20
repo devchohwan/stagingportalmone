@@ -99,6 +99,29 @@ class MakeupPassController < ApplicationController
         content: params[:makeup_pass_request][:content],
         status: 'active'
       )
+
+      if enrollment.teacher == '지명' && enrollment.subject == '믹싱'
+        week_number = enrollment.calculate_week_number(selected_date)
+        group_makeup_slot_id = params[:makeup_pass_request][:group_makeup_slot_id]
+
+        if group_makeup_slot_id.present?
+          slot = GroupMakeupSlot.find_by(id: group_makeup_slot_id)
+        else
+          slot = GroupMakeupSlot.find_or_create_by!(
+            lesson_date: selected_date,
+            time_slot: params[:makeup_pass_request][:time_slot],
+            week_number: week_number,
+            subject: '믹싱'
+          ) do |s|
+            s.teacher = params[:makeup_pass_request][:teacher] || '오또'
+            s.max_capacity = 4
+            s.current_count = 0
+            s.status = 'active'
+          end
+        end
+
+        makeup_pass_request.group_makeup_slot_id = slot.id
+      end
     else
       if enrollment.remaining_passes <= 0
         redirect_to makeup_pass_reserve_path, alert: '해당 과목의 남은 패스권이 없습니다.'
@@ -218,29 +241,62 @@ class MakeupPassController < ApplicationController
   def available_time_slots
     date = Date.parse(params[:date])
     enrollment_id = params[:enrollment_id]&.to_i
-    week_number = params[:week_number]&.to_i
 
-    # 지명 믹싱이면 그룹 보강 슬롯만 조회
     if enrollment_id
       enrollment = current_user.user_enrollments.find_by(id: enrollment_id)
       if enrollment && enrollment.teacher == '지명' && enrollment.subject == '믹싱'
-        unless week_number
-          render json: { error: '주차를 선택해주세요.' }, status: :unprocessable_entity
-          return
+        week_number = enrollment.calculate_week_number(date)
+
+        existing_slots = GroupMakeupSlot
+          .where(lesson_date: date, subject: '믹싱', week_number: week_number)
+          .map { |slot|
+            current_count = MakeupPassRequest
+              .where(group_makeup_slot_id: slot.id, status: ['active', 'completed'])
+              .count
+            
+            next if current_count >= slot.max_capacity
+            
+            {
+              time_slot: slot.time_slot,
+              display_time: slot.display_time,
+              teacher: slot.teacher,
+              week_number: slot.week_number,
+              current_count: current_count,
+              max_capacity: slot.max_capacity,
+              group_makeup_slot_id: slot.id
+            }
+          }.compact
+
+        all_time_slots = ['19-20', '20-21']
+        day_of_week = date.strftime('%a').downcase
+        
+        empty_slots = []
+        if day_of_week == 'tue' || day_of_week == 'sat'
+          teachers = ['오또']
+          
+          all_time_slots.each do |time_slot|
+            existing_slot = existing_slots.find { |s| s[:time_slot] == time_slot }
+            
+            unless existing_slot
+              teachers.each do |teacher|
+                empty_slots << {
+                  time_slot: time_slot,
+                  display_time: time_slot.split('-').first + ':00-' + time_slot.split('-').last + ':00',
+                  teacher: teacher,
+                  week_number: week_number,
+                  current_count: 0,
+                  max_capacity: 4,
+                  group_makeup_slot_id: nil
+                }
+              end
+            end
+          end
         end
 
-        slots = GroupMakeupSlot.available_for(date, '믹싱', week_number)
+        all_slots = existing_slots + empty_slots
+        all_slots.sort_by! { |s| s[:time_slot] }
 
-        render json: slots.map { |slot|
-          {
-            time_slot: slot.time_slot,
-            display_time: slot.display_time,
-            teacher: slot.teacher,
-            week_number: slot.week_number,
-            available_slots: slot.remaining_slots,
-            group_makeup_slot_id: slot.id
-          }
-        }
+        render json: all_slots
         return
       end
     end

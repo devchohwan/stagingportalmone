@@ -732,22 +732,9 @@ function navigateMonth(direction) {
         </div>
       </div>
 
-      <!-- Step 2.5: 결석 주차 선택 (지명 믹싱 전용) -->
-      <div class="step-section hidden" data-reservation-target="weekSection">
-        <h3 class="step-title">3. 결석 주차 선택</h3>
-        <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-          <div style="font-size: 0.9rem; color: #065f46; font-weight: 600;">
-            💡 같은 주차의 학생들끼리 그룹 보강을 받습니다
-          </div>
-        </div>
-        <div id="absent-weeks-container" style="display: grid; gap: 10px;">
-          <!-- 결석 주차 버튼이 동적으로 추가됩니다 -->
-        </div>
-      </div>
-
-      <!-- Step 3 (또는 4): 날짜 선택 -->
+      <!-- Step 3: 날짜 선택 -->
       <div class="step-section hidden" data-reservation-target="dateSection">
-        <h3 class="step-title"><span id="date-step-number">3</span>. 날짜 선택</h3>
+        <h3 class="step-title">3. 날짜 선택</h3>
         <% if @has_cancelled_makeup %>
           <div style="background: #fee2e2; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 15px;">
             <p style="color: #991b1b; font-weight: 600; margin: 0;">⚠️ 보강 취소 페널티</p>
@@ -949,60 +936,63 @@ window.selectType = function(element, type) {
 window.continueTypeSelection = function(element, type) {
   selectedType = type;
 
-  // 시각적 선택 업데이트
   var typeButtons = document.querySelectorAll('.type-btn');
   for (var i = 0; i < typeButtons.length; i++) {
     typeButtons[i].classList.remove('selected');
   }
   element.classList.add('selected');
 
-  // 선택 상태 초기화
   selectedDate = null;
   selectedTimeSlot = null;
   selectedTeacher = null;
   selectedWeekNumber = null;
   selectedGroupMakeupSlotId = null;
 
-  // 달력 날짜 선택 초기화
   var dateElements = document.querySelectorAll('[data-date]');
   for (var i = 0; i < dateElements.length; i++) {
     dateElements[i].classList.remove('selected');
   }
 
-  // 지명 믹싱 보강인 경우 주차 선택 섹션 표시
   var isMixingMakeup = selectedEnrollment.teacher === '지명' &&
                        selectedEnrollment.subject === '믹싱' &&
                        type === 'makeup';
 
   if (isMixingMakeup) {
-    hideSection('dateSection');
     hideSection('timeSection');
     hideSection('teacherSection');
     hideSection('contentSection');
     hideSection('confirmSection');
 
-    var weekSection = document.querySelector('[data-reservation-target="weekSection"]');
-    if (weekSection) {
-      weekSection.classList.remove('hidden');
-      console.log('결석 주차 선택 섹션 표시');
+    var dateSection = document.querySelector('[data-reservation-target="dateSection"]');
+    if (dateSection) {
+      dateSection.classList.remove('hidden');
+      console.log('날짜 선택 섹션 표시 (믹싱 그룹 보강)');
     }
 
-    // 날짜 섹션 스텝 번호를 4로 변경
-    var dateStepNumber = document.getElementById('date-step-number');
-    if (dateStepNumber) dateStepNumber.textContent = '4';
+    var currentMonth = new Date();
+    var year = currentMonth.getFullYear();
+    var month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+    var dateStr = year + '-' + month + '-01';
 
-    loadAbsentWeeks();
+    fetch('/makeup_pass/reserve?date=' + dateStr + '&enrollment_id=' + selectedEnrollment.id, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+      .then(function(response) { return response.text(); })
+      .then(function(html) {
+        document.getElementById('calendar-container').innerHTML = html;
+        selectedDate = null;
+        updateCalendarForMixingMakeup();
+      })
+      .catch(function(error) {
+        console.error('달력 로드 오류:', error);
+      });
   } else {
-    // 일반 보강/패스 플로우
-    hideSection('weekSection');
     hideSection('timeSection');
     hideSection('teacherSection');
     hideSection('contentSection');
     hideSection('confirmSection');
-
-    // 날짜 섹션 스텝 번호를 3으로 변경
-    var dateStepNumber = document.getElementById('date-step-number');
-    if (dateStepNumber) dateStepNumber.textContent = '3';
 
     var dateSection = document.querySelector('[data-reservation-target="dateSection"]');
     if (dateSection) {
@@ -1062,10 +1052,11 @@ window.selectDate = function(element) {
 
   if (selectedType === 'makeup') {
     if (isMixingMakeup) {
-      // 믹싱 그룹 보강: 선생님 선택 건너뛰고 바로 시간 선택
       hideSection('teacherSection');
       hideSection('contentSection');
       hideSection('confirmSection');
+
+      calculateAndSetWeekNumber();
 
       loadTimeSlots(selectedDate, null);
       var timeSection = document.querySelector('[data-reservation-target="timeSection"]');
@@ -1075,9 +1066,8 @@ window.selectDate = function(element) {
       }
 
       var stepNumber = document.getElementById('content-step-number');
-      if (stepNumber) stepNumber.textContent = '5';
+      if (stepNumber) stepNumber.textContent = '4';
     } else {
-      // 일반 보강: 선생님 선택
       loadTeachers(selectedDate);
       var teacherSection = document.querySelector('[data-reservation-target="teacherSection"]');
       if (teacherSection) {
@@ -1116,96 +1106,6 @@ window.selectDate = function(element) {
   }
 }
 
-function loadAbsentWeeks() {
-  if (!selectedEnrollment || !selectedEnrollment.id) {
-    console.error('선택된 enrollment가 없습니다.');
-    return;
-  }
-
-  fetch('/makeup_pass/absent_weeks?enrollment_id=' + selectedEnrollment.id, {
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(weeks) {
-      console.log('결석 주차:', weeks);
-      renderAbsentWeeks(weeks);
-    })
-    .catch(function(error) {
-      console.error('결석 주차 로드 오류:', error);
-      alert('결석 주차를 불러오는데 실패했습니다.');
-    });
-}
-
-function renderAbsentWeeks(weeks) {
-  var container = document.getElementById('absent-weeks-container');
-  container.innerHTML = '';
-
-  if (weeks.length === 0) {
-    container.innerHTML = '<div style="text-align: center; color: #718096; padding: 20px;">결석한 주차가 없습니다.</div>';
-    return;
-  }
-
-  weeks.forEach(function(week) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'week-btn';
-    btn.style.cssText = 'border: 2px solid #e2e8f0; border-radius: 8px; padding: 15px; background: white; cursor: pointer; transition: all 0.3s ease; font-weight: 600; color: #2d3748;';
-    btn.textContent = week + '주차';
-    btn.onclick = function() { selectWeek(this, week); };
-    container.appendChild(btn);
-  });
-}
-
-function selectWeek(element, weekNumber) {
-  selectedWeekNumber = weekNumber;
-  console.log('주차 선택:', weekNumber);
-
-  var weekButtons = document.querySelectorAll('.week-btn');
-  for (var i = 0; i < weekButtons.length; i++) {
-    weekButtons[i].style.borderColor = '#e2e8f0';
-    weekButtons[i].style.background = 'white';
-  }
-
-  element.style.borderColor = '#34d399';
-  element.style.background = 'rgba(52, 211, 153, 0.1)';
-
-  // 날짜 선택 섹션 표시
-  var dateSection = document.querySelector('[data-reservation-target="dateSection"]');
-  if (dateSection) {
-    dateSection.classList.remove('hidden');
-    console.log('날짜 선택 섹션 표시 (믹싱 그룹 보강)');
-  }
-
-  // 달력 로드 (화/토만 선택 가능하도록 필터링)
-  var currentMonth = new Date();
-  var year = currentMonth.getFullYear();
-  var month = String(currentMonth.getMonth() + 1).padStart(2, '0');
-  var dateStr = year + '-' + month + '-01';
-
-  fetch('/makeup_pass/reserve?date=' + dateStr + '&enrollment_id=' + selectedEnrollment.id, {
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  })
-    .then(function(response) { return response.text(); })
-    .then(function(html) {
-      document.getElementById('calendar-container').innerHTML = html;
-      selectedDate = null;
-
-      // 믹싱 그룹 보강용 달력 필터링 (화/토만 활성화)
-      updateCalendarForMixingMakeup();
-    })
-    .catch(function(error) {
-      console.error('달력 로드 오류:', error);
-    });
-
-  hideSection('timeSection');
-  hideSection('contentSection');
-  hideSection('confirmSection');
-}
-
 function updateCalendarForMixingMakeup() {
   console.log('믹싱 그룹 보강용 달력 필터링 시작');
   var allDayCells = document.querySelectorAll('.calendar-day-cell');
@@ -1217,7 +1117,6 @@ function updateCalendarForMixingMakeup() {
     var dateObj = new Date(date);
     var dayOfWeek = dateObj.getDay();
 
-    // 화요일(2) 또는 토요일(6)만 클릭 가능
     var isTueOrSat = dayOfWeek === 2 || dayOfWeek === 6;
     var isPast = cell.classList.contains('past-day');
     var isNotCurrentMonth = cell.classList.contains('not-current-month');
@@ -1252,7 +1151,6 @@ function loadTimeSlots(date, teacher) {
 
   if (isMixingMakeup) {
     url += '&enrollment_id=' + selectedEnrollment.id;
-    url += '&week_number=' + selectedWeekNumber;
   } else if (teacher) {
     url += '&teacher=' + encodeURIComponent(teacher);
   }
@@ -1331,15 +1229,11 @@ function selectGroupMakeupSlot(element, timeSlot, teacher, groupMakeupSlotId) {
   element.classList.add('selected');
 
   document.querySelector('[data-reservation-target="contentSection"]').classList.remove('hidden');
-  document.getElementById('content-step-number').textContent = '5';
+  document.getElementById('content-step-number').textContent = '4';
   document.getElementById('content-section-title').textContent = '신청 정보';
   document.querySelector('[data-reservation-target="confirmSection"]').classList.add('hidden');
 
-  // 주차 번호 자동 설정 (이미 선택된 주차 사용)
-  var weekNumberInput = document.getElementById('week-number');
-  if (weekNumberInput && selectedWeekNumber) {
-    weekNumberInput.value = selectedWeekNumber + '주차';
-  }
+  calculateAndSetWeekNumber();
 }
 
 function selectTimeSlot(element, timeSlot, teacher) {
