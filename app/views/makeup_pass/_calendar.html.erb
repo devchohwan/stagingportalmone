@@ -17,7 +17,6 @@
     # 다음 수업 찾기 (시간 체크)
     upcoming_schedules = TeacherSchedule.where(user_enrollment_id: enrollment.id)
       .where('lesson_date >= ?', today)
-      .where(is_absent: false)
       .order(:lesson_date)
     
     next_lesson = nil
@@ -40,7 +39,6 @@
     # 이전 수업 찾기 (시간 체크)
     past_schedules = TeacherSchedule.where(user_enrollment_id: enrollment.id)
       .where('lesson_date <= ?', today)
-      .where(is_absent: false)
       .order(lesson_date: :desc)
     
     prev_lesson = nil
